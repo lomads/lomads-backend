@@ -23,15 +23,16 @@ const create = async (req, res, next) => {
     try {
         for (let index = 0; index < members.length; index++) {
             const member = members[index];
-            const filter = { wallet: member.address }
+            const filter = { wallet:  { $regex : new RegExp(`^${member.address}$`, "i") } }
             const m = await Member.findOneAndUpdate(filter, { name: member.name, wallet: member.address }, { new: true, upsert: true })
             mMembers.push(m)
         }
         let newSafe = null;
         let O = [];
         if(safe){
-            const { name, address, owners } = safe;
-            newSafe = new Safe({ name, address: address, owners: mMembers.filter(m => owners.indexOf(m.wallet) > -1).map(m => m._id)  })
+            let { name, address, owners } = safe;
+            owners = owners.map(o => o.toLowerCase())
+            newSafe = new Safe({ name, address: address, owners: mMembers.filter(m => owners.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id)  })
             newSafe = await newSafe.save();
         }
 
