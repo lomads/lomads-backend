@@ -31,13 +31,13 @@ const create = async (req, res, next) => {
         let O = [];
         if(safe){
             let { name, address, owners } = safe;
-            owners = owners.map(o => o.toLowerCase())
-            newSafe = new Safe({ name, address: address, owners: mMembers.filter(m => owners.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id)  })
+            O = owners.map(o => o.toLowerCase())
+            newSafe = new Safe({ name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id)  })
             newSafe = await newSafe.save();
         }
 
         let mem = mMembers.map(m => {
-            return { member: m._id, role: O.indexOf(m.wallet) > -1 ? 'ADMIN': 'MEMBER' }
+            return { member: m._id, role: O.indexOf(m.wallet.toLowerCase()) > -1 ? 'ADMIN': 'MEMBER' }
         })
 
         let daoURL = url.replace('https://app.lomads.xyz/', "")
