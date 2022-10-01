@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const DAO = require('@server/modules/dao/dao.model')
 const Member = require('@server/modules/member/member.model')
 const Safe = require('@server/modules/safe/safe.model')
@@ -24,7 +25,12 @@ const create = async (req, res, next) => {
         for (let index = 0; index < members.length; index++) {
             const member = members[index];
             const filter = { wallet:  { $regex : new RegExp(`^${member.address}$`, "i") } }
-            const m = await Member.findOneAndUpdate(filter, { name: member.name, wallet: member.address }, { new: true, upsert: true })
+            let m = await Member.findOne(filter);
+            if(!m) {
+               m = new Member({ wallet: member.address, name: member.name })
+               m = m.save();
+            }
+            //const m = await Member.findOneAndUpdate(filter, { wallet: member.address }, { new: true, upsert: true })
             mMembers.push(m)
         }
         let newSafe = null;
@@ -37,10 +43,10 @@ const create = async (req, res, next) => {
         }
 
         let mem = mMembers.map(m => {
-            return { member: m._id, role: O.indexOf(m.wallet.toLowerCase()) > -1 ? 'ADMIN': 'MEMBER' }
+            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: O.indexOf(m.wallet.toLowerCase()) > -1 ? 'ADMIN': 'MEMBER' }
         })
 
-        let daoURL = url.replace('https://app.lomads.xyz/', "")
+        let daoURL = url;
 
         let dao = new DAO({
             contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id
