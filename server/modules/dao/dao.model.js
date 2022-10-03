@@ -34,6 +34,8 @@ const DAOSchema = new mongoose.Schema({
   safe: { type: mongoose.Schema.Types.ObjectId, ref: 'Safe' },
   members: [{ 
     member : { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
+    creator: { type: mongoose.Schema.Types.Boolean, default: false },
+    joined: { type: Date, default: Date.now },
     role: { type: String }
   }],
   createdAt: {

@@ -7,7 +7,6 @@ const ObjectId = require('mongodb').ObjectID;
 
 const load = async (req, res) => {
     const { _id } = req.user;
-    console.log(_id)
     try {
         const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] }}).populate({ path: 'safe members.member', populate: { path: 'owners' } }).exec()
         return res.status(200).json(dao)
@@ -28,7 +27,7 @@ const create = async (req, res, next) => {
             let m = await Member.findOne(filter);
             if(!m) {
                m = new Member({ wallet: member.address, name: member.name })
-               m = m.save();
+               m = await m.save();
             }
             //const m = await Member.findOneAndUpdate(filter, { wallet: member.address }, { new: true, upsert: true })
             mMembers.push(m)
@@ -76,6 +75,38 @@ const getByUrl = async (req, res) => {
     }
 }
 
+const addDaoMember = async (req, res) => {
+    
+    const { _id } = req.user;
+    const { url } = req.params;
+    const { name, address } = req.body;
 
+    try {
+        const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] }})
+        if(!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+    
+        const filter = { wallet:  { $regex : new RegExp(`^${address}$`, "i") } }
+        let m = await Member.findOne(filter);
+        if(!m) {
+            m = new Member({ wallet: address, name })
+            m = await m.save();
+         }
+        const userExistInDao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [m._id] }})
+        if(userExistInDao)
+            return res.status(500).json({ message: 'Member already exists in DAO' })
+            
+        await DAO.findOneAndUpdate(
+            { _id: dao._id },
+            { $addToSet: { members: { member: m._id, creator: false, role: 'MEMBER' } } }
+        )
+        const d = await DAO.findOne({ url }).populate({ path: 'safe members.member', populate: { path: 'owners' } })
+        return res.status(200).json(d)
+    }
+    catch(e) {
+        console.error("dao.addDaoMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
 
-module.exports = { load, create, getByUrl };
+module.exports = { load, create, getByUrl, addDaoMember };
