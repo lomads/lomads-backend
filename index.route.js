@@ -16,7 +16,7 @@ router.get('/health-check', (req, res) =>
 router.use('/dao', daoRoutes);
 
 // mount user routes at /users
-router.use('/members', memberRoutes);
+router.use('/member', memberRoutes);
 
 // mount auth routes at /auth
 router.use('/auth', authRoutes);
