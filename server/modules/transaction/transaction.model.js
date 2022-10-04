@@ -6,28 +6,37 @@ const APIError = require('@server/helpers/APIError');
 /**
  * Safe Schema
  */
-const SafeSchema = new mongoose.Schema({
-  name: {
+const TransactionSchema = new mongoose.Schema({
+  safeTransactionHash: {
     type: String,
     required: true
   },
-  address: {
+  rejectTransactionHash: {
+    type: String,
+    default: null,
+    required: false
+  },
+  nonce: {
     type: String,
     required: true
   },
-  dao: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
-  owners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
-  token: {
-    type: String,
-    required: false,
-    default: null
+  amount: {
+    type: Number,
+    required: true
   },
-  balance: {
-    type: String,
-    required: false,
-    default: null
+  recipient: {
+     type: mongoose.Schema.Types.ObjectId, ref: 'Member'
   },
-  transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }],
+  paymentReason: {
+    type: String,
+    default: null,
+    required: false
+  },
+  status: {
+    type: Number,
+    default: -1,
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -52,17 +61,17 @@ const SafeSchema = new mongoose.Schema({
 /**
  * Methods
  */
- SafeSchema.method({
+ TransactionSchema.method({
 });
 
 /**
  * Statics
  */
- SafeSchema.statics = {
+ TransactionSchema.statics = {
 
 };
 
 /**
  * @typedef DAO
  */
-module.exports = mongoose.model('Safe', SafeSchema);
+module.exports = mongoose.model('Transaction', TransactionSchema);
