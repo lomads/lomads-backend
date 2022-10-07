@@ -46,4 +46,17 @@ const create = async (req, res) => {
     }
 }
 
-module.exports = { create };
+const getContract = async (req, res) => {
+    const { contractAddress } = req.params;
+    try {
+        const contract = await Contract.findOne({ address: contractAddress });
+        return res.status(200).json(contract);
+    }
+    catch (e) {
+        console.error("contract.controller::get::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+
+module.exports = { create, getContract };
