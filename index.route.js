@@ -3,7 +3,7 @@ const memberRoutes = require('@server/modules/member/member.route');
 const daoRoutes = require('@server/modules/dao/dao.route');
 const authRoutes = require('@server/modules/auth/auth.route');
 const contractRoutes = require('@server/modules/contract/contract.route');
-const metadataRoutes = require('@server/modules/metadat/metadata.route');
+const metadataRoutes = require('@server/modules/metadata/metadata.route');
 
 const router = express.Router(); // eslint-disable-line new-cap
 
