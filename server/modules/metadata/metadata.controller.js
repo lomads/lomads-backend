@@ -1,4 +1,4 @@
-const Metadata = require('@server/modules/contract/metadata.model');
+const Metadata = require('@server/modules/metadata/metadata.model');
 const Contract = require('@server/modules/contract/contract.model');
 
 const addMetaData = async (req, res) => {
