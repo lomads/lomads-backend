@@ -4,6 +4,6 @@ const contractCtrl = require('./contract.controller');
 const router = express.Router(); // eslint-disable-line new-cap
 
 router.post('/', web3Auth, contractCtrl.create);
-router.get('/get-contract/:contractAddress', web3Auth, contractCtrl.getContract);
+router.get('/:contractAddress', web3Auth, contractCtrl.getContract);
 
 module.exports = router;
