@@ -32,9 +32,8 @@ const DAOSchema = new mongoose.Schema({
     required: false
   },
   safe: { type: mongoose.Schema.Types.ObjectId, ref: 'Safe' },
-  sbt: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
-  members: [{
-    member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
+  members: [{ 
+    member : { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     creator: { type: mongoose.Schema.Types.Boolean, default: false },
     joined: { type: Date, default: Date.now },
     role: { type: String }
@@ -63,13 +62,13 @@ const DAOSchema = new mongoose.Schema({
 /**
  * Methods
  */
-DAOSchema.method({
+ DAOSchema.method({
 });
 
 /**
  * Statics
  */
-DAOSchema.statics = {
+ DAOSchema.statics = {
 
 };
 
