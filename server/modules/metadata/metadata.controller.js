@@ -6,7 +6,7 @@ const addMetaData = async (req, res) => {
     const { id, description, name, image, attributes } = req.body;
 
     try {
-        const c = await Contract.findOne({ address: contractAddress });
+        let c = await Contract.findOne({ address: contractAddress });
         let metaData = new Metadata({
             id,
             description,
@@ -16,6 +16,8 @@ const addMetaData = async (req, res) => {
             contract: c._id
         })
         metaData = await metaData.save();
+        c.metadata.push(metaData);
+        c = await c.save();
         return res.status(200).json({ message: 'Metadata added successfully' });
     }
     catch (e) {
