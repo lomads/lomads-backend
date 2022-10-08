@@ -4,6 +4,7 @@ const daoRoutes = require('@server/modules/dao/dao.route');
 const authRoutes = require('@server/modules/auth/auth.route');
 const contractRoutes = require('@server/modules/contract/contract.route');
 const metadataRoutes = require('@server/modules/metadata/metadata.route');
+const transactionRoutes = require('@server/modules/transaction/transaction.route');
 
 const router = express.Router(); // eslint-disable-line new-cap
 
@@ -16,6 +17,7 @@ router.get('/health-check', (req, res) =>
 router.use('/dao', daoRoutes);
 router.use('/member', memberRoutes);
 router.use('/contract', contractRoutes);
+router.use('/transaction', transactionRoutes);
 router.use('/auth', authRoutes);
 router.use('/metadata', metadataRoutes);
 
