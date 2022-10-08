@@ -32,6 +32,10 @@ const MemberSchema = new mongoose.Schema({
   deletedAt: {
     type: Date,
     default: null
+  },
+  sbtTokens: {
+    type: Array,
+    default: []
   }
 });
 
@@ -45,13 +49,13 @@ const MemberSchema = new mongoose.Schema({
 /**
  * Methods
  */
- MemberSchema.method({
+MemberSchema.method({
 });
 
 /**
  * Statics
  */
- MemberSchema.statics = {
+MemberSchema.statics = {
 
 };
 

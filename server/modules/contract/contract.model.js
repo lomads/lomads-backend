@@ -10,6 +10,7 @@ const ContractSchema = new mongoose.Schema({
   address: { type: String },
   admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
   metadata: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Metadata' }],
+  contactDetail: { type: Array },
   createdAt: {
     type: Date,
     default: Date.now
@@ -34,13 +35,13 @@ const ContractSchema = new mongoose.Schema({
 /**
  * Methods
  */
- ContractSchema.method({
+ContractSchema.method({
 });
 
 /**
  * Statics
  */
- ContractSchema.statics = {
+ContractSchema.statics = {
 
 };
 

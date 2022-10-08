@@ -7,14 +7,15 @@ const APIError = require('@server/helpers/APIError');
  * Safe Schema
  */
 const MetadataSchema = new mongoose.Schema({
+  id: { type: String },
   description: { type: String },
   name: { type: String },
   image: { type: String },
-  attributes : [{
-    trait_type : String,
-    value : mongoose.Schema.Types.Mixed
+  attributes: [{
+    trait_type: String,
+    value: mongoose.Schema.Types.Mixed
   }],
-  contract : {type: mongoose.Schema.Types.ObjectId, ref: 'Contract'},
+  contract: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
   createdAt: {
     type: Date,
     default: Date.now
@@ -39,13 +40,13 @@ const MetadataSchema = new mongoose.Schema({
 /**
  * Methods
  */
- MetadataSchema.method({
+MetadataSchema.method({
 });
 
 /**
  * Statics
  */
- MetadataSchema.statics = {
+MetadataSchema.statics = {
 
 };
 

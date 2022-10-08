@@ -7,11 +7,11 @@ const APIError = require('@server/helpers/APIError');
  * Safe Schema
  */
 const TransactionSchema = new mongoose.Schema({
-  safeTransactionHash: {
+  safeTxHash: {
     type: String,
     required: true
   },
-  rejectTransactionHash: {
+  rejectTxHash: {
     type: String,
     default: null,
     required: false
@@ -20,18 +20,7 @@ const TransactionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  amount: {
-    type: Number,
-    required: true
-  },
-  recipient: {
-     type: mongoose.Schema.Types.ObjectId, ref: 'Member'
-  },
-  paymentReason: {
-    type: String,
-    default: null,
-    required: false
-  },
+  data: [{ type: mongoose.Schema.Types.Object }],
   status: {
     type: Number,
     default: -1,
