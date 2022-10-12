@@ -2,6 +2,18 @@ const Project = require('@server/modules/project/project.model');
 const Member = require('@server/modules/member/member.model');
 const DAO = require('@server/modules/dao/dao.model')
 
+const getById = async (req, res) => {
+    const { projectId } = req.params;
+    try {
+        const project = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } });
+        return res.status(200).json(project)
+    }
+    catch (e) {
+        console.error("project.controller::get::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const create = async (req, res) => {
     const { name, description, members, links, daoId } = req.body;
     console.log("data : ", name, description, members, links, daoId);
@@ -45,4 +57,72 @@ const create = async (req, res) => {
     }
 }
 
-module.exports = { create };
+const addProjectMember = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { name, address } = req.body;
+    console.log("member details : ", name, address);
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        const filter = { wallet: { $regex: new RegExp(`^${address}$`, "i") } }
+        let m = await Member.findOne(filter);
+        if (!m) {
+            m = new Member({ wallet: address, name })
+            m = await m.save();
+        }
+        console.log("Member found in collection");
+        const userExistInProject = await Project.findOne({ deletedAt: null, _id: projectId, 'members': { $in: [m._id] } })
+        if (userExistInProject) {
+            console.log("member exists in project");
+            return res.status(500).json({ message: 'Member already exists in Project' })
+        }
+        console.log("member doesnt exists in project .... adding");
+        project.members.push(m._id);
+        project = await project.save();
+
+        const userExistInDao = await DAO.findOne({ deletedAt: null, url: daoUrl, 'members.member': { $in: [m._id] } })
+        if (!userExistInDao) {
+            await DAO.findOneAndUpdate(
+                { url: daoUrl },
+                { $addToSet: { members: { member: m._id, creator: false, role: 'MEMBER' } } }
+            )
+        }
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.addProjectMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const addProjectLinks = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { title, link } = req.body;
+    console.log("link details : ", title, link);
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        project.links.push({ title: title, link: link });
+        project = await project.save();
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.addProjectLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { getById, create, addProjectMember, addProjectLinks };
