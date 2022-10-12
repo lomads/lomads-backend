@@ -35,7 +35,7 @@ const create = async (req, res) => {
                 }
             )
         }
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
         return res.status(200).json(d);
 
         // return res.status(200).json({ message: 'Contract created successfully' })

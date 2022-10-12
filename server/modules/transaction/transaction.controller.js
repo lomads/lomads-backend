@@ -1,4 +1,5 @@
 const Transaction = require('@server/modules/transaction/transaction.model');
+const Safe = require('@server/modules/safe/safe.model');
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -17,6 +18,10 @@ const create = async (req, res) => {
     try {
         let txn = new Transaction({ ...req.body })
         txn = await txn.save()
+        const safe = await Safe.updateMany(
+            { address: req.body.safeAddress },
+            { $addToSet: { transactions: txn._id } }
+        )
         return res.status(200).json({ message: 'Txn created successfully' })
     }
     catch(e) {
@@ -27,10 +32,20 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
     const { _id } = req.user;
-    const { rejectTxHash, nonce } = req.body;
+    console.log(req.body)
+    const { safeTxHash, reason, recipient } = req.body;
     try {
-        await Transaction.updateMany({ nonce: nonce }, { rejectTxHash: rejectTxHash })
-        return res.status(200).json({ message: 'Txn updated successfully' })
+        let txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
+        if(!txn)
+            return res.status(404).json({ message: 'Transaction not found' })
+        txn.data = txn.data.map(d => {
+            if(d.recipient.toLowerCase() === recipient.toLowerCase())
+                return { ...d, reason }
+            return d;
+        })
+        txn = await txn.save();
+        txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
+        return res.status(200).json(txn)
     }
     catch(e) {
         console.error(e)
