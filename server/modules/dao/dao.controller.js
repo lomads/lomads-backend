@@ -8,7 +8,7 @@ const ObjectId = require('mongodb').ObjectID;
 const load = async (req, res) => {
     const { _id } = req.user;
     try {
-        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member', populate: { path: 'owners transactions' } }).exec()
+        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } }).exec()
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -66,9 +66,7 @@ const create = async (req, res, next) => {
 const getByUrl = async (req, res) => {
     const { url } = req.params;
     try {
-        const dao = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member', populate: { path: 'owners transactions' } })
-        if(!dao)
-            return res.status(500).json({ message: 'DAO not found'})
+        const dao = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -102,7 +100,7 @@ const addDaoMember = async (req, res) => {
             { _id: dao._id },
             { $addToSet: { members: { member: m._id, creator: false, role: 'MEMBER' } } }
         )
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member', populate: { path: 'owners transactions' } })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
         return res.status(200).json(d)
     }
     catch (e) {
