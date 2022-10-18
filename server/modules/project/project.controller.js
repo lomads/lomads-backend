@@ -104,7 +104,7 @@ const addProjectMember = async (req, res) => {
 const addProjectLinks = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { title, link } = req.body;
+    const { title, link, lock } = req.body;
     console.log("link details : ", title, link);
     try {
 
@@ -112,7 +112,7 @@ const addProjectLinks = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
-        project.links.push({ title: title, link: link });
+        project.links.push({ title: title, link: link, lock: lock });
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
