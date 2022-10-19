@@ -1,6 +1,7 @@
 const Project = require('@server/modules/project/project.model');
 const Member = require('@server/modules/member/member.model');
 const DAO = require('@server/modules/dao/dao.model')
+const { find } = require('lodash');
 
 const getById = async (req, res) => {
     const { projectId } = req.params;
@@ -104,7 +105,7 @@ const addProjectMember = async (req, res) => {
 const addProjectLinks = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { title, link } = req.body;
+    const { title, link, accessControl, guildId = null, id } = req.body;
     console.log("link details : ", title, link);
     try {
 
@@ -112,7 +113,7 @@ const addProjectLinks = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
-        project.links.push({ title: title, link: link });
+        project.links.push({ id, title, link, accessControl, guildId, unlocked: [] });
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
@@ -125,4 +126,35 @@ const addProjectLinks = async (req, res) => {
     }
 }
 
-module.exports = { getById, create, addProjectMember, addProjectLinks };
+const updateProjectLink = async (req, res) => {
+    const { wallet } = req.user;
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { id } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        if (!id) {
+            return res.status(404).json({ message: 'Link not found' })
+        }
+        project.links = project.links.map(l => {
+            if(l.id === id)
+                return { ...l, unlocked: [ ...(l.unlocked ? l.unlocked : []), wallet.toLowerCase() ] }
+            return l
+        })
+        project = await project.save();
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.addProjectLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { getById, create, addProjectMember, addProjectLinks, updateProjectLink };
