@@ -2,6 +2,7 @@ const Project = require('@server/modules/project/project.model');
 const Member = require('@server/modules/member/member.model');
 const DAO = require('@server/modules/dao/dao.model')
 const { find } = require('lodash');
+const ObjectId = require('mongodb').ObjectID;
 
 const getById = async (req, res) => {
     const { projectId } = req.params;
@@ -102,6 +103,35 @@ const addProjectMember = async (req, res) => {
     }
 }
 
+const updateProjectMember = async (req, res) => {
+    const { projectId } = req.params;
+    const { memberList } = req.body;
+    console.log("Member List : ", memberList);
+    try {
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        console.log("Project found")
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            {
+                $addToSet: { members: { $each: memberList } },
+            }
+        )
+        // project.members = [...project.members, ...(memberList.map(m => ObjectId(m)))];
+        // console.log(project.members);
+        // project = await project.save();
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        return res.status(200).json(p);
+    }
+    catch (e) {
+        console.error("project.updateProjectMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const addProjectLinks = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
@@ -141,8 +171,8 @@ const updateProjectLink = async (req, res) => {
             return res.status(404).json({ message: 'Link not found' })
         }
         project.links = project.links.map(l => {
-            if(l.id === id)
-                return { ...l, unlocked: [ ...(l.unlocked ? l.unlocked : []), wallet.toLowerCase() ] }
+            if (l.id === id)
+                return { ...l, unlocked: [...(l.unlocked ? l.unlocked : []), wallet.toLowerCase()] }
             return l
         })
         project = await project.save();
@@ -157,4 +187,4 @@ const updateProjectLink = async (req, res) => {
     }
 }
 
-module.exports = { getById, create, addProjectMember, addProjectLinks, updateProjectLink };
+module.exports = { getById, create, addProjectMember, updateProjectMember, addProjectLinks, updateProjectLink };
