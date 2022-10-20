@@ -1,5 +1,7 @@
 const Transaction = require('@server/modules/transaction/transaction.model');
 const Safe = require('@server/modules/safe/safe.model');
+const _ = require('lodash');
+const axios = require('axios');
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -7,7 +9,7 @@ const load = async (req, res) => {
         let txns = await Transaction.find({})
         return res.status(200).json(txns)
     }
-    catch(e) {
+    catch (e) {
         console.error(e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
@@ -24,7 +26,7 @@ const create = async (req, res) => {
         )
         return res.status(200).json({ message: 'Txn created successfully' })
     }
-    catch(e) {
+    catch (e) {
         console.error(e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
@@ -33,13 +35,51 @@ const create = async (req, res) => {
 const update = async (req, res) => {
     const { _id } = req.user;
     console.log(req.body)
-    const { safeTxHash, reason, recipient } = req.body;
+    const { safeTxHash, reason, recipient, txType = null, safeAddress } = req.body;
     try {
         let txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
-        if(!txn)
-            return res.status(404).json({ message: 'Transaction not found' })
+        console.log("TXN : ", txn)
+        if (!txn) {
+            if (txType === 'ETHEREUM_TRANSACTION') {
+                let txn = new Transaction({
+                    safeAddress,
+                    safeTxHash: safeTxHash,
+                    rejectTxHash: null,
+                    data: [{ reason, recipient }],
+                    nonce: '0',
+                })
+                txn = await txn.save();
+                const safe = await Safe.updateMany(
+                    { address: safeAddress },
+                    { $addToSet: { transactions: txn._id } }
+                )
+                txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
+                return res.status(200).json(txn)
+            }
+            const safeTxn = await axios.get(`https://safe-transaction-goerli.safe.global/api/v1/multisig-transactions/${safeTxHash}/`)
+            if (safeTxn && safeTxn.data) {
+                let txn = new Transaction({
+                    safeAddress: safeTxn.data.safe,
+                    safeTxHash: safeTxHash,
+                    rejectTxHash: null,
+                    data: [{ reason, recipient: _.get(safeTxn.data, 'dataDecoded.parameters[0].value', '') }],
+                    nonce: safeTxn.data.nonce,
+                })
+                txn = await txn.save();
+                const safe = await Safe.updateMany(
+                    { address: safeTxn.data.safe },
+                    { $addToSet: { transactions: txn._id } }
+                )
+                txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
+                return res.status(200).json(txn)
+            }
+            else {
+                return res.status(404).json({ message: 'Transaction not found' })
+            }
+        }
+
         txn.data = txn.data.map(d => {
-            if(d.recipient.toLowerCase() === recipient.toLowerCase())
+            if (d.recipient.toLowerCase() === recipient.toLowerCase())
                 return { ...d, reason }
             return d;
         })
@@ -47,10 +87,10 @@ const update = async (req, res) => {
         txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
         return res.status(200).json(txn)
     }
-    catch(e) {
+    catch (e) {
         console.error(e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
 
-module.exports = {load, create, update };
+module.exports = { load, create, update };
