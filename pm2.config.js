@@ -19,7 +19,10 @@ module.exports = {
         "NODE_ENV": "production",
         "JWT_SECRET": "sjgljhghjglhjglrc",
         "PORT": "8080",
-        "MONGO_HOST": "mongodb+srv://lomads-dao:L0mads@321@cluster0.kkgl3yd.mongodb.net/Lomads-dao?retryWrites=true&w=majority"
+        "MONGO_HOST": "mongodb+srv://lomads-dao:L0mads@321@cluster0.kkgl3yd.mongodb.net/Lomads-dao?retryWrites=true&w=majority",
+        "AWS_REGION": "eu-west-3",
+        "S3_BUCKET_URL": 'https://lomads-dao-development.s3.eu-west-3.amazonaws.com/',
+        "S3_BUCKET":"lomads-dao-development"
       }
     }],
   }

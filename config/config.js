@@ -21,7 +21,13 @@ const envVarsSchema = Joi.object({
   MONGO_HOST: Joi.string().required()
     .description('Mongo DB host url'),
   MONGO_PORT: Joi.number()
-    .default(27017)
+    .default(27017),
+  AWS_REGION: Joi.string()
+  .default('eu-west-3'),
+  S3_BUCKET_URL: Joi.string()
+  .default('https://lomads-dao-development.s3.eu-west-3.amazonaws.com/'),
+  S3_BUCKET: Joi.string()
+  .default('lomads-dao-development'),
 }).unknown()
   .required();
 
@@ -38,6 +44,11 @@ const config = {
   mongo: {
     host: envVars.MONGO_HOST,
     port: envVars.MONGO_PORT
+  },
+  aws: {
+    region: envVars.AWS_REGION,
+    s3BucketUrl: envVars.S3_BUCKET_URL,
+    s3Bucket: envVars.S3_BUCKET
   }
 };
 

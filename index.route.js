@@ -6,6 +6,7 @@ const contractRoutes = require('@server/modules/contract/contract.route');
 const metadataRoutes = require('@server/modules/metadata/metadata.route');
 const transactionRoutes = require('@server/modules/transaction/transaction.route');
 const projectRoutes = require('@server/modules/project/project.route');
+const utilityRoutes = require('@server/modules/utility/utility.route');
 
 const router = express.Router(); // eslint-disable-line new-cap
 
@@ -22,5 +23,6 @@ router.use('/transaction', transactionRoutes);
 router.use('/auth', authRoutes);
 router.use('/metadata', metadataRoutes);
 router.use('/project', projectRoutes);
+router.use('/utility', utilityRoutes);
 
 module.exports = router;
