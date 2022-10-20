@@ -42,7 +42,7 @@ const create = async (req, res, next) => {
         }
 
         let mem = mMembers.map(m => {
-            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: O.indexOf(m.wallet.toLowerCase()) > -1 ? 'ADMIN' : 'MEMBER' }
+            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: O.indexOf(m.wallet.toLowerCase()) > -1 ? 'ADMIN' : 'CORE_CONTRIBUTOR' }
         })
 
         let daoURL = url;
@@ -98,7 +98,7 @@ const addDaoMember = async (req, res) => {
 
         await DAO.findOneAndUpdate(
             { _id: dao._id },
-            { $addToSet: { members: { member: m._id, creator: false, role: 'MEMBER' } } }
+            { $addToSet: { members: { member: m._id, creator: false, role: 'CORE_CONTRIBUTOR' } } }
         )
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
         return res.status(200).json(d)
