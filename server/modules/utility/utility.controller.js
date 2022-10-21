@@ -1,4 +1,4 @@
-const AWS = require('@config/AWS');
+const AWS = require('@config/aws');
 const config = require('@config/config');
 
 const getUploadURL = async (req, res, next) => {
