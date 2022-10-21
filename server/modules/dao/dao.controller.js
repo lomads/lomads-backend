@@ -67,6 +67,8 @@ const getByUrl = async (req, res) => {
     const { url } = req.params;
     try {
         const dao = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        if(!dao)
+            return res.status(404).json({ message: 'DAO not found' })
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -82,7 +84,8 @@ const addDaoMember = async (req, res) => {
     const { name, address } = req.body;
 
     try {
-        const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
+        //const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
+        const dao = await DAO.findOne({ deletedAt: null, url })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
