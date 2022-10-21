@@ -119,15 +119,90 @@ const updateProjectMember = async (req, res) => {
                 $addToSet: { members: { $each: memberList } },
             }
         )
-        // project.members = [...project.members, ...(memberList.map(m => ObjectId(m)))];
-        // console.log(project.members);
-        // project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         return res.status(200).json(p);
     }
     catch (e) {
         console.error("project.updateProjectMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const deleteProjectMember = async (req, res) => {
+    const { projectId } = req.params;
+    const { memberList } = req.body;
+    console.log("Member List : ", memberList);
+    try {
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            {
+                $pull: {
+                    members: {
+                        $in: memberList.map(m => ObjectId(m))
+                    }
+                },
+            }
+        )
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        console.log(p);
+        return res.status(200).json(p);
+    }
+    catch (e) {
+        console.error("project.updateProjectMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const archiveProject = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    try {
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            {
+                archivedAt: Date.now(),
+            }
+        )
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.archiveProject::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const deleteProject = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    try {
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            {
+                deletedAt: Date.now(),
+            }
+        )
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.archiveProject::", e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
@@ -187,4 +262,4 @@ const updateProjectLink = async (req, res) => {
     }
 }
 
-module.exports = { getById, create, addProjectMember, updateProjectMember, addProjectLinks, updateProjectLink };
+module.exports = { getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink };
