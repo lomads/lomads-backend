@@ -1,5 +1,6 @@
 const Project = require('@server/modules/project/project.model');
 const Member = require('@server/modules/member/member.model');
+const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model')
 const { find } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
@@ -51,6 +52,30 @@ const create = async (req, res) => {
 
         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members' } })
 
+        //update metadata
+
+        if(d.sbt){
+            for (let index = 0; index < members.length; index++) {
+                const member = members[index];
+                const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                const metadata = await Metadata.findOne(filter)
+                if(metadata) {
+                    let attrs = [ ...metadata.attributes ];
+                    if(!find(attrs, attr => attr.trait_type === 'projects')){
+                        attrs.push({ trait_type: 'projects', value: project._id })
+                    } else {
+                        attrs.map(attr => {
+                            if(attr.trait_type === 'projects') 
+                                return { ...attr, value: attr.value.split(',').push(project._id).join(',')}
+                            return attr
+                        })
+                    }
+                    metadata.attributes = attrs;
+                    await metadata.save();
+                }
+            }
+        }
+
         return res.status(200).json(d);
     }
     catch (e) {
@@ -94,6 +119,26 @@ const addProjectMember = async (req, res) => {
             )
         }
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+
+        if(d.sbt){
+            const filter = { 'attributes.value': { $regex: new RegExp(`^${address}$`, "i") }, contract: d.sbt._id }
+            const metadata = await Metadata.findOne(filter)
+            if(metadata) {
+                let attrs = metadata.attributes;
+                if(!find(attrs, attr => attr.trait_type === 'projects')){
+                    attrs.push({ trait_type: 'projects', value: project._id })
+                } else {
+                    attrs.map(attr => {
+                        if(attr.trait_type === 'projects' && attr.value.indexOf(project._id)) 
+                            return { ...attr, value: attr.value.split(',').push(project._id).join(',')}
+                        return attr
+                    })
+                }
+                metadata.attributes = attr;
+                await metadata.save();
+            }
+        }
+
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         return res.status(200).json({ project: p, dao: d });
     }
@@ -105,7 +150,7 @@ const addProjectMember = async (req, res) => {
 
 const updateProjectMember = async (req, res) => {
     const { projectId } = req.params;
-    const { memberList } = req.body;
+    const { memberList, daoId } = req.body;
     console.log("Member List : ", memberList);
     try {
         let project = await Project.findOne({ _id: projectId });
@@ -119,9 +164,31 @@ const updateProjectMember = async (req, res) => {
                 $addToSet: { members: { $each: memberList } },
             }
         )
-        // project.members = [...project.members, ...(memberList.map(m => ObjectId(m)))];
-        // console.log(project.members);
-        // project = await project.save();
+
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+
+        if(d.sbt){
+            for (let index = 0; index < memberList.length; index++) {
+                const memberid = memberList[index];
+                const member = await Member.findOne({ _id: memberid })
+                const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
+                const metadata = await Metadata.findOne(filter)
+                if(metadata) {
+                    let attrs = metadata.attributes;
+                    if(!find(attrs, attr => attr.trait_type === 'projects')){
+                        attrs.push({ trait_type: 'projects', value: projectId })
+                    } else {
+                        attrs.map(attr => {
+                            if(attr.trait_type === 'projects') 
+                                return { ...attr, value: attr.value.split(',').push(projectId).join(',')}
+                            return attr
+                        })
+                    }
+                    metadata.attributes = attr;
+                    await metadata.save();
+                }
+            }
+        }
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         return res.status(200).json(p);
