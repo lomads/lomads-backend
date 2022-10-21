@@ -18,6 +18,10 @@ const ProjectSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    archivedAt: {
+        type: Date,
+        default: null
+    },
     updatedAt: {
         type: Date,
         default: Date.now
