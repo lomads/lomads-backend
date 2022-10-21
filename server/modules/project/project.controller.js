@@ -2,7 +2,7 @@ const Project = require('@server/modules/project/project.model');
 const Member = require('@server/modules/member/member.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model')
-const { find } = require('lodash');
+const { find, get } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
 
 const getById = async (req, res) => {
@@ -65,8 +65,9 @@ const create = async (req, res) => {
                         attrs.push({ trait_type: 'projects', value: project._id })
                     } else {
                         attrs.map(attr => {
-                            if (attr.trait_type === 'projects')
-                                return { ...attr, value: attr.value.split(',').push(project._id).join(',') }
+                            if (attr.trait_type === 'projects') {
+                                return { ...attr, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                            }
                             return attr
                         })
                     }
@@ -130,7 +131,7 @@ const addProjectMember = async (req, res) => {
                 } else {
                     attrs.map(attr => {
                         if (attr.trait_type === 'projects' && attr.value.indexOf(project._id))
-                            return { ...attr, value: attr.value.split(',').push(project._id).join(',') }
+                            return { ...attr, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
                         return attr
                     })
                 }
@@ -180,7 +181,7 @@ const updateProjectMember = async (req, res) => {
                     } else {
                         attrs.map(attr => {
                             if (attr.trait_type === 'projects')
-                                return { ...attr, value: attr.value.split(',').push(projectId).join(',') }
+                                return { ...attr, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
                             return attr
                         })
                     }
@@ -220,7 +221,6 @@ const deleteProjectMember = async (req, res) => {
         )
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
-        console.log(p);
         return res.status(200).json(p);
     }
     catch (e) {
