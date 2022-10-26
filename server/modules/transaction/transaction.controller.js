@@ -78,11 +78,17 @@ const update = async (req, res) => {
             }
         }
 
-        txn.data = txn.data.map(d => {
-            if (d.recipient.toLowerCase() === recipient.toLowerCase())
-                return { ...d, reason }
-            return d;
-        })
+        let rec = _.find(txn.data, t => t.recipient.toLowerCase() === recipient.toLowerCase())
+
+        if(rec) {
+            txn.data = txn.data.map(d => {
+                if (d.recipient.toLowerCase() === recipient.toLowerCase())
+                    return { ...d, reason }
+                return d;
+            })
+        } else {
+            txn.data = [ ...txn.data, { recipient, reason } ] 
+        }
         txn = await txn.save();
         txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
         return res.status(200).json(txn)
