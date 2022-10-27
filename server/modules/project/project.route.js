@@ -5,6 +5,7 @@ const web3Auth = require('@server/services/web3Auth');
 const router = express.Router(); // eslint-disable-line new-cap
 
 router.post('/', web3Auth, projectCtrl.create);
+router.get('/discord-server-exists/:discordServerId', web3Auth, projectCtrl.checkDiscordServerExists);
 router.get('/:projectId', web3Auth, projectCtrl.getById);
 router.patch('/:projectId/archive', web3Auth, projectCtrl.archiveProject);
 router.patch('/:projectId/delete', web3Auth, projectCtrl.deleteProject);
