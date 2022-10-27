@@ -88,7 +88,7 @@ const create = async (req, res) => {
 const addProjectMember = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { name, address } = req.body;
+    const { name, address, role = "CONTRIBUTOR" } = req.body;
     console.log("member details : ", name, address);
     try {
 
@@ -116,7 +116,7 @@ const addProjectMember = async (req, res) => {
         if (!userExistInDao) {
             await DAO.findOneAndUpdate(
                 { url: daoUrl },
-                { $addToSet: { members: { member: m._id, creator: false, role: 'CORE_CONTRIBUTOR' } } }
+                { $addToSet: { members: { member: m._id, creator: false, role } } }
             )
         }
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
