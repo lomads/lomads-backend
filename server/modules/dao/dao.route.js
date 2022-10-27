@@ -8,6 +8,6 @@ router.get('/', web3Auth, daoCtrl.load)
 router.post('/', web3Auth, daoCtrl.create)
 router.get('/:url', web3Auth, daoCtrl.getByUrl)
 router.patch('/:url/add-member', web3Auth, daoCtrl.addDaoMember)
-router.patch('/:url/delete-member', web3Auth, daoCtrl.deleteDaoMember)
+router.patch('/:url/manage-member', web3Auth, daoCtrl.manageDaoMember)
 
 module.exports = router;
