@@ -116,27 +116,40 @@ const manageDaoMember = async (req, res) => {
     const { url } = req.params;
     const { deleteList, updateList } = req.body;
 
+    console.log("Deleted array : ", deleteList)
+    console.log("updated array : ", updateList)
+
     try {
         const dao = await DAO.findOne({ deletedAt: null, url })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
-        let members = dao.members;
-        for (var i = 0; i < members.length; i++) {
-            var user = members[i];
+        // let members = dao.members;
+        let members = [];
+        console.log("members before : ", members);
+        for (var i = 0; i < dao.members.length; i++) {
+            var user = dao.members[i];
 
             // if included in delete array
             if (deleteList.includes(user.member.toString())) {
-                members.splice(i, 1);
+                console.log(user.member, " to be deleted")
+                // members.splice(i, 1);
             }
 
             // if included in update array
-            else if (updateList.some((ob) => ob.id === user._id.toString()) === true) {
+            else if (updateList.some((ob) => ob.id === user._id.toString()) === true && deleteList.includes(user.member.toString()) === false) {
+                console.log(user, " to be updated")
                 const index = updateList.map(object => object.id).indexOf(user._id.toString());
-                members[i].role = updateList[index].role.toString();
+                // members[i].role = updateList[index].role.toString();
+                user.role = updateList[index].role.toString();
+                members.push(user);
+            }
+
+            else {
+                members.push(user);
             }
         }
-
+        console.log("members after : ", members);
         await DAO.findOneAndUpdate({ url }, { members });
 
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } });
