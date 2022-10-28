@@ -63,6 +63,29 @@ const create = async (req, res, next) => {
     }
 }
 
+const updateDetails = async (req, res) => {
+    const { url } = req.params;
+    const { name, description } = req.body;
+    try {
+
+        let dao = await DAO.findOne({ deletedAt: null, url });
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        await DAO.findOneAndUpdate(
+            { deletedAt: null, url },
+            { name, description }
+        )
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.updateDaoDetails::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const getByUrl = async (req, res) => {
     const { url } = req.params;
     try {
@@ -81,7 +104,7 @@ const addDaoMember = async (req, res) => {
 
     const { _id } = req.user;
     const { url } = req.params;
-    const { name, address, role = "CONTRIBUTOR" } = req.body;
+    const { name, address, role } = req.body;
 
     try {
         //const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
@@ -162,4 +185,26 @@ const manageDaoMember = async (req, res) => {
     }
 }
 
-module.exports = { load, create, getByUrl, addDaoMember, manageDaoMember };
+const addDaoLinks = async (req, res) => {
+    const { url } = req.params;
+    const { title, link } = req.body;
+    console.log("link details : ", title, link);
+    try {
+
+        let dao = await DAO.findOne({ deletedAt: null, url });
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        dao.links.push({ title, link });
+        dao = await dao.save();
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.addDaoLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { load, create, updateDetails, getByUrl, addDaoMember, manageDaoMember, addDaoLinks };

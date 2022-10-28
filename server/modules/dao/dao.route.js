@@ -9,5 +9,7 @@ router.post('/', web3Auth, daoCtrl.create)
 router.get('/:url', web3Auth, daoCtrl.getByUrl)
 router.patch('/:url/add-member', web3Auth, daoCtrl.addDaoMember)
 router.patch('/:url/manage-member', web3Auth, daoCtrl.manageDaoMember)
+router.patch('/:url/add-links', web3Auth, daoCtrl.addDaoLinks);
+router.patch('/:url/update-details', web3Auth, daoCtrl.updateDetails);
 
 module.exports = router;
