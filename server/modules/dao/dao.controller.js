@@ -19,7 +19,7 @@ const load = async (req, res) => {
 
 const create = async (req, res, next) => {
     const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null } = req.body;
-    const mMembers = []
+    let mMembers = []
     try {
         for (let index = 0; index < members.length; index++) {
             const member = members[index];
@@ -29,9 +29,11 @@ const create = async (req, res, next) => {
                 m = new Member({ wallet: member.address, name: member.name })
                 m = await m.save();
             }
+            console.log(m)
             //const m = await Member.findOneAndUpdate(filter, { wallet: member.address }, { new: true, upsert: true })
-            mMembers.push({ ...m, role: member.role })
+            mMembers.push({ ...m, _doc: { ...m._doc, role: member.role } })
         }
+        mMembers = mMembers.map(m => m._doc)
         let newSafe = null;
         let O = [];
         if (safe) {
