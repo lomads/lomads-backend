@@ -7,9 +7,9 @@ const ObjectId = require('mongodb').ObjectID;
 
 const load = async (req, res) => {
     const { _id } = req.user;
-    //const { chainId = 5 } = req.query;
+    const { chainId = 5 } = req.query;
     try {
-        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } }).exec()
+        const dao = await DAO.find({ chainId, deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } }).exec()
         return res.status(200).json(dao)
     }
     catch (e) {
