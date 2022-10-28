@@ -18,7 +18,7 @@ const getById = async (req, res) => {
 }
 
 const create = async (req, res) => {
-    const { _id } = req.user;
+    const { _id, wallet } = req.user;
     const { name, description, members, links, daoId } = req.body;
     console.log("data : ", name, description, members, links, daoId);
     let mMembers = [];
@@ -40,7 +40,7 @@ const create = async (req, res) => {
         })
 
         let project = new Project({
-            name, description, members: mem, links, creator: _id
+            name, description, members: mem, links, creator: wallet
         })
 
         project = await project.save();

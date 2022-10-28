@@ -7,6 +7,7 @@ const ObjectId = require('mongodb').ObjectID;
 
 const load = async (req, res) => {
     const { _id } = req.user;
+    //const { chainId = 5 } = req.query;
     try {
         const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } }).exec()
         return res.status(200).json(dao)
@@ -18,7 +19,7 @@ const load = async (req, res) => {
 }
 
 const create = async (req, res, next) => {
-    const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null } = req.body;
+    const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null, chainId = 5 } = req.body;
     let mMembers = []
     try {
         for (let index = 0; index < members.length; index++) {
@@ -50,7 +51,7 @@ const create = async (req, res, next) => {
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id
+            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id, chainId
         })
 
         dao = await dao.save();
