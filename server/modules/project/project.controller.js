@@ -18,6 +18,7 @@ const getById = async (req, res) => {
 }
 
 const create = async (req, res) => {
+    const { _id, wallet } = req.user;
     const { name, description, members, links, daoId } = req.body;
     console.log("data : ", name, description, members, links, daoId);
     let mMembers = [];
@@ -39,7 +40,7 @@ const create = async (req, res) => {
         })
 
         let project = new Project({
-            name, description, members: mem, links
+            name, description, members: mem, links, creator: wallet
         })
 
         project = await project.save();
@@ -50,7 +51,7 @@ const create = async (req, res) => {
             dao = await dao.save();
         }
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: "owners members transactions" } })
 
         //update metadata
 
@@ -88,7 +89,7 @@ const create = async (req, res) => {
 const addProjectMember = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { name, address } = req.body;
+    const { name, address, role = "CONTRIBUTOR" } = req.body;
     console.log("member details : ", name, address);
     try {
 
@@ -116,7 +117,7 @@ const addProjectMember = async (req, res) => {
         if (!userExistInDao) {
             await DAO.findOneAndUpdate(
                 { url: daoUrl },
-                { $addToSet: { members: { member: m._id, creator: false, role: 'CORE_CONTRIBUTOR' } } }
+                { $addToSet: { members: { member: m._id, creator: false, role } } }
             )
         }
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
@@ -357,4 +358,22 @@ const updateProjectLink = async (req, res) => {
     }
 }
 
-module.exports = { getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink };
+const checkDiscordServerExists = async (req, res) => {
+    const { discordServerId } = req.params;
+    try {
+        let project = await Project.findOne({
+            'links.platformId': discordServerId
+        })
+        if(!project)
+            return res.status(200).json(null)
+    
+        const guildId = get(find(project.links, l => l.platformId === discordServerId), 'guildId', null)
+        return res.status(200).json(guildId)
+    }
+    catch (e) {
+        console.error("project.checkDiscordServerExists::", e)
+        return res.status(200).json(null)
+    }
+}
+
+module.exports = { checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink };

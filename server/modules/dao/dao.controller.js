@@ -7,6 +7,7 @@ const ObjectId = require('mongodb').ObjectID;
 
 const load = async (req, res) => {
     const { _id } = req.user;
+    //const { chainId = 5 } = req.query;
     try {
         const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } }).exec()
         return res.status(200).json(dao)
@@ -18,8 +19,8 @@ const load = async (req, res) => {
 }
 
 const create = async (req, res, next) => {
-    const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null } = req.body;
-    const mMembers = []
+    const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null, chainId = 5 } = req.body;
+    let mMembers = []
     try {
         for (let index = 0; index < members.length; index++) {
             const member = members[index];
@@ -29,9 +30,11 @@ const create = async (req, res, next) => {
                 m = new Member({ wallet: member.address, name: member.name })
                 m = await m.save();
             }
+            console.log(m)
             //const m = await Member.findOneAndUpdate(filter, { wallet: member.address }, { new: true, upsert: true })
-            mMembers.push(m)
+            mMembers.push({ ...m, _doc: { ...m._doc, role: member.role } })
         }
+        mMembers = mMembers.map(m => m._doc)
         let newSafe = null;
         let O = [];
         if (safe) {
@@ -42,13 +45,13 @@ const create = async (req, res, next) => {
         }
 
         let mem = mMembers.map(m => {
-            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: O.indexOf(m.wallet.toLowerCase()) > -1 ? 'ADMIN' : 'CORE_CONTRIBUTOR' }
+            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'CONTRIBUTOR') }
         })
 
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id
+            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id, chainId
         })
 
         dao = await dao.save();
@@ -59,6 +62,29 @@ const create = async (req, res, next) => {
     }
     catch (e) {
         console.error("dao.controller::create::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const updateDetails = async (req, res) => {
+    const { url } = req.params;
+    const { name, description } = req.body;
+    try {
+
+        let dao = await DAO.findOne({ deletedAt: null, url });
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        await DAO.findOneAndUpdate(
+            { deletedAt: null, url },
+            { name, description }
+        )
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.updateDaoDetails::", e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
@@ -81,7 +107,7 @@ const addDaoMember = async (req, res) => {
 
     const { _id } = req.user;
     const { url } = req.params;
-    const { name, address } = req.body;
+    const { name, address, role } = req.body;
 
     try {
         //const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
@@ -101,7 +127,7 @@ const addDaoMember = async (req, res) => {
 
         await DAO.findOneAndUpdate(
             { _id: dao._id },
-            { $addToSet: { members: { member: m._id, creator: false, role: 'CORE_CONTRIBUTOR' } } }
+            { $addToSet: { members: { member: m._id, creator: false, role } } }
         )
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
         return res.status(200).json(d)
@@ -112,34 +138,157 @@ const addDaoMember = async (req, res) => {
     }
 }
 
-const deleteDaoMember = async (req, res) => {
+
+
+const addDaoMemberList = async (req, res) => {
     const { url } = req.params;
-    const { memberList } = req.body;
+    const { list } = req.body;
+
+    let mMembers = [];
+    try {
+        const dao = await DAO.findOne({ deletedAt: null, url })
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        for (let i = 0; i < list.length; i++) {
+            let user = list[i];
+
+            const filter = { wallet: { $regex: new RegExp(`^${user.address}$`, "i") } }
+            let m = await Member.findOne(filter);
+            if (!m) {
+                m = new Member({ wallet: user.address, name: user.name })
+                m = await m.save();
+            }
+            mMembers.push({ ...m, _doc: { ...m._doc, role: user.role } })
+        }
+
+        mMembers = mMembers.map(m => m._doc);
+
+        let mem = mMembers.map(m => {
+            return { member: m._id, creator: false, role: _.get(m, 'role', 'CONTRIBUTOR') }
+        })
+
+        await DAO.findOneAndUpdate(
+            { deletedAt: null, url },
+            {
+                $addToSet: { members: { $each: mem } },
+            }
+        )
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } });
+        return res.status(200).json(d);
+
+    }
+    catch (e) {
+        console.error("dao.addDaoMemberList::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const manageDaoMember = async (req, res) => {
+    const { url } = req.params;
+    const { deleteList, updateList } = req.body;
+
+    console.log("Deleted array : ", deleteList)
+    console.log("updated array : ", updateList)
 
     try {
         const dao = await DAO.findOne({ deletedAt: null, url })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
-        await DAO.findOneAndUpdate(
-            { url },
-            {
-                $pull: {
-                    members: {
-                        member: {
-                            $in: memberList.map(m => ObjectId(m))
-                        }
-                    }
-                },
+        // let members = dao.members;
+        let members = [];
+        console.log("members before : ", members);
+        for (var i = 0; i < dao.members.length; i++) {
+            var user = dao.members[i];
+
+            // if included in delete array
+            if (deleteList.includes(user.member.toString())) {
+                console.log(user.member, " to be deleted")
+                // members.splice(i, 1);
             }
-        )
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
-        return res.status(200).json(d)
+
+            // if included in update array
+            else if (updateList.some((ob) => ob.id === user._id.toString()) === true && deleteList.includes(user.member.toString()) === false) {
+                console.log(user, " to be updated")
+                const index = updateList.map(object => object.id).indexOf(user._id.toString());
+                // members[i].role = updateList[index].role.toString();
+                user.role = updateList[index].role.toString();
+                members.push(user);
+            }
+
+            else {
+                members.push(user);
+            }
+        }
+        console.log("members after : ", members);
+        await DAO.findOneAndUpdate({ url }, { members });
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } });
+        return res.status(200).json(d);
     }
+
     catch (e) {
-        console.error("dao.deleteDaoMember::", e)
+        console.error("dao.manageDaoMember::", e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
 
-module.exports = { load, create, getByUrl, addDaoMember, deleteDaoMember };
+const addDaoLinks = async (req, res) => {
+    const { url } = req.params;
+    const { title, link } = req.body;
+    console.log("link details : ", title, link);
+    try {
+
+        let dao = await DAO.findOne({ deletedAt: null, url });
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        dao.links.push({ title, link });
+        dao = await dao.save();
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.addDaoLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+
+const updateDaoLinks = async (req, res) => {
+    const { url } = req.params;
+    const { links } = req.body;
+    console.log("links : ", links);
+    try {
+
+        let dao = await DAO.findOne({ deletedAt: null, url });
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        let tempArray = [];
+        for (var i = 0; i < links.length; i++) {
+            let tempLink = links[i];
+            if (tempLink.link.indexOf('https://') === -1 && tempLink.link.indexOf('http://') === -1) {
+                tempLink.link = 'https://' + tempLink.link;
+            }
+            tempArray.push(tempLink);
+        }
+
+        await DAO.findOneAndUpdate(
+            { deletedAt: null, url },
+            { links: tempArray }
+        )
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.addDaoLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks };

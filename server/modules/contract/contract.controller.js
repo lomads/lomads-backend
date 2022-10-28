@@ -22,7 +22,7 @@ const create = async (req, res) => {
         }
 
         let mem = mMembers.map(m => {
-            return { member: m._id, creator: false, role: 'CORE_CONTRIBUTOR' }
+            return { member: m._id, creator: false, role: 'CONTRIBUTOR' }
         })
 
         const dao = await DAO.findOne({ _id: daoId });
