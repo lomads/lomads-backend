@@ -9,6 +9,7 @@ const APIError = require('@server/helpers/APIError');
 const ProjectSchema = new mongoose.Schema({
     name: { type: String },
     description: { type: String },
+    creator: { type: String },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
     links: {
         type: Array,

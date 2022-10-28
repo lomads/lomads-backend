@@ -7,6 +7,11 @@ const APIError = require('@server/helpers/APIError');
  * Dao Schema
  */
 const DAOSchema = new mongoose.Schema({
+  chainId: {
+    type: Number,
+    default: 5,
+    required: true
+  },
   contractAddress: {
     type: String,
     default: null,
