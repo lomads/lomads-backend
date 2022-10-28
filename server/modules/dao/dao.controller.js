@@ -138,6 +138,53 @@ const addDaoMember = async (req, res) => {
     }
 }
 
+
+
+const addDaoMemberList = async (req, res) => {
+    const { url } = req.params;
+    const { list } = req.body;
+
+    let mMembers = [];
+    try {
+        const dao = await DAO.findOne({ deletedAt: null, url })
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        for (let i = 0; i < list.length; i++) {
+            let user = list[i];
+
+            const filter = { wallet: { $regex: new RegExp(`^${user.address}$`, "i") } }
+            let m = await Member.findOne(filter);
+            if (!m) {
+                m = new Member({ wallet: user.address, name: user.name })
+                m = await m.save();
+            }
+            mMembers.push({ ...m, _doc: { ...m._doc, role: user.role } })
+        }
+
+        mMembers = mMembers.map(m => m._doc);
+
+        let mem = mMembers.map(m => {
+            return { member: m._id, creator: false, role: _.get(m, 'role', 'CONTRIBUTOR') }
+        })
+
+        await DAO.findOneAndUpdate(
+            { deletedAt: null, url },
+            {
+                $addToSet: { members: { $each: mem } },
+            }
+        )
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } });
+        return res.status(200).json(d);
+
+    }
+    catch (e) {
+        console.error("dao.addDaoMemberList::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const manageDaoMember = async (req, res) => {
     const { url } = req.params;
     const { deleteList, updateList } = req.body;
@@ -210,4 +257,38 @@ const addDaoLinks = async (req, res) => {
     }
 }
 
-module.exports = { load, create, updateDetails, getByUrl, addDaoMember, manageDaoMember, addDaoLinks };
+
+const updateDaoLinks = async (req, res) => {
+    const { url } = req.params;
+    const { links } = req.body;
+    console.log("links : ", links);
+    try {
+
+        let dao = await DAO.findOne({ deletedAt: null, url });
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        let tempArray = [];
+        for (var i = 0; i < links.length; i++) {
+            let tempLink = links[i];
+            if (tempLink.link.indexOf('https://') === -1 && tempLink.link.indexOf('http://') === -1) {
+                tempLink.link = 'https://' + tempLink.link;
+            }
+            tempArray.push(tempLink);
+        }
+
+        await DAO.findOneAndUpdate(
+            { deletedAt: null, url },
+            { links: tempArray }
+        )
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.addDaoLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks };

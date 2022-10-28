@@ -2,7 +2,7 @@ const Project = require('@server/modules/project/project.model');
 const Member = require('@server/modules/member/member.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model')
-const { find, get } = require('lodash');
+const { find, get, uniqBy } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
 
 const getById = async (req, res) => {
@@ -35,9 +35,7 @@ const create = async (req, res) => {
             mMembers.push(m);
         }
 
-        let mem = mMembers.map(m => {
-            return m._id
-        })
+        let mem = uniqBy(mMembers.map(m => m._id))
 
         let project = new Project({
             name, description, members: mem, links, creator: wallet
