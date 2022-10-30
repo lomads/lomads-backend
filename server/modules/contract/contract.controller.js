@@ -1,6 +1,31 @@
 const Contract = require('@server/modules/contract/contract.model');
+const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model');
-const Member = require('@server/modules/member/member.model')
+const Member = require('@server/modules/member/member.model');
+
+const getContractTokenMetadata = async (req, res) => {
+    const { contractAddress, token } = req.params;
+    console.log(contractAddress, token)
+    try { 
+        const contract = await Contract.findOne({ address: { $regex: new RegExp(`^${contractAddress}$`, "i") } })
+        if(contract){
+            const metadata = await Metadata.findOne({ 
+                contract: contract._id, 
+                id: token
+             })
+             if(metadata){
+                res.status(200).json(metadata)  
+             } else {
+                res.status(200).json({})   
+             }
+        } else {
+            res.status(200).json({}) 
+        }
+    } catch(e) {
+        console.log(e)
+        res.status(200).json({})
+    }
+}
 
 const create = async (req, res) => {
     const { _id } = req.user;
@@ -59,4 +84,4 @@ const getContract = async (req, res) => {
 }
 
 
-module.exports = { create, getContract };
+module.exports = { create, getContract, getContractTokenMetadata };

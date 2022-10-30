@@ -34,8 +34,7 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
     const { _id } = req.user;
-    console.log(req.body)
-    const { safeTxHash, reason, recipient, txType = null, safeAddress } = req.body;
+    const { safeTxHash, reason, recipient, txType = null, safeAddress, chainId = 5 } = req.body;
     try {
         let txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
         console.log("TXN : ", txn)
@@ -56,13 +55,18 @@ const update = async (req, res) => {
                 txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
                 return res.status(200).json(txn)
             }
-            const safeTxn = await axios.get(`https://safe-transaction-goerli.safe.global/api/v1/multisig-transactions/${safeTxHash}/`)
+
+            let url = `https://safe-transaction-goerli.safe.global/api/v1/multisig-transactions/${safeTxHash}/`;
+            if(+chainId === 137)
+                url = `https://safe-transaction-polygon.safe.global/api/v1/multisig-transactions/${safeTxHash}/`
+
+            const safeTxn = await axios.get(url)
             if (safeTxn && safeTxn.data) {
                 let txn = new Transaction({
                     safeAddress: safeTxn.data.safe,
                     safeTxHash: safeTxHash,
                     rejectTxHash: null,
-                    data: [{ reason, recipient: _.get(safeTxn.data, 'dataDecoded.parameters[0].value', '') }],
+                    data: [{ reason, recipient: _.get(safeTxn.data, 'dataDecoded.parameters[0].value', _.get(safeTxn.data, 'to', '')) }],
                     nonce: safeTxn.data.nonce,
                 })
                 txn = await txn.save();
