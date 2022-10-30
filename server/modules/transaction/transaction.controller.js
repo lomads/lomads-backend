@@ -34,7 +34,8 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
     const { _id } = req.user;
-    const { safeTxHash, reason, recipient, txType = null, safeAddress, chainId = 5 } = req.body;
+    let { safeTxHash, reason, recipient = '', txType = null, safeAddress, chainId = 5 } = req.body;
+    recipient = recipient === "" ? safeAddress : recipient;
     try {
         let txn = await Transaction.findOne({ safeTxHash: { $regex: new RegExp(`^${safeTxHash}$`, "i") } })
         console.log("TXN : ", txn)
