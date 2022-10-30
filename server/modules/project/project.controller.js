@@ -65,11 +65,22 @@ const create = async (req, res) => {
                     } else {
                         attrs = attrs.map(attr => {
                             if (attr.trait_type === 'projects') {
-                                return { ...attr, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
                             }
                             return attr
                         })
                     }
+                    if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                        attrs.push({ trait_type: 'project_names', value: project._id.toString() })
+                    } else {
+                        attrs = attrs.map(attr => {
+                            if (attr.trait_type === 'project_names') {
+                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project.name.toString()].join(',') }
+                            }
+                            return attr
+                        })
+                    }
+                    console.log("attrs", attrs);
                     metadata._doc.attributes = attrs;
                     await metadata.save();
                 }
@@ -130,7 +141,16 @@ const addProjectMember = async (req, res) => {
                 } else {
                     attrs = attrs.map(attr => {
                         if (attr.trait_type === 'projects' && attr.value.indexOf(project._id))
-                            return { ...attr, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                        return attr
+                    })
+                }
+                if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                    attrs.push({ trait_type: 'project_names', value: project._id.toString() })
+                } else {
+                    attrs = attrs.map(attr => {
+                        if (attr.trait_type === 'project_names' && attr.value.indexOf(project._id))
+                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project.name.toString()].join(',') }
                         return attr
                     })
                 }
@@ -180,7 +200,16 @@ const updateProjectMember = async (req, res) => {
                     } else {
                         attrs = attrs.map(attr => {
                             if (attr.trait_type === 'projects')
-                                return { ...attr, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                            return attr
+                        })
+                    }
+                    if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                        attrs.push({ trait_type: 'project_names', value: projectId })
+                    } else {
+                        attrs = attrs.map(attr => {
+                            if (attr.trait_type === 'project_names')
+                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project.name.toString()].join(',') }
                             return attr
                         })
                     }
@@ -234,7 +263,14 @@ const deleteProjectMember = async (req, res) => {
                         if (find(attrs, attr => attr.trait_type === 'projects')) {
                             attrs = attrs.map(attr => {
                                 if (attr.trait_type === 'projects' && attr.value && attr.value.length > 1)
-                                    return { ...attr, value: [...get(attr, 'value', '').toString().split(',')].filter(p => p !== p._id.toString()).join(',') }
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(',')].filter(p => p !== p._id.toString()).join(',') }
+                                return attr
+                            })
+                        }
+                        if (find(attrs, attr => attr.trait_type === 'project_names')) {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'project_names' && attr.value && attr.value.length > 1)
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(',')].filter(p => p !== p.name.toString()).join(',') }
                                 return attr
                             })
                         }
