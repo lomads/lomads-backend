@@ -68,7 +68,6 @@ const create = async (req, res, next) => {
 
 const updateDetails = async (req, res) => {
     const { url } = req.params;
-    const { name, description } = req.body;
     try {
 
         let dao = await DAO.findOne({ deletedAt: null, url });
@@ -77,7 +76,7 @@ const updateDetails = async (req, res) => {
 
         await DAO.findOneAndUpdate(
             { deletedAt: null, url },
-            { name, description }
+            { ...req.body }
         )
 
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
