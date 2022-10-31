@@ -9,7 +9,7 @@ const APIError = require('@server/helpers/APIError');
 const SafeSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true
+    required: false
   },
   address: {
     type: String,
