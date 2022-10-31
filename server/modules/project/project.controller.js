@@ -95,6 +95,32 @@ const create = async (req, res) => {
     }
 }
 
+const updateProjectDetails = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { name, description } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            { name, description }
+        )
+
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("dao.updateProjectDetails::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const addProjectMember = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
@@ -250,7 +276,7 @@ const deleteProjectMember = async (req, res) => {
         )
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
 
-        if(daoId){
+        if (daoId) {
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
             if (d.sbt) {
                 const members = await Member.find({ _id: { $in: memberList } })
@@ -398,9 +424,9 @@ const checkDiscordServerExists = async (req, res) => {
         let project = await Project.findOne({
             'links.platformId': discordServerId
         })
-        if(!project)
+        if (!project)
             return res.status(200).json(null)
-    
+
         const guildId = get(find(project.links, l => l.platformId === discordServerId), 'guildId', null)
         return res.status(200).json(guildId)
     }
@@ -410,4 +436,4 @@ const checkDiscordServerExists = async (req, res) => {
     }
 }
 
-module.exports = { checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink };
+module.exports = { checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink, updateProjectDetails };
