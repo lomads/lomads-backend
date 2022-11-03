@@ -19,7 +19,7 @@ const addMetaData = async (req, res) => {
         metaData = await metaData.save();
         c.metadata.push(metaData);
         c = await c.save();
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         return res.status(200).json(d);
     }
     catch (e) {

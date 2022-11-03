@@ -111,7 +111,7 @@ const updateProjectDetails = async (req, res) => {
             { name, description }
         )
 
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         return res.status(200).json({ project: p, dao: d });
     }
@@ -155,7 +155,7 @@ const addProjectMember = async (req, res) => {
                 { $addToSet: { members: { member: m._id, creator: false, role } } }
             )
         }
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
 
         if (d.sbt) {
             const filter = { 'attributes.value': { $regex: new RegExp(`^${address}$`, "i") }, contract: d.sbt._id }
@@ -211,7 +211,7 @@ const updateProjectMember = async (req, res) => {
             }
         )
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
 
         if (d.sbt) {
             for (let index = 0; index < memberList.length; index++) {
@@ -277,7 +277,7 @@ const deleteProjectMember = async (req, res) => {
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
 
         if (daoId) {
-            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
             if (d.sbt) {
                 const members = await Member.find({ _id: { $in: memberList } })
                 for (let index = 0; index < members.length; index++) {
@@ -329,7 +329,7 @@ const archiveProject = async (req, res) => {
                 archivedAt: Date.now(),
             }
         )
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         return res.status(200).json({ project: p, dao: d });
     }
@@ -353,7 +353,7 @@ const deleteProject = async (req, res) => {
                 deletedAt: Date.now(),
             }
         )
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         return res.status(200).json({ project: p, dao: d });
     }
@@ -378,7 +378,7 @@ const addProjectLinks = async (req, res) => {
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -409,7 +409,7 @@ const updateProjectLink = async (req, res) => {
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {

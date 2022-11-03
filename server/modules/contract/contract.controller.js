@@ -6,22 +6,22 @@ const Member = require('@server/modules/member/member.model');
 const getContractTokenMetadata = async (req, res) => {
     const { contractAddress, token } = req.params;
     console.log(contractAddress, token)
-    try { 
+    try {
         const contract = await Contract.findOne({ address: { $regex: new RegExp(`^${contractAddress}$`, "i") } })
-        if(contract){
-            const metadata = await Metadata.findOne({ 
-                contract: contract._id, 
+        if (contract) {
+            const metadata = await Metadata.findOne({
+                contract: contract._id,
                 id: token
-             })
-             if(metadata){
-                res.status(200).json(metadata)  
-             } else {
-                res.status(200).json({})   
-             }
+            })
+            if (metadata) {
+                res.status(200).json(metadata)
+            } else {
+                res.status(200).json({})
+            }
         } else {
-            res.status(200).json({}) 
+            res.status(200).json({})
         }
-    } catch(e) {
+    } catch (e) {
         console.log(e)
         res.status(200).json({})
     }
@@ -60,7 +60,7 @@ const create = async (req, res) => {
                 }
             )
         }
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         return res.status(200).json(d);
 
         // return res.status(200).json({ message: 'Contract created successfully' })
