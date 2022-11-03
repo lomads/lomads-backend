@@ -4,6 +4,7 @@ const util = require('util')
 
 // config should be imported before importing any other file
 const config = require('@config/config');
+const events = require('@config/events');
 const app = require('@config/express');
 
 const debug = require('debug');
@@ -13,6 +14,8 @@ Promise = require('bluebird'); // eslint-disable-line no-global-assign
 
 // plugin bluebird promise in mongoose
 mongoose.Promise = Promise;
+
+const discordConnect = require('./config/discord-ws');
 
 // connect to mongo db
 const mongoUri = config.mongo.host;
@@ -33,6 +36,8 @@ if (config.mongooseDebug) {
 if (!module.parent) {
   // listen on port config.port
   app.listen(config.port, () => {
+    events.boot();
+    discordConnect();
     console.info(`server started on port ${config.port} (${config.env})`); // eslint-disable-line no-console
   });
 }

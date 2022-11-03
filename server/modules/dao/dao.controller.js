@@ -20,6 +20,8 @@ const load = async (req, res) => {
 
 const create = async (req, res, next) => {
     const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null, chainId = 5 } = req.body;
+    if(!name)
+        return res.status(400).json({ message: 'Organisation name is required' })
     let mMembers = []
     try {
         for (let index = 0; index < members.length; index++) {
@@ -68,7 +70,6 @@ const create = async (req, res, next) => {
 
 const updateDetails = async (req, res) => {
     const { url } = req.params;
-    const { name, description } = req.body;
     try {
 
         let dao = await DAO.findOne({ deletedAt: null, url });
@@ -77,7 +78,7 @@ const updateDetails = async (req, res) => {
 
         await DAO.findOneAndUpdate(
             { deletedAt: null, url },
-            { name, description }
+            { ...req.body }
         )
 
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })

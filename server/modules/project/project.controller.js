@@ -366,7 +366,7 @@ const deleteProject = async (req, res) => {
 const addProjectLinks = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { title, link, accessControl, guildId = null, id } = req.body;
+    const { title, link, accessControl, guildId = null, id, platformId } = req.body;
     console.log("link details : ", title, link);
     try {
 
@@ -374,7 +374,7 @@ const addProjectLinks = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
-        project.links.push({ id, title, link, accessControl, guildId, unlocked: [] });
+        project.links.push({ id, title, link, accessControl, guildId, platformId, unlocked: [] });
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
@@ -422,12 +422,12 @@ const checkDiscordServerExists = async (req, res) => {
     const { discordServerId } = req.params;
     try {
         let project = await Project.findOne({
-            'links.platformId': discordServerId
+            'links.platformId': `${discordServerId}`
         })
         if (!project)
             return res.status(200).json(null)
 
-        const guildId = get(find(project.links, l => l.platformId === discordServerId), 'guildId', null)
+        const guildId = get(find(project.links, l => l.platformId === `${discordServerId}`), 'guildId', null)
         return res.status(200).json(guildId)
     }
     catch (e) {
