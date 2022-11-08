@@ -45,6 +45,7 @@ const DAOSchema = new mongoose.Schema({
     role: { type: String }
   }],
   projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
   links: {
     type: Array,
     default: [],
