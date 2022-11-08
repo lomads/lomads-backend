@@ -91,15 +91,16 @@ const checkSpaceAdminStatus = async domain => {
         if(space && space.spaceId) {
             return axios.post('https://www.notion.so/api/v3/getSpaces', {}, options(auth))
             .then(res => {
+                console.log(res.data)
                 if(res && typeof res.data !== 'string') {
                     const spc = _.get(res.data, `${auth.userId}.space.${space.spaceId}`, null)
                     if(spc && spc.role === 'editor') {
                         console.log(spc.value.permissions)
                         return { status: true }
                     }
-                    return { status: false, message: `Something went wrong. Please try after sometime` }
+                    return { status: false, message: `No admin privilege for ${config.notion.email}` }
                 }
-                return { status: false, message: `No admin privilege for ${config.notion.email}` }
+                return { status: false, message: `Something went wrong. Please try after sometime` }
             })
         } else {
             return { status: false, message: 'Domain does not exist' }
