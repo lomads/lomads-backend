@@ -7,6 +7,7 @@ const metadataRoutes = require('@server/modules/metadata/metadata.route');
 const transactionRoutes = require('@server/modules/transaction/transaction.route');
 const projectRoutes = require('@server/modules/project/project.route');
 const utilityRoutes = require('@server/modules/utility/utility.route');
+const notificationRoutes = require('@server/modules/notification/notification.route');
 
 const contractCtrl = require('@server/modules/contract/contract.controller');
 
@@ -26,6 +27,7 @@ router.use('/auth', authRoutes);
 router.use('/metadata', metadataRoutes);
 router.use('/project', projectRoutes);
 router.use('/utility', utilityRoutes);
+router.use('/notification', notificationRoutes);
 router.get('/:contractAddress/:token', contractCtrl.getContractTokenMetadata)
 
 module.exports = router;

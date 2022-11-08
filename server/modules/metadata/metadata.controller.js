@@ -28,4 +28,22 @@ const addMetaData = async (req, res) => {
     }
 }
 
-module.exports = { addMetaData };
+
+const getMetadata = async (req, res) => {
+    try {
+        const { contractAddress } = req.params;
+        const { wallet } = req.user;
+        const metadata = await Metadata.findOne({ 
+            contract: contractAddress,
+            "attributes.value": { $regex: new RegExp(`^${wallet}$`, "i") }
+        })
+        if(!metadata)
+            return res.status(404).json({ message: 'Metadata not found' })
+        return res.status(200).json(metadata)
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { addMetaData, getMetadata };

@@ -4,7 +4,10 @@
       "module": "commonjs",
       "paths": {
         "@server/*": ["./server/*"],
-        "@config/*": ["./modules/*"],
+        "@config/*": ["./config/*"],
+        "@events/*": ["./server/events/*"],
+        "@listeners/*": ["./server/listeners/*"],
+        "@services/*": ["./server/services/*"],
         "@root/*": ["./*"]
       }
     },

@@ -4,6 +4,10 @@ const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model')
 const { find, get, uniqBy } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
+const URL = require('url');
+const axios = require('axios')
+const { projectCreated, memberInvitedToProject } = require('@events')
+const { checkSpaceAdminStatus, findNotionUserByEmail, getSpaceByDomain, prepareInviteObject, inviteUserToNotionBlock, removeUserFromNotionBlock } = require('@services/notion')
 
 const getById = async (req, res) => {
     const { projectId } = req.params;
@@ -38,7 +42,7 @@ const create = async (req, res) => {
         let mem = uniqBy(mMembers.map(m => m._id))
 
         let project = new Project({
-            name, description, members: mem, links, creator: wallet
+            daoId, name, description, members: mem, links, creator: wallet
         })
 
         project = await project.save();
@@ -86,7 +90,7 @@ const create = async (req, res) => {
                 }
             }
         }
-
+        projectCreated.emit(project)
         return res.status(200).json(d);
     }
     catch (e) {
@@ -221,11 +225,55 @@ const updateProjectMember = async (req, res) => {
         }
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+
+        memberInvitedToProject.emit({ project: p, members: memberList })
+
         return res.status(200).json(p);
     }
     catch (e) {
         console.error("project.updateProjectMember::", e)
         return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const removeNotionUser = async (p) => {
+    try {
+        for (let index = 0; index < p.links.length; index++) {
+            const link = p.links[index];
+            if(link.provider.indexOf('notion.') > -1) {
+                for (let index = 0; index < memberList.length; index++) {
+                    const account = memberList[index];
+                    const member = await Member.findOne({ _id: account })
+                    let accountUnlocked = link.unlocked.map(l => l.toLowerCase()).indexOf(member.wallet.toLowerCase()) > -1
+                    if(accountUnlocked){
+                        if(member && member.notionUserId) {
+                            const notionUID = member.notionUserId;
+                            if(notionUID) {
+                                const space = await getSpaceByDomain(link.spaceDomain)
+                                if(space && space.spaceId) {
+                                    let url = URL.parse(link.link);
+                                    const pathname = url.pathname;
+                                    let blockId = null;
+                                    if(pathname.indexOf('-') == -1){
+                                        blockId = pathname.replace('/', '')
+                                    } else {
+                                        let path = pathname.split('-');
+                                        blockId = path[path.length - 1]
+                                    }
+                                    blockId = `${blockId.substring(0,8)}-${blockId.substring(8,12)}-${blockId.substring(12,16)}-${blockId.substring(16,20)}-${blockId.substring(20, blockId.length)}`
+                                    const spaceId = space.spaceId
+                                    await removeUserFromNotionBlock({ spaceId, blockId, inviteeId: notionUID })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+    } catch (e) {
+        console.log(e)
+        return;
     }
 }
 
@@ -281,6 +329,8 @@ const deleteProjectMember = async (req, res) => {
             }
         }
 
+        removeNotionUser(p);
+
         return res.status(200).json(p);
     }
     catch (e) {
@@ -305,6 +355,7 @@ const archiveProject = async (req, res) => {
         )
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        removeNotionUser(p)
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -329,6 +380,7 @@ const deleteProject = async (req, res) => {
         )
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        removeNotionUser(p)
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -410,4 +462,60 @@ const checkDiscordServerExists = async (req, res) => {
     }
 }
 
-module.exports = { checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink };
+const checkNotionSpaceAdminStatus = async (req, res) => {
+    const { domain = '' } = req.query;
+    try {
+        const status = await checkSpaceAdminStatus(domain)
+        return res.status(200).json(status)
+    } catch (e) {
+        console.log(e)
+        return res.status(200).json({ status: false, message: 'Something went wrong. try again' })
+    }
+}
+
+const getNotionUser = async (req, res) => {
+    const { email = '' } = req.query;
+    try {
+        const user = await findNotionUserByEmail(email)
+        return res.status(200).json(user)
+    } catch (e) {
+        console.log(e)
+        return res.status(200).json(null)
+    }
+}
+
+const addNotionUserRole = async (req, res) => {
+    const { notionUserId, linkId, projectId, account } = req.body;
+    try {
+        const project = await Project.findOne({ _id: projectId })
+        if(project) {
+            let link = find(project.links, link => link.id === linkId);
+            const space = await getSpaceByDomain(link.spaceDomain)
+            if(space && space.spaceId) {
+                console.log(link.link)
+                let url = URL.parse(link.link);
+                const pathname = url.pathname;
+                let blockId = null;
+                if(pathname.indexOf('-') == -1){
+                    blockId = pathname.replace('/', '')
+                } else {
+                    let path = pathname.split('-');
+                    blockId = path[path.length - 1]
+                }
+                blockId = `${blockId.substring(0,8)}-${blockId.substring(8,12)}-${blockId.substring(12,16)}-${blockId.substring(16,20)}-${blockId.substring(20, blockId.length)}`
+                const spaceId = space.spaceId
+                console.log(spaceId, blockId, notionUserId)
+                await inviteUserToNotionBlock({ spaceId, blockId, inviteeId: notionUserId })
+                return res.status(200).json({ message: "User added to notion page" })
+            }
+        }
+    } catch(e) {
+        console.log(e)
+        return res.status(500).json({ message: 'something went wrong' })
+    }
+}
+
+module.exports = { 
+    checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
+    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole
+};

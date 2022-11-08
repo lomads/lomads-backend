@@ -36,6 +36,11 @@ const MemberSchema = new mongoose.Schema({
   sbtTokens: {
     type: Array,
     default: []
+  },
+  notionUserId: {
+    type: String,
+    required: false,
+    default: null
   }
 });
 
