@@ -22,8 +22,8 @@ const options = auth => {
 
 const login = async () => {
     axios.post(`https://www.notion.so/api/v3/loginWithEmail`, {
-        email: 'harishsnsdl@live.in',
-        password: 'WinterIs100%C0ming'
+        email: config.notion.email,
+        password: config.notion.password
     })
     .then(async res => {
         if(typeof res.data !== 'string'){
