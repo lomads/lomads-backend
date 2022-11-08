@@ -33,8 +33,15 @@ const MemberSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  sbtTokens: {
+  sbtMetaData: {
     type: Array,
+    default: []
+  },
+  earnings: {
+    type: [{
+      currency: String,
+      value: Number,
+    }],
     default: []
   }
 });

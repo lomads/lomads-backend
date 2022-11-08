@@ -7,6 +7,7 @@ const APIError = require('@server/helpers/APIError');
  * Safe Schema
  */
 const TaskSchema = new mongoose.Schema({
+    taskStatus: { type: String, default: 'open' },
     name: { type: String },
     description: { type: String },
     creator: { type: String },
@@ -25,7 +26,7 @@ const TaskSchema = new mongoose.Schema({
     },
     submissionLink: { type: String },
     compensation: { type: mongoose.Schema.Types.Mixed },
-    reviewer: { type: String },
+    reviewer: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     contributionType: { type: String },
     isSingleContributor: { type: Boolean, default: false },
     isFilterRoles: { type: Boolean, default: false },
@@ -41,6 +42,10 @@ const TaskSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
+    },
+    draftedAt: {
+        type: Date,
+        default: null
     },
     deletedAt: {
         type: Date,
