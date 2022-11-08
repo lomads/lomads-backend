@@ -28,6 +28,8 @@ const envVarsSchema = Joi.object({
   .default('https://lomads-dao-development.s3.eu-west-3.amazonaws.com/'),
   S3_BUCKET: Joi.string()
   .default('lomads-dao-development'),
+  AES_PASS_PHRASE: Joi.string()
+  .default('lomads-dao')
 }).unknown()
   .required();
 
@@ -41,6 +43,7 @@ const config = {
   port: envVars.PORT,
   mongooseDebug: envVars.MONGOOSE_DEBUG,
   jwtSecret: envVars.JWT_SECRET,
+  aesPassPhrase: envVars.AES_PASS_PHRASE,
   mongo: {
     host: envVars.MONGO_HOST,
     port: envVars.MONGO_PORT
@@ -49,6 +52,10 @@ const config = {
     region: envVars.AWS_REGION,
     s3BucketUrl: envVars.S3_BUCKET_URL,
     s3Bucket: envVars.S3_BUCKET
+  },
+  notion: {
+    email: envVars.NOTION_ADMIN_EMAIL,
+    password: envVars.NOTION_ADMIN_PASSWORD,
   }
 };
 
