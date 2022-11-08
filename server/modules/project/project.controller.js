@@ -99,6 +99,32 @@ const create = async (req, res) => {
     }
 }
 
+const updateProjectDetails = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { name, description } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            { name, description }
+        )
+
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("dao.updateProjectDetails::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const addProjectMember = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
@@ -133,7 +159,7 @@ const addProjectMember = async (req, res) => {
                 { $addToSet: { members: { member: m._id, creator: false, role } } }
             )
         }
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
 
         if (d.sbt) {
             const filter = { 'attributes.value': { $regex: new RegExp(`^${address}$`, "i") }, contract: d.sbt._id }
@@ -189,7 +215,7 @@ const updateProjectMember = async (req, res) => {
             }
         )
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
 
         if (d.sbt) {
             for (let index = 0; index < memberList.length; index++) {
@@ -298,8 +324,8 @@ const deleteProjectMember = async (req, res) => {
         )
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
 
-        if(daoId){
-            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        if (daoId) {
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
             if (d.sbt) {
                 const members = await Member.find({ _id: { $in: memberList } })
                 for (let index = 0; index < members.length; index++) {
@@ -353,7 +379,7 @@ const archiveProject = async (req, res) => {
                 archivedAt: Date.now(),
             }
         )
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         removeNotionUser(p)
         return res.status(200).json({ project: p, dao: d });
@@ -378,7 +404,7 @@ const deleteProject = async (req, res) => {
                 deletedAt: Date.now(),
             }
         )
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         removeNotionUser(p)
         return res.status(200).json({ project: p, dao: d });
@@ -404,7 +430,7 @@ const addProjectLinks = async (req, res) => {
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -435,7 +461,7 @@ const updateProjectLink = async (req, res) => {
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -450,9 +476,9 @@ const checkDiscordServerExists = async (req, res) => {
         let project = await Project.findOne({
             'links.platformId': `${discordServerId}`
         })
-        if(!project)
+        if (!project)
             return res.status(200).json(null)
-    
+
         const guildId = get(find(project.links, l => l.platformId === `${discordServerId}`), 'guildId', null)
         return res.status(200).json(guildId)
     }
@@ -517,5 +543,5 @@ const addNotionUserRole = async (req, res) => {
 
 module.exports = { 
     checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
-    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole
+    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails
 };

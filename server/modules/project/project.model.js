@@ -13,6 +13,7 @@ const ProjectSchema = new mongoose.Schema({
     description: { type: String },
     creator: { type: String },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
+    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     links: {
         type: Array,
         default: [],
