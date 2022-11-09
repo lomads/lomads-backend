@@ -53,7 +53,7 @@ const create = async (req, res) => {
             dao = await dao.save();
         }
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects', populate: { path: "owners members transactions" } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member transactions project" } })
 
         //update metadata
 
@@ -115,7 +115,7 @@ const updateProjectDetails = async (req, res) => {
             { name, description }
         )
 
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         return res.status(200).json({ project: p, dao: d });
     }
@@ -159,7 +159,7 @@ const addProjectMember = async (req, res) => {
                 { $addToSet: { members: { member: m._id, creator: false, role } } }
             )
         }
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
 
         if (d.sbt) {
             const filter = { 'attributes.value': { $regex: new RegExp(`^${address}$`, "i") }, contract: d.sbt._id }
@@ -215,7 +215,7 @@ const updateProjectMember = async (req, res) => {
             }
         )
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
 
         if (d.sbt) {
             for (let index = 0; index < memberList.length; index++) {
@@ -266,27 +266,27 @@ const removeNotionUser = async (p) => {
     try {
         for (let index = 0; index < p.links.length; index++) {
             const link = p.links[index];
-            if(link.provider.indexOf('notion.') > -1) {
+            if (link.provider.indexOf('notion.') > -1) {
                 for (let index = 0; index < memberList.length; index++) {
                     const account = memberList[index];
                     const member = await Member.findOne({ _id: account })
                     let accountUnlocked = link.unlocked.map(l => l.toLowerCase()).indexOf(member.wallet.toLowerCase()) > -1
-                    if(accountUnlocked){
-                        if(member && member.notionUserId) {
+                    if (accountUnlocked) {
+                        if (member && member.notionUserId) {
                             const notionUID = member.notionUserId;
-                            if(notionUID) {
+                            if (notionUID) {
                                 const space = await getSpaceByDomain(link.spaceDomain)
-                                if(space && space.spaceId) {
+                                if (space && space.spaceId) {
                                     let url = URL.parse(link.link);
                                     const pathname = url.pathname;
                                     let blockId = null;
-                                    if(pathname.indexOf('-') == -1){
+                                    if (pathname.indexOf('-') == -1) {
                                         blockId = pathname.replace('/', '')
                                     } else {
                                         let path = pathname.split('-');
                                         blockId = path[path.length - 1]
                                     }
-                                    blockId = `${blockId.substring(0,8)}-${blockId.substring(8,12)}-${blockId.substring(12,16)}-${blockId.substring(16,20)}-${blockId.substring(20, blockId.length)}`
+                                    blockId = `${blockId.substring(0, 8)}-${blockId.substring(8, 12)}-${blockId.substring(12, 16)}-${blockId.substring(16, 20)}-${blockId.substring(20, blockId.length)}`
                                     const spaceId = space.spaceId
                                     await removeUserFromNotionBlock({ spaceId, blockId, inviteeId: notionUID })
                                 }
@@ -325,7 +325,7 @@ const deleteProjectMember = async (req, res) => {
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
 
         if (daoId) {
-            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
             if (d.sbt) {
                 const members = await Member.find({ _id: { $in: memberList } })
                 for (let index = 0; index < members.length; index++) {
@@ -379,7 +379,7 @@ const archiveProject = async (req, res) => {
                 archivedAt: Date.now(),
             }
         )
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         removeNotionUser(p)
         return res.status(200).json({ project: p, dao: d });
@@ -404,7 +404,7 @@ const deleteProject = async (req, res) => {
                 deletedAt: Date.now(),
             }
         )
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
         removeNotionUser(p)
         return res.status(200).json({ project: p, dao: d });
@@ -430,7 +430,7 @@ const addProjectLinks = async (req, res) => {
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -461,7 +461,7 @@ const updateProjectLink = async (req, res) => {
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'members', populate: { path: 'members' } })
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -514,34 +514,34 @@ const addNotionUserRole = async (req, res) => {
     const { notionUserId, linkId, projectId, account } = req.body;
     try {
         const project = await Project.findOne({ _id: projectId })
-        if(project) {
+        if (project) {
             let link = find(project.links, link => link.id === linkId);
             const space = await getSpaceByDomain(link.spaceDomain)
-            if(space && space.spaceId) {
+            if (space && space.spaceId) {
                 console.log(link.link)
                 let url = URL.parse(link.link);
                 const pathname = url.pathname;
                 let blockId = null;
-                if(pathname.indexOf('-') == -1){
+                if (pathname.indexOf('-') == -1) {
                     blockId = pathname.replace('/', '')
                 } else {
                     let path = pathname.split('-');
                     blockId = path[path.length - 1]
                 }
-                blockId = `${blockId.substring(0,8)}-${blockId.substring(8,12)}-${blockId.substring(12,16)}-${blockId.substring(16,20)}-${blockId.substring(20, blockId.length)}`
+                blockId = `${blockId.substring(0, 8)}-${blockId.substring(8, 12)}-${blockId.substring(12, 16)}-${blockId.substring(16, 20)}-${blockId.substring(20, blockId.length)}`
                 const spaceId = space.spaceId
                 console.log(spaceId, blockId, notionUserId)
                 await inviteUserToNotionBlock({ spaceId, blockId, inviteeId: notionUserId })
                 return res.status(200).json({ message: "User added to notion page" })
             }
         }
-    } catch(e) {
+    } catch (e) {
         console.log(e)
         return res.status(500).json({ message: 'something went wrong' })
     }
 }
 
-module.exports = { 
+module.exports = {
     checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
     checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails
 };

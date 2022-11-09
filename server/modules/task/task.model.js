@@ -10,11 +10,11 @@ const TaskSchema = new mongoose.Schema({
     taskStatus: { type: String, default: 'open' },
     name: { type: String },
     description: { type: String },
-    creator: { type: String },
+    creator: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     members: [{
         member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
         appliedAt: { type: Date, default: Date.now },
-        isApproved: { type: Boolean, default: false },
+        status: { type: String, default: 'pending' },
         note: { type: String, default: '' },
         links: { type: Array, default: [] }
     }],
