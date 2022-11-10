@@ -2,7 +2,7 @@ const Joi = require('joi');
 
 // require and configure dotenv, will load vars in .env in PROCESS.ENV
 require('dotenv').config();
-
+const { SupportedChainId } = require('@config/constants');
 // define validation for all the env vars
 const envVarsSchema = Joi.object({
   NODE_ENV: Joi.string()
@@ -56,6 +56,10 @@ const config = {
   notion: {
     email: envVars.NOTION_ADMIN_EMAIL,
     password: envVars.NOTION_ADMIN_PASSWORD,
+  },
+  safe: {
+    [`${SupportedChainId.POLYGON}`]: 'https://safe-transaction-polygon.safe.global',
+    [`${SupportedChainId.GOERLI}`]: 'https://safe-transaction-goerli.safe.global'
   }
 };
 

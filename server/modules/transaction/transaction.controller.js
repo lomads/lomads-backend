@@ -1,4 +1,5 @@
 const Transaction = require('@server/modules/transaction/transaction.model');
+const OffChain = require('@server/modules/transaction/offchain.model');
 const Safe = require('@server/modules/safe/safe.model');
 const _ = require('lodash');
 const axios = require('axios');
@@ -15,9 +16,78 @@ const load = async (req, res) => {
     }
 }
 
+const loadOffChain = async (req, res) => {
+    const { daoId } = req.query;
+    try {
+        let txns = await OffChain.find({ daoId })
+        return res.status(200).json(txns)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const createOffChainTransaction = async (req, res) => {
+    try {
+        const offChainTx = await OffChain.create(req.body);
+        if(offChainTx)
+            return res.status(200).json(offChainTx)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const approveOffChainTransaction = async (req, res) => {
+    const { safeTxHash } = req.params;
+    try {
+        let offChainTx = await OffChain.findOne({ safeTxHash });
+        if(!offChainTx)
+            return res.status(500).json({ message: 'Txn not found' })
+        await OffChain.updateMany(
+            { safeTxHash },
+            { $addToSet: { 'confirmations': req.body.confirmations[0] } }
+        )
+        offChainTx = await OffChain.findOne({ safeTxHash }); 
+        return res.status(200).json(offChainTx)  
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const rejectOffChainTransaction = async (req, res) => {
+    const { nonce } = req.params;
+    try {
+        let offChainTx = await OffChain.findOne({ nonce });
+        if(!offChainTx)
+            return res.status(500).json({ message: 'Txn not found' })
+        if(!offChainTx.rejectedTxn) {
+            offChainTx.rejectedTxn = req.body
+            offChainTx = await offChainTx.save()
+        } else {
+            await OffChain.updateMany(
+                { nonce },
+                { $addToSet: { 'rejectedTxn.confirmations': req.body.confirmations[0] } }
+            )
+        }
+        offChainTx = await OffChain.findOne({ nonce }); 
+        return res.status(200).json(offChainTx)  
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const create = async (req, res) => {
     const { _id } = req.user;
     try {
+        console.log(req.body)
         let txn = new Transaction({ ...req.body })
         txn = await txn.save()
         const safe = await Safe.updateMany(
@@ -104,4 +174,4 @@ const update = async (req, res) => {
     }
 }
 
-module.exports = { load, create, update };
+module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction };
