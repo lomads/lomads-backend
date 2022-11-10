@@ -8,7 +8,6 @@ const ObjectId = require('mongodb').ObjectID;
 
 const getById = async (req, res) => {
     const { taskId } = req.params;
-    console.log("Task called : ", taskId);
     try {
 
         const task = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
@@ -44,8 +43,8 @@ const create = async (req, res) => {
             taskStatus: applicant ? 'assigned' : 'open',
             name,
             description,
-            members: applicant ? [{ member: applicant._id, isApproved: true }] : [],
-            creator: wallet,
+            members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
+            creator: _id,
             project: projectId,
             discussionChannel,
             deadline,
@@ -77,7 +76,7 @@ const create = async (req, res) => {
             dao = await dao.save();
         }
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members transactions" } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member transactions project" } })
         // update sbt
 
         if (d.sbt && applicant) {
@@ -144,8 +143,8 @@ const draftTask = async (req, res) => {
             taskStatus: applicant ? 'assigned' : 'open',
             name,
             description,
-            members: applicant ? [{ member: applicant._id, isApproved: true }] : [],
-            creator: wallet,
+            members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
+            creator: _id,
             project: projectId,
             discussionChannel,
             deadline,
@@ -178,7 +177,7 @@ const draftTask = async (req, res) => {
             dao = await dao.save();
         }
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members transactions" } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member transactions project" } })
         // update sbt
 
         if (d.sbt && applicant) {
@@ -239,7 +238,7 @@ const applyTask = async (req, res) => {
         )
 
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         return res.status(200).json({ task: t, dao: d });
     }
     catch (e) {
@@ -248,6 +247,44 @@ const applyTask = async (req, res) => {
     }
 }
 
+const assignTask = async (req, res) => {
+    const { _id } = req.user;
+    const { daoUrl } = req.query;
+    const { taskId } = req.params;
+    const { memberId } = req.body;
+    try {
+
+        let task = await Task.findOne({ _id: taskId });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' })
+        }
+        let members = task.members;
+        for (var i = 0; i < members.length; i++) {
+            if (members[i].member.toString() === memberId) {
+                members[i].status = 'approved'
+            }
+            else {
+                members[i].status = 'rejected'
+            }
+        }
+        task.members = members;
+        task.taskStatus = "assigned";
+        await task.save();
+        // await Task.findOneAndUpdate(
+        //     { _id: taskId },
+        //     { $addToSet: { members: { member: _id, note, links: resourceList } } }
+        // )
+
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json({ task: t, dao: d });
+    }
+    catch (e) {
+        console.error("task.assignTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
 
 
-module.exports = { getById, create, draftTask, applyTask };
+
+module.exports = { getById, create, draftTask, applyTask, assignTask };
