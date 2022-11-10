@@ -5,6 +5,8 @@ const DAO = require('@server/modules/dao/dao.model')
 const Metadata = require('@server/modules/metadata/metadata.model');
 const { find, get, uniqBy } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
+const _ = require('lodash');
+const moment = require('moment');
 
 const getById = async (req, res) => {
     const { taskId } = req.params;
@@ -270,11 +272,6 @@ const assignTask = async (req, res) => {
         task.members = members;
         task.taskStatus = "assigned";
         await task.save();
-        // await Task.findOneAndUpdate(
-        //     { _id: taskId },
-        //     { $addToSet: { members: { member: _id, note, links: resourceList } } }
-        // )
-
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         return res.status(200).json({ task: t, dao: d });
@@ -285,6 +282,100 @@ const assignTask = async (req, res) => {
     }
 }
 
+const rejectTaskMember = async (req, res) => {
+    const { _id } = req.user;
+    const { daoUrl } = req.query;
+    const { taskId } = req.params;
+    const { memberId } = req.body;
+    try {
+
+        let task = await Task.findOne({ _id: taskId });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' })
+        }
+        let members = task.members;
+        for (var i = 0; i < members.length; i++) {
+            if (members[i].member.toString() === memberId) {
+                members[i].status = 'rejected'
+            }
+        }
+        task.members = members;
+        await task.save();
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json({ task: t, dao: d });
+    }
+    catch (e) {
+        console.error("task.assignTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const submitTask = async (req, res) => {
+    const { _id } = req.user;
+    const { taskId } = req.params;
+    const { daoUrl } = req.query;
+    const { submissionLink = undefined, note = "" } = req.body;
+    try {
+        const dao = await DAO.findOne({ url: daoUrl })
+        const task = await Task.findOne({ _id: taskId })
+        if(task){
+            console.log(taskId)
+            console.log(_id)
+            if(task.contributionType === 'assign' || (task.isSingleContributor === true && task.contributionType === 'open')) {
+                const taskContributor = _.find(task.members, m => m.member.toString() === _id.toString() && m.status === 'approved')
+                if(taskContributor) {
+                    let members = task.members;
+                    for (var i = 0; i < members.length; i++) {
+                        if (members[i]._id === taskContributor._id) {
+                            members[i].submission = {
+                                submittedAt: moment().utc().toDate(),
+                                submissionLink,
+                                note
+                            }
+                        }
+                    }
+                    task.taskStatus = 'submitted'
+                    task.members = members;
+                    await task.save();
+                } else {
+                    return res.status(500).json({ message: 'Not permitted' }) 
+                }
+            } else if(task.isSingleContributor === false && task.contributionType === 'open') {
+                if(task.isFilterRoles) {
+                    const roles = task.validRoles.map(r => r.replace(' ', '_').toUpperCase())
+                    const eligible = _.find(_.get(dao, 'members', []), m => m.member.toString() === _id.toString() && roles.indexOf(m.role) > -1)
+                    if(!eligible)
+                        return res.status(500).json({ message: 'Not permitted' })
+
+                    await Task.updateOne({ _id: taskId }, {
+                        $addToSet: { members: {
+                            member: _id,
+                            status: 'approved',
+                            submission: {
+                                submittedAt: moment().utc().toDate(),
+                                submissionLink,
+                                note
+                            }
+                        } },
+                    })
+
+                }
+            } else {
+                return res.status(500).json({ message: 'Not permitted' }) 
+            }
+            const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+            const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+            return res.status(200).json({ task: t, dao: d });
+        }
+        return res.status(500).json({ message: 'Task not found' }) 
+    }
+    catch(e) {
+        console.error("task.assignTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' }) 
+    }
+}
 
 
-module.exports = { getById, create, draftTask, applyTask, assignTask };
+
+module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask };

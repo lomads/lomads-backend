@@ -16,7 +16,8 @@ const TaskSchema = new mongoose.Schema({
         appliedAt: { type: Date, default: Date.now },
         status: { type: String, default: 'pending' },
         note: { type: String, default: '' },
-        links: { type: Array, default: [] }
+        links: { type: Array, default: [] },
+        submission: { type: Object }
     }],
     project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
     discussionChannel: { type: String },
@@ -24,7 +25,7 @@ const TaskSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    submissionLink: { type: String },
+    submissionLink: [{ type: String }],
     compensation: { type: mongoose.Schema.Types.Mixed },
     reviewer: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     contributionType: { type: String },
