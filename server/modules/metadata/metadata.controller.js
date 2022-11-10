@@ -19,7 +19,7 @@ const addMetaData = async (req, res) => {
         metaData = await metaData.save();
         c.metadata.push(metaData);
         c = await c.save();
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members transactions' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
         return res.status(200).json(d);
     }
     catch (e) {
@@ -33,11 +33,11 @@ const getMetadata = async (req, res) => {
     try {
         const { contractAddress } = req.params;
         const { wallet } = req.user;
-        const metadata = await Metadata.findOne({ 
+        const metadata = await Metadata.findOne({
             contract: contractAddress,
             "attributes.value": { $regex: new RegExp(`^${wallet}$`, "i") }
         })
-        if(!metadata)
+        if (!metadata)
             return res.status(404).json({ message: 'Metadata not found' })
         return res.status(200).json(metadata)
     } catch (e) {
