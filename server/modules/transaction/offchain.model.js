@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const OffChain = new mongoose.Schema({
   daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
+  taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: false, default: null },
   token: { type: mongoose.Schema.Types.Object },
   offChain: { type: mongoose.Schema.Types.Boolean, default: true },
   rejectedTxn: { type: mongoose.Schema.Types.Object },
