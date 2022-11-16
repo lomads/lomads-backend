@@ -1,5 +1,6 @@
 const Project = require('@server/modules/project/project.model');
 const Task = require('@server/modules/task/task.model');
+const OffChain = require('@server/modules/transaction/offchain.model');
 const Member = require('@server/modules/member/member.model');
 const DAO = require('@server/modules/dao/dao.model')
 const Metadata = require('@server/modules/metadata/metadata.model');
@@ -315,7 +316,7 @@ const submitTask = async (req, res) => {
     const { _id } = req.user;
     const { taskId } = req.params;
     const { daoUrl } = req.query;
-    const { submissionLink = undefined, note = "" } = req.body;
+    const { submissionLink, note } = req.body;
     try {
         const dao = await DAO.findOne({ url: daoUrl })
         const task = await Task.findOne({ _id: taskId })
@@ -330,7 +331,7 @@ const submitTask = async (req, res) => {
                         if (members[i]._id === taskContributor._id) {
                             members[i].submission = {
                                 submittedAt: moment().utc().toDate(),
-                                submissionLink,
+                                submissionLink: submissionLink,
                                 note
                             }
                         }
@@ -354,7 +355,7 @@ const submitTask = async (req, res) => {
                             status: 'approved',
                             submission: {
                                 submittedAt: moment().utc().toDate(),
-                                submissionLink,
+                                submissionLink: submissionLink,
                                 note
                             }
                         } },
@@ -376,6 +377,66 @@ const submitTask = async (req, res) => {
     }
 }
 
+const approveTask = async (req, res) => {
+    const { _id } = req.user;
+    const { taskId } = req.params;
+    const { daoUrl } = req.query;
+    const { compensationDelta = 0, offChainPayload, onChainSafeTxHash, recipient } = req.body;
+    try {
+        const task = await Task.findOne({ _id: taskId })
+        let chainTxnHash = onChainSafeTxHash;
+        if(offChainPayload) {
+            const offChainTx = await OffChain.create(offChainPayload);
+            chainTxnHash = offChainTx.safeTxHash;
+        }
+        await Task.findOneAndUpdate(
+            { _id: taskId },
+            {
+                taskStatus: 'approved',
+                'compensation.delta':compensationDelta,
+                'compensation.recipient': recipient,
+                'compensation.txnHash': chainTxnHash,
+                'compensation.onChain': onChainSafeTxHash ? true : false
+            }  
+        )
+        await Task.findOneAndUpdate(
+            { _id: taskId, 'members.member._id': recipient },
+            {
+                'members.$.status': 'approved'
+            }  
+        )
+        // const user = await Member.findOne({ _id: recipient })
+        // let earnings = user.earnings
+        // const symbol = _.find(earnings, e => e.symbol === task.compensation.symbol)
+        
+        // if(symbol) {
+        //     earnings = earnings.map(e => {
+        //         if(e.symbol === task.compensation.symbol)
+        //             return { ...e._doc, value: +e.value + (+task.compensation.amount) }
+        //         return e
+        //     })
+        //     console.log(earnings)
+        // } else {
+        //     earnings.push({
+        //         symbol: task.compensation.symbol,
+        //         value: task.compensation.amount,
+        //         currency: task.compensation.currency
+        //     })
+        // }
+
+        // await Member.findByIdAndUpdate(
+        //     {_id: recipient},
+        //     { earnings }
+        // )
+
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json({ task: t, dao: d });
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' }) 
+    }
+}
 
 
-module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask };
+module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask, approveTask };

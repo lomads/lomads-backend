@@ -44,6 +44,7 @@ const MemberSchema = new mongoose.Schema({
   },
   earnings: {
     type: [{
+      symbol: String,
       currency: String,
       value: Number,
     }],

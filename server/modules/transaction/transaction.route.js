@@ -10,6 +10,8 @@ router.get('/off-chain', web3Auth, transactionCtrl.loadOffChain)
 router.post('/off-chain', web3Auth, transactionCtrl.createOffChainTransaction)
 router.patch('/off-chain/:nonce/reject', web3Auth, transactionCtrl.rejectOffChainTransaction)
 router.patch('/off-chain/:safeTxHash/approve', web3Auth, transactionCtrl.approveOffChainTransaction)
+router.get('/off-chain/:safeTxHash/execute', web3Auth, transactionCtrl.executeOffChainTransaction)
+router.delete('/off-chain/:safeTxHash', web3Auth, transactionCtrl.deleteOffChainTransaction)
 router.post('/', web3Auth, transactionCtrl.create)
 router.patch('/', web3Auth, transactionCtrl.update)
 

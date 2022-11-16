@@ -38,9 +38,6 @@ coverage
 # Compiled binary addons (http://nodejs.org/api/addons.html)
 build/Release
 
-# Dependency directory
-node_modules
-
 # Optional npm cache directory
 .npm
 
@@ -52,3 +49,6 @@ node_modules
 
 pm2.config.js
 
+node_modules/
+
+node_modules

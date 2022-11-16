@@ -93,6 +93,12 @@ const OffChain = new mongoose.Schema({
   transactionHash: {
     type: String || null,
   },
+  transfers: {
+    type: Array || null,
+  },
+  txType: {
+    type: String || null,
+  },
   trusted: {
     type: Boolean || null,
   },

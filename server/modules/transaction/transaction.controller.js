@@ -1,5 +1,6 @@
 const Transaction = require('@server/modules/transaction/transaction.model');
 const OffChain = require('@server/modules/transaction/offchain.model');
+const Member = require('@server/modules/member/member.model');
 const Safe = require('@server/modules/safe/safe.model');
 const _ = require('lodash');
 const axios = require('axios');
@@ -41,6 +42,18 @@ const createOffChainTransaction = async (req, res) => {
     }
 }
 
+const deleteOffChainTransaction = async (req, res) => {
+    const { safeTxHash } = req.params;
+    try {
+        await OffChain.deleteOne({ safeTxHash });
+        return res.status(200).json({ message: 'Txn deleted' })
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const approveOffChainTransaction = async (req, res) => {
     const { safeTxHash } = req.params;
     try {
@@ -53,6 +66,83 @@ const approveOffChainTransaction = async (req, res) => {
         )
         offChainTx = await OffChain.findOne({ safeTxHash }); 
         return res.status(200).json(offChainTx)  
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const executeOffChainTransaction = async (req, res) => {
+    const { safeTxHash } = req.params;
+    const { rejectedTxn = null } = req.query;
+    console.log(rejectedTxn, "==>", typeof rejectedTxn)
+    try {
+        let offChainTx = await OffChain.findOne({ safeTxHash });
+        if(!offChainTx)
+            return res.status(500).json({ message: 'Txn not found' })
+
+        let transfers = []
+
+        let parameters = [];
+        if(_.get(offChainTx, 'dataDecoded.method' , '') === 'multiSend')
+            parameters = _.get(offChainTx, 'dataDecoded.parameters[0].valueDecoded', [])
+        else if (_.get(offChainTx, 'dataDecoded.method', '') === 'transfer')
+            parameters = [{ dataDecoded: offChainTx.dataDecoded }]
+
+        for (let index = 0; index < parameters.length; index++) {
+            const parameter = parameters[index];
+            const recipient = _.get(_.find(parameter.dataDecoded.parameters,  p => p.name === 'to'), 'value', null)
+            const amount = _.get(_.find(parameter.dataDecoded.parameters,  p => p.name === 'value'), 'value', null)
+            transfers.push({
+                to: recipient,
+                value: amount
+            })
+            console.log(recipient, amount)
+            if(!rejectedTxn || (rejectedTxn && rejectedTxn === null)) {
+                if(recipient) {
+                    const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
+                    let earnings = user.earnings
+                    const symbol = _.find(earnings, e => e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT'))
+    
+                    if(symbol) {
+                        earnings = earnings.map(e => {
+                            if(e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT'))
+                                return { ...e._doc, value: +e.value + (amount / 10 ** 18) }
+                            return e
+                        }) 
+                    } else {
+                        earnings.push({
+                            symbol: _.get(offChainTx, 'token.symbol', 'SWEAT'),
+                            value: amount / 10 ** 18,
+                            currency: _.get(offChainTx, 'token.tokenAddress', 'SWEAT')
+                        })
+                    }
+                    console.log("earnings", earnings)
+                    await Member.findByIdAndUpdate(
+                        { _id: user._id },
+                        { earnings }
+                    )
+                }
+            }
+        }
+        
+
+        await OffChain.findOneAndUpdate(
+            { safeTxHash },
+            { 
+                isExecuted: true, 
+                isSuccessful: true,
+                transfers,
+                txType: "MULTISIG_TRANSACTION",
+                confirmations: rejectedTxn && rejectedTxn !== null ? rejectedTxn.confirmations : offChainTx.confirmations,
+                ...(rejectedTxn && rejectedTxn !== null  ? { dataDecoded: null, } : { rejectedTxn: null })
+            }
+        )
+
+        let oct = await OffChain.findOne({ safeTxHash });
+
+        return res.status(200).json(oct)  
     }
     catch (e) {
         console.error(e)
@@ -174,4 +264,4 @@ const update = async (req, res) => {
     }
 }
 
-module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction };
+module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction, deleteOffChainTransaction, executeOffChainTransaction };

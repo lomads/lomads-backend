@@ -4,5 +4,6 @@ const memberCtrl = require('./member.controller');
 const router = express.Router(); // eslint-disable-line new-cap
 
 router.patch('/', web3Auth, memberCtrl.update)
+router.post('/earnings', web3Auth, memberCtrl.updateEarnings)
 
 module.exports = router;

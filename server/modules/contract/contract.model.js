@@ -9,7 +9,7 @@ const APIError = require('@server/helpers/APIError');
 const ContractSchema = new mongoose.Schema({
   name: { type: String },
   image: { type: String },
-  tokenSuppy: { type: Number },
+  tokenSuppy: { type: String | Number },
   whitelisted: { type: mongoose.Schema.Types.Boolean, default: false },
   address: { type: String },
   admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
