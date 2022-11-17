@@ -7,6 +7,9 @@ const router = express.Router(); // eslint-disable-line new-cap
 
 router.get('/', web3Auth, transactionCtrl.load)
 router.get('/off-chain', web3Auth, transactionCtrl.loadOffChain)
+router.post('/label', web3Auth, transactionCtrl.addTxnLabel)
+router.get('/label', web3Auth, transactionCtrl.loadTxnLabel)
+router.patch('/label', web3Auth, transactionCtrl.updateTxnLabel)
 router.post('/off-chain', web3Auth, transactionCtrl.createOffChainTransaction)
 router.patch('/off-chain/:nonce/reject', web3Auth, transactionCtrl.rejectOffChainTransaction)
 router.patch('/off-chain/:safeTxHash/approve', web3Auth, transactionCtrl.approveOffChainTransaction)

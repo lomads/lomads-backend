@@ -3,6 +3,7 @@ const OffChain = require('@server/modules/transaction/offchain.model');
 const Member = require('@server/modules/member/member.model');
 const Task = require('@server/modules/task/task.model');
 const Safe = require('@server/modules/safe/safe.model');
+const txLabel = require('@server/modules/transaction/txlabel.model');
 const _ = require('lodash');
 const axios = require('axios');
 const ObjectId = require('mongodb').ObjectID;
@@ -73,6 +74,9 @@ const moveTxToOnChain = async (req, res) => {
                 }
             )
         }
+
+        await txLabel.updateMany({ safeTxHash }, { safeTxHash: onChainTxHash })
+
         return res.status(200).json({ message: 'success' })
     }
     catch (e) {
@@ -347,4 +351,43 @@ const update = async (req, res) => {
     }
 }
 
-module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction, deleteOffChainTransaction, executeOffChainTransaction, moveTxToOnChain, executedOnChain };
+const addTxnLabel = async (req, res) => {
+    try {
+        await txLabel.create(req.body)
+        return res.status(200).json({ message: ''})
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const loadTxnLabel = async (req, res) => {
+    const { safeAddress } = req.query;
+    try {
+        const labels = await txLabel.find({ safeAddress })
+        return res.status(200).json(labels)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const updateTxnLabel = async (req, res) => {
+    const { safeAddress, safeTxHash, label, recipient } = req.body;
+    try {
+        await txLabel.findOneAndUpdate(
+            { safeTxHash, safeAddress, recipient }, 
+            { label, recipient }, 
+            { new: true, upsert: true });
+        const labels = await txLabel.find({ safeAddress })
+        return res.status(200).json(labels)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction, deleteOffChainTransaction, executeOffChainTransaction, moveTxToOnChain, executedOnChain, addTxnLabel, loadTxnLabel, updateTxnLabel };
