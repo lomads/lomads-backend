@@ -332,6 +332,7 @@ const submitTask = async (req, res) => {
                           'members.member': _id
                         },
                         {
+                            'taskStatus': 'submitted',
                             'members.$.submission': {
                                 submittedAt: moment().utc().toDate(),
                                 submissionLink: submissionLink,
