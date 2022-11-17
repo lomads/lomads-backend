@@ -71,6 +71,21 @@ const create = async (req, res) => {
     }
 }
 
+const update = async (req, res) => {
+    const { contractId, daoId, contactDetail, whitelisted } = req.body;
+    try {
+
+        await Contract.findOneAndUpdate({ _id: contractId }, { contactDetail, whitelisted });
+
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const getContract = async (req, res) => {
     const { contractAddress } = req.params;
     try {
@@ -84,4 +99,4 @@ const getContract = async (req, res) => {
 }
 
 
-module.exports = { create, getContract, getContractTokenMetadata };
+module.exports = { create, update, getContract, getContractTokenMetadata };
