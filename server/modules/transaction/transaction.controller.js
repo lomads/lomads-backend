@@ -1,9 +1,12 @@
 const Transaction = require('@server/modules/transaction/transaction.model');
 const OffChain = require('@server/modules/transaction/offchain.model');
 const Member = require('@server/modules/member/member.model');
+const Task = require('@server/modules/task/task.model');
 const Safe = require('@server/modules/safe/safe.model');
+const txLabel = require('@server/modules/transaction/txlabel.model');
 const _ = require('lodash');
 const axios = require('axios');
+const ObjectId = require('mongodb').ObjectID;
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -20,7 +23,7 @@ const load = async (req, res) => {
 const loadOffChain = async (req, res) => {
     const { daoId } = req.query;
     try {
-        let txns = await OffChain.find({ daoId })
+        let txns = await OffChain.find({ daoId, offChain: true })
         return res.status(200).json(txns)
     }
     catch (e) {
@@ -54,6 +57,34 @@ const deleteOffChainTransaction = async (req, res) => {
     }
 }
 
+const moveTxToOnChain = async (req, res) => {
+    const { safeTxHash } = req.params;
+    const { onChainTxHash, taskId } = req.body;
+    try {
+        await OffChain.findOneAndUpdate(
+            { safeTxHash },
+            { safeTxHash: onChainTxHash, offChain: false }
+        )
+        if(taskId) {
+            await Task.findOneAndUpdate(
+                { _id: ObjectId(taskId) },
+                { 
+                    'compensation.txnHash': onChainTxHash,
+                    'compensation.onChain': true
+                }
+            )
+        }
+
+        await txLabel.updateMany({ safeTxHash }, { safeTxHash: onChainTxHash })
+
+        return res.status(200).json({ message: 'success' })
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const approveOffChainTransaction = async (req, res) => {
     const { safeTxHash } = req.params;
     try {
@@ -73,6 +104,63 @@ const approveOffChainTransaction = async (req, res) => {
     }
 }
 
+const executedOnChain = async (req, res) => {
+    const { safeTx } = req.body;
+    try {
+        let task = await Task.findOne({ 'compensation.txnHash': safeTx.safeTxHash })
+        if(task){
+            task.taskStatus = 'paid'
+            await task.save()
+        }
+        let transfers = []
+        let parameters = [];
+        if(_.get(safeTx, 'dataDecoded.method' , '') === 'multiSend')
+            parameters = _.get(safeTx, 'dataDecoded.parameters[0].valueDecoded', [])
+        else if (_.get(safeTx, 'dataDecoded.method', '') === 'transfer')
+            parameters = [{ dataDecoded: safeTx.dataDecoded }]
+
+        for (let index = 0; index < parameters.length; index++) {
+            const parameter = parameters[index];
+            const recipient = _.get(_.find(parameter.dataDecoded.parameters,  p => p.name === 'to'), 'value', null)
+            const amount = _.get(_.find(parameter.dataDecoded.parameters,  p => p.name === 'value'), 'value', null)
+            transfers.push({
+                to: recipient,
+                value: amount
+            })
+            console.log(recipient, amount)
+            if(recipient) {
+                const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
+                let earnings = user.earnings
+                const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT'))
+
+                if(symbol) {
+                    earnings = earnings.map(e => {
+                        if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT'))
+                            return { ...e._doc, value: +e.value + (amount / 10 ** 18) }
+                        return e
+                    }) 
+                } else {
+                    earnings.push({
+                        symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
+                        value: amount / 10 ** 18,
+                        currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT')
+                    })
+                }
+                console.log("earnings", earnings)
+                await Member.findByIdAndUpdate(
+                    { _id: user._id },
+                    { earnings }
+                )
+            }
+        }
+        return res.status(200).json({ message: 'success' })
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const executeOffChainTransaction = async (req, res) => {
     const { safeTxHash } = req.params;
     const { rejectedTxn = null } = req.query;
@@ -83,7 +171,6 @@ const executeOffChainTransaction = async (req, res) => {
             return res.status(500).json({ message: 'Txn not found' })
 
         let transfers = []
-
         let parameters = [];
         if(_.get(offChainTx, 'dataDecoded.method' , '') === 'multiSend')
             parameters = _.get(offChainTx, 'dataDecoded.parameters[0].valueDecoded', [])
@@ -264,4 +351,43 @@ const update = async (req, res) => {
     }
 }
 
-module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction, deleteOffChainTransaction, executeOffChainTransaction };
+const addTxnLabel = async (req, res) => {
+    try {
+        await txLabel.create(req.body)
+        return res.status(200).json({ message: ''})
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const loadTxnLabel = async (req, res) => {
+    const { safeAddress } = req.query;
+    try {
+        const labels = await txLabel.find({ safeAddress })
+        return res.status(200).json(labels)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const updateTxnLabel = async (req, res) => {
+    const { safeAddress, safeTxHash, label, recipient } = req.body;
+    try {
+        await txLabel.findOneAndUpdate(
+            { safeTxHash, safeAddress, recipient }, 
+            { label, recipient }, 
+            { new: true, upsert: true });
+        const labels = await txLabel.find({ safeAddress })
+        return res.status(200).json(labels)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction, deleteOffChainTransaction, executeOffChainTransaction, moveTxToOnChain, executedOnChain, addTxnLabel, loadTxnLabel, updateTxnLabel };

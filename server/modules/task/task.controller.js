@@ -317,6 +317,7 @@ const submitTask = async (req, res) => {
     const { taskId } = req.params;
     const { daoUrl } = req.query;
     const { submissionLink, note } = req.body;
+    console
     try {
         const dao = await DAO.findOne({ url: daoUrl })
         const task = await Task.findOne({ _id: taskId })
@@ -326,19 +327,19 @@ const submitTask = async (req, res) => {
             if(task.contributionType === 'assign' || (task.isSingleContributor === true && task.contributionType === 'open')) {
                 const taskContributor = _.find(task.members, m => m.member.toString() === _id.toString() && m.status === 'approved')
                 if(taskContributor) {
-                    let members = task.members;
-                    for (var i = 0; i < members.length; i++) {
-                        if (members[i]._id === taskContributor._id) {
-                            members[i].submission = {
+                    await Task.updateOne(
+                        { _id: taskId,
+                          'members.member': _id
+                        },
+                        {
+                            'taskStatus': 'submitted',
+                            'members.$.submission': {
                                 submittedAt: moment().utc().toDate(),
                                 submissionLink: submissionLink,
                                 note
                             }
                         }
-                    }
-                    task.taskStatus = 'submitted'
-                    task.members = members;
-                    await task.save();
+                    )
                 } else {
                     return res.status(500).json({ message: 'Not permitted' }) 
                 }
