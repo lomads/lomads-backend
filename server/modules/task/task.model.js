@@ -36,6 +36,10 @@ const TaskSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    reopenedAt: {
+        type: Date,
+        default: null
+    },
     archivedAt: {
         type: Date,
         default: null
