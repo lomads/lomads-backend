@@ -47,6 +47,7 @@ const MemberSchema = new mongoose.Schema({
       symbol: String,
       currency: String,
       value: Number,
+      daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
     }],
     default: []
   }

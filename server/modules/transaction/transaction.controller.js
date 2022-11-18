@@ -106,6 +106,7 @@ const approveOffChainTransaction = async (req, res) => {
 
 const executedOnChain = async (req, res) => {
     const { safeTx } = req.body;
+    const { daoId } = req.query;
     try {
         let task = await Task.findOne({ 'compensation.txnHash': safeTx.safeTxHash })
         if(task){
@@ -131,7 +132,7 @@ const executedOnChain = async (req, res) => {
             if(recipient) {
                 const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
                 let earnings = user.earnings
-                const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT'))
+                const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', '' && e.daoId === daoId))
 
                 if(symbol) {
                     earnings = earnings.map(e => {
@@ -143,7 +144,8 @@ const executedOnChain = async (req, res) => {
                     earnings.push({
                         symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
                         value: amount / 10 ** 18,
-                        currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT')
+                        currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT'),
+                        daoId
                     })
                 }
                 console.log("earnings", earnings)
@@ -164,6 +166,8 @@ const executedOnChain = async (req, res) => {
 const executeOffChainTransaction = async (req, res) => {
     const { safeTxHash } = req.params;
     const { rejectedTxn = null } = req.query;
+    const { daoId } = req.query;
+    
     console.log(rejectedTxn, "==>", typeof rejectedTxn)
     try {
         let offChainTx = await OffChain.findOne({ safeTxHash });
@@ -190,7 +194,7 @@ const executeOffChainTransaction = async (req, res) => {
                 if(recipient) {
                     const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
                     let earnings = user.earnings
-                    const symbol = _.find(earnings, e => e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT'))
+                    const symbol = _.find(earnings, e => e.symbol === _.get(offChainTx, 'token.symbol', '') && e.daoId === daoId)
     
                     if(symbol) {
                         earnings = earnings.map(e => {
@@ -202,7 +206,8 @@ const executeOffChainTransaction = async (req, res) => {
                         earnings.push({
                             symbol: _.get(offChainTx, 'token.symbol', 'SWEAT'),
                             value: amount / 10 ** 18,
-                            currency: _.get(offChainTx, 'token.tokenAddress', 'SWEAT')
+                            currency: _.get(offChainTx, 'token.tokenAddress', 'SWEAT'),
+                            daoId
                         })
                     }
                     console.log("earnings", earnings)
@@ -226,6 +231,14 @@ const executeOffChainTransaction = async (req, res) => {
                 ...(rejectedTxn && rejectedTxn !== null  ? { dataDecoded: null, } : { rejectedTxn: null })
             }
         )
+
+        if(!rejectedTxn){
+            let task = await Task.findOne({ 'compensation.txnHash': safeTxHash })
+            if(task){
+                task.taskStatus = 'paid'
+                await task.save()
+            }
+        }
 
         let oct = await OffChain.findOne({ safeTxHash });
 
