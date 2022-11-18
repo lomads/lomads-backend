@@ -275,6 +275,39 @@ const assignTask = async (req, res) => {
         await task.save();
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        
+        if (d.sbt) {
+            const member = await Member.findOne({ _id: memberId })
+            const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
+            const metadata = await Metadata.findOne(filter)
+            if (metadata) {
+                let attrs = [...metadata._doc.attributes];
+                if (!find(attrs, attr => attr.trait_type === 'tasks')) {
+                    attrs.push({ trait_type: 'tasks', value: task._id.toString() })
+                } else {
+                    attrs = attrs.map(attr => {
+                        if (attr.trait_type === 'tasks') {
+                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task._id.toString()].join(',') }
+                        }
+                        return attr
+                    })
+                }
+                if (!find(attrs, attr => attr.trait_type === 'task_names')) {
+                    attrs.push({ trait_type: 'task_names', value: task._id.toString() })
+                } else {
+                    attrs = attrs.map(attr => {
+                        if (attr.trait_type === 'task_names') {
+                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task.name.toString()].join(',') }
+                        }
+                        return attr
+                    })
+                }
+                console.log("attrs", attrs);
+                metadata._doc.attributes = attrs;
+                await metadata.save();
+            }
+        }
+
         return res.status(200).json({ task: t, dao: d });
     }
     catch (e) {
