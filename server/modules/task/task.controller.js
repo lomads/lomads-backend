@@ -321,15 +321,16 @@ const submitTask = async (req, res) => {
     try {
         const dao = await DAO.findOne({ url: daoUrl })
         const task = await Task.findOne({ _id: taskId })
-        if(task){
+        if (task) {
             console.log(taskId)
             console.log(_id)
-            if(task.contributionType === 'assign' || (task.isSingleContributor === true && task.contributionType === 'open')) {
+            if (task.contributionType === 'assign' || (task.isSingleContributor === true && task.contributionType === 'open')) {
                 const taskContributor = _.find(task.members, m => m.member.toString() === _id.toString() && m.status === 'approved')
-                if(taskContributor) {
+                if (taskContributor) {
                     await Task.updateOne(
-                        { _id: taskId,
-                          'members.member': _id
+                        {
+                            _id: taskId,
+                            'members.member': _id
                         },
                         {
                             'taskStatus': 'submitted',
@@ -341,40 +342,42 @@ const submitTask = async (req, res) => {
                         }
                     )
                 } else {
-                    return res.status(500).json({ message: 'Not permitted' }) 
+                    return res.status(500).json({ message: 'Not permitted' })
                 }
-            } else if(task.isSingleContributor === false && task.contributionType === 'open') {
-                if(task.isFilterRoles) {
+            } else if (task.isSingleContributor === false && task.contributionType === 'open') {
+                if (task.isFilterRoles) {
                     const roles = task.validRoles.map(r => r.replace(' ', '_').toUpperCase())
                     const eligible = _.find(_.get(dao, 'members', []), m => m.member.toString() === _id.toString() && roles.indexOf(m.role) > -1)
-                    if(!eligible)
+                    if (!eligible)
                         return res.status(500).json({ message: 'Not permitted' })
 
                     await Task.updateOne({ _id: taskId }, {
-                        $addToSet: { members: {
-                            member: _id,
-                            status: 'approved',
-                            submission: {
-                                submittedAt: moment().utc().toDate(),
-                                submissionLink: submissionLink,
-                                note
+                        $addToSet: {
+                            members: {
+                                member: _id,
+                                status: 'approved',
+                                submission: {
+                                    submittedAt: moment().utc().toDate(),
+                                    submissionLink: submissionLink,
+                                    note
+                                }
                             }
-                        } },
+                        },
                     })
 
                 }
             } else {
-                return res.status(500).json({ message: 'Not permitted' }) 
+                return res.status(500).json({ message: 'Not permitted' })
             }
             const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
             const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
             return res.status(200).json({ task: t, dao: d });
         }
-        return res.status(500).json({ message: 'Task not found' }) 
+        return res.status(500).json({ message: 'Task not found' })
     }
-    catch(e) {
+    catch (e) {
         console.error("task.assignTask::", e)
-        return res.status(500).json({ message: 'Something went wrong' }) 
+        return res.status(500).json({ message: 'Something went wrong' })
     }
 }
 
@@ -386,7 +389,7 @@ const approveTask = async (req, res) => {
     try {
         const task = await Task.findOne({ _id: taskId })
         let chainTxnHash = onChainSafeTxHash;
-        if(offChainPayload) {
+        if (offChainPayload) {
             const offChainTx = await OffChain.create(offChainPayload);
             chainTxnHash = offChainTx.safeTxHash;
         }
@@ -394,22 +397,22 @@ const approveTask = async (req, res) => {
             { _id: taskId },
             {
                 taskStatus: 'approved',
-                'compensation.delta':compensationDelta,
+                'compensation.delta': compensationDelta,
                 'compensation.recipient': recipient,
                 'compensation.txnHash': chainTxnHash,
                 'compensation.onChain': onChainSafeTxHash ? true : false
-            }  
+            }
         )
         await Task.findOneAndUpdate(
             { _id: taskId, 'members.member._id': recipient },
             {
                 'members.$.status': 'approved'
-            }  
+            }
         )
         // const user = await Member.findOne({ _id: recipient })
         // let earnings = user.earnings
         // const symbol = _.find(earnings, e => e.symbol === task.compensation.symbol)
-        
+
         // if(symbol) {
         //     earnings = earnings.map(e => {
         //         if(e.symbol === task.compensation.symbol)
@@ -435,9 +438,73 @@ const approveTask = async (req, res) => {
         return res.status(200).json({ task: t, dao: d });
     } catch (e) {
         console.log(e)
-        return res.status(500).json({ message: 'Something went wrong' }) 
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const rejectTask = async (req, res) => {
+    const { _id } = req.user;
+    const { daoUrl } = req.query;
+    const { taskId } = req.params;
+    const { memberId } = req.body;
+    try {
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json({ task: t, dao: d });
+    }
+    catch (e) {
+        console.error("task.rejectTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const archiveTask = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { taskId } = req.params;
+    try {
+        let task = await Task.findOne({ _id: taskId });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' })
+        }
+        await Task.findOneAndUpdate(
+            { _id: taskId },
+            {
+                archivedAt: Date.now(),
+            }
+        )
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json({ task: t, dao: d });
+    }
+    catch (e) {
+        console.error("project.archiveTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const deleteTask = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { taskId } = req.params;
+    try {
+        let task = await Task.findOne({ _id: taskId });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' })
+        }
+        await Task.findOneAndUpdate(
+            { _id: taskId },
+            {
+                deletedAt: Date.now(),
+            }
+        )
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json({ task: t, dao: d });
+    }
+    catch (e) {
+        console.error("project.deleteTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
     }
 }
 
 
-module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask, approveTask };
+module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask, approveTask, rejectTask, archiveTask, deleteTask };
