@@ -292,4 +292,18 @@ const updateDaoLinks = async (req, res) => {
     }
 }
 
-module.exports = { load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks };
+const updateSweatPoints = async (req, res) => {
+    const { url } = req.params;
+    const { status } = req.body;
+    try {
+        await DAO.findOneAndUpdate({ url }, { sweatPoints: status })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.updateSweatPoints::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };

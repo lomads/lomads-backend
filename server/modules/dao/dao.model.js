@@ -36,6 +36,10 @@ const DAOSchema = new mongoose.Schema({
     default: null,
     required: false
   },
+  sweatPoints: {
+    type: Boolean,
+    default: false,
+  },
   safe: { type: mongoose.Schema.Types.ObjectId, ref: 'Safe' },
   sbt: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
   members: [{

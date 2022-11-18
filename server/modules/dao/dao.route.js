@@ -7,6 +7,7 @@ const router = express.Router(); // eslint-disable-line new-cap
 router.get('/', web3Auth, daoCtrl.load)
 router.post('/', web3Auth, daoCtrl.create)
 router.get('/:url', web3Auth, daoCtrl.getByUrl)
+router.patch('/:url/sweat-points', web3Auth, daoCtrl.updateSweatPoints)
 router.patch('/:url/add-member', web3Auth, daoCtrl.addDaoMember)
 router.patch('/:url/add-member-list', web3Auth, daoCtrl.addDaoMemberList)
 router.patch('/:url/manage-member', web3Auth, daoCtrl.manageDaoMember)
