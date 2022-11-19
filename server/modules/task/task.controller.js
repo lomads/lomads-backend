@@ -275,7 +275,7 @@ const assignTask = async (req, res) => {
         await task.save();
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
-        
+
         if (d.sbt) {
             const member = await Member.findOne({ _id: memberId })
             const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
@@ -479,11 +479,34 @@ const rejectTask = async (req, res) => {
     const { _id } = req.user;
     const { daoUrl } = req.query;
     const { taskId } = req.params;
-    const { memberId } = req.body;
+    const { reopen, contributionType } = req.body;
     try {
-        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
-        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
-        return res.status(200).json({ task: t, dao: d });
+        console.log("DATA : ", daoUrl, taskId, reopen, contributionType);
+        let task = await Task.findOne({ _id: taskId });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' })
+        }
+        // if contributionType is open && admin wants to reopen the task --- 
+        // reset data of the task,
+        // change task status to open, 
+        // change the approved user status to 'submission rejected'
+        // update reopenedAt with current date
+        if (contributionType === 'open' && reopen) {
+            let newMembers = [];
+            task.taskStatus = 'open';
+            task.reopenedAt = Date.now();
+            let user = _.find(_.get(task, 'members', []), m => m.status === 'approved')
+            user.status = 'submission_rejected';
+            newMembers.push(user);
+            task.members = newMembers;
+            console.log("new task : ", task);
+        }
+        else if (contributionType === 'open' && !reopen) {
+
+        }
+        // const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        // const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        // return res.status(200).json({ task: t, dao: d });
     }
     catch (e) {
         console.error("task.rejectTask::", e)
