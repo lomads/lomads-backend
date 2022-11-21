@@ -16,6 +16,7 @@ const TaskSchema = new mongoose.Schema({
         appliedAt: { type: Date, default: Date.now },
         status: { type: String, default: 'pending' },
         note: { type: String, default: '' },
+        rejectionNote: { type: String, default: '' },
         links: { type: Array, default: [] },
         submission: { type: Object }
     }],

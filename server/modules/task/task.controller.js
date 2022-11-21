@@ -479,34 +479,103 @@ const rejectTask = async (req, res) => {
     const { _id } = req.user;
     const { daoUrl } = req.query;
     const { taskId } = req.params;
-    const { reopen, contributionType } = req.body;
+    const { reopen, rejectionNote, contributionType, isSingleContributor, newContributorId } = req.body;
     try {
         console.log("DATA : ", daoUrl, taskId, reopen, contributionType);
         let task = await Task.findOne({ _id: taskId });
         if (!task) {
             return res.status(404).json({ message: 'Task not found' })
         }
-        // if contributionType is open && admin wants to reopen the task --- 
+        // CASE 1 --- if contributionType is open && only single contributor allowed && admin wants to reopen the task --- 
         // reset data of the task,
         // change task status to open, 
         // change the approved user status to 'submission rejected'
+        // store rejection note (if any)
         // update reopenedAt with current date
-        if (contributionType === 'open' && reopen) {
+        if (contributionType === 'open' && isSingleContributor && reopen) {
+            console.log("CASE 1")
             let newMembers = [];
             task.taskStatus = 'open';
             task.reopenedAt = Date.now();
             let user = _.find(_.get(task, 'members', []), m => m.status === 'approved')
             user.status = 'submission_rejected';
+            user.rejectionNote = rejectionNote;
             newMembers.push(user);
             task.members = newMembers;
             console.log("new task : ", task);
-        }
-        else if (contributionType === 'open' && !reopen) {
+            // save task now
+            await task.save();
 
         }
-        // const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
-        // const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
-        // return res.status(200).json({ task: t, dao: d });
+        // CASE 2 --- if contributionType is open && only single contributor allowed && admin does not wants to reopen the task ---
+        // simply reject the approved user's submission --- 'submission_rejected'
+        // store rejection note (if any)
+        // task status to 'rejected'
+        else if (contributionType === 'open' && isSingleContributor && !reopen) {
+            console.log("CASE 2")
+            let newMembers = task.members;
+            for (var i = 0; i < newMembers.length; i++) {
+                if (newMembers[i].status === 'approved') {
+                    newMembers[i].status = 'submission_rejected';
+                    newMembers[i].rejectionNote = rejectionNote;
+                }
+            }
+            task.members = newMembers;
+            task.taskStatus = 'rejected';
+            console.log("new task : ", task);
+            await task.save();
+        }
+        // CASE 3 --- if contributionType is open && multiple contributors ---
+        // simply reject the approved user's submission --- 'submission_rejected'
+        // store rejection note (if any)
+        // task status to 'rejected'
+
+
+
+        // CASE 4 --- if contributionType is assigned && admin wants to change the contributor ---
+        // reject approved user's submission --- 'submission_rejected'
+        // store rejection note (if any)
+        // add new contributor id to member list with status --- 'approved'
+        else if (contributionType === 'assign' && newContributorId) {
+            console.log("CASE 4")
+            let newMembers = task.members;
+            for (var i = 0; i < newMembers.length; i++) {
+                if (newMembers[i].status === 'approved') {
+                    newMembers[i].status = 'submission_rejected';
+                    newMembers[i].rejectionNote = rejectionNote;
+                }
+            }
+            let user = {};
+            user.member = newContributorId;
+            user.status = 'approved';
+            newMembers.push(user);
+            task.members = newMembers;
+            task.taskStatus = 'assigned';
+            console.log("new task : ", task);
+            await task.save();
+        }
+        // CASE 5 --- if contributionType is assigned && admin does not wants to change the contributor ---
+        // simply reject the approved user's submission --- 'submission_rejected'
+        // store rejection note (if any)
+        // task status to 'rejected'
+        else if (contributionType === 'assign' && !newContributorId) {
+            console.log("CASE 5")
+            let newMembers = task.members;
+            for (var i = 0; i < newMembers.length; i++) {
+                if (newMembers[i].status === 'approved') {
+                    newMembers[i].status = 'submission_rejected';
+                    newMembers[i].rejectionNote = rejectionNote;
+                }
+            }
+            task.members = newMembers;
+            task.taskStatus = 'rejected';
+            console.log("new task : ", task);
+            await task.save();
+        }
+
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member transactions project' } })
+        return res.status(200).json({ task: t, dao: d });
     }
     catch (e) {
         console.error("task.rejectTask::", e)
