@@ -32,8 +32,8 @@ const create = async (req, res) => {
     const { membersList, daoId } = req.body;
     let mMembers = [];
     try {
-        let contract = new Contract({ ...req.body, admin: _id })
-        contract = await contract.save()
+        console.log(req.body)
+        let contract = await Contract.create({ ...req.body, admin: _id })
 
         for (let index = 0; index < membersList.length; index++) {
             const member = membersList[index];
