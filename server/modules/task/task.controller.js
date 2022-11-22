@@ -370,36 +370,40 @@ const submitTask = async (req, res) => {
                             'members.$.submission': {
                                 submittedAt: moment().utc().toDate(),
                                 submissionLink: submissionLink,
-                                note
+                                note,
+                                submissionStatus: null
                             }
                         }
                     )
                 } else {
                     return res.status(500).json({ message: 'Not permitted' })
                 }
-            } else if (task.isSingleContributor === false && task.contributionType === 'open') {
+            }
+            else if (task.isSingleContributor === false && task.contributionType === 'open') {
                 if (task.isFilterRoles) {
                     const roles = task.validRoles.map(r => r.replace(' ', '_').toUpperCase())
                     const eligible = _.find(_.get(dao, 'members', []), m => m.member.toString() === _id.toString() && roles.indexOf(m.role) > -1)
                     if (!eligible)
                         return res.status(500).json({ message: 'Not permitted' })
 
-                    await Task.updateOne({ _id: taskId }, {
-                        $addToSet: {
-                            members: {
-                                member: _id,
-                                status: 'approved',
-                                submission: {
-                                    submittedAt: moment().utc().toDate(),
-                                    submissionLink: submissionLink,
-                                    note
-                                }
-                            }
-                        },
-                    })
-
                 }
-            } else {
+                await Task.updateOne({ _id: taskId }, {
+                    $addToSet: {
+                        members: {
+                            member: _id,
+                            status: 'approved',
+                            submission: {
+                                submittedAt: moment().utc().toDate(),
+                                submissionLink: submissionLink,
+                                note,
+                                submissionStatus: null
+                            }
+                        }
+                    },
+                })
+
+            }
+            else {
                 return res.status(500).json({ message: 'Not permitted' })
             }
             const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
@@ -426,20 +430,31 @@ const approveTask = async (req, res) => {
             const offChainTx = await OffChain.create(offChainPayload);
             chainTxnHash = offChainTx.safeTxHash;
         }
-        await Task.findOneAndUpdate(
-            { _id: taskId },
-            {
-                taskStatus: 'approved',
-                'compensation.delta': compensationDelta,
-                'compensation.recipient': recipient,
-                'compensation.txnHash': chainTxnHash,
-                'compensation.onChain': onChainSafeTxHash ? true : false
-            }
-        )
+        if (!(task.isSingleContributor === false && task.contributionType === 'open')) {
+            await Task.findOneAndUpdate(
+                { _id: taskId },
+                {
+                    taskStatus: 'approved',
+                    'compensation.delta': compensationDelta,
+                    'compensation.recipient': recipient,
+                    'compensation.txnHash': chainTxnHash,
+                    'compensation.onChain': onChainSafeTxHash ? true : false
+                }
+            )
+        }
         await Task.findOneAndUpdate(
             { _id: taskId, 'members.member._id': recipient },
             {
                 'members.$.status': 'approved'
+            }
+        )
+        await Task.updateOne(
+            {
+                _id: taskId,
+                'members.member': recipient
+            },
+            {
+                'members.$.submission.submissionStatus': 'accepted'
             }
         )
         // const user = await Member.findOne({ _id: recipient })
