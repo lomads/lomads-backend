@@ -371,7 +371,6 @@ const submitTask = async (req, res) => {
                                 submittedAt: moment().utc().toDate(),
                                 submissionLink: submissionLink,
                                 note,
-                                submissionStatus: null
                             }
                         }
                     )
@@ -396,7 +395,6 @@ const submitTask = async (req, res) => {
                                 submittedAt: moment().utc().toDate(),
                                 submissionLink: submissionLink,
                                 note,
-                                submissionStatus: null
                             }
                         }
                     },
@@ -454,7 +452,7 @@ const approveTask = async (req, res) => {
                 'members.member': recipient
             },
             {
-                'members.$.submission.submissionStatus': 'accepted'
+                'members.$.status': 'submission_accepted'
             }
         )
         // const user = await Member.findOne({ _id: recipient })
@@ -494,7 +492,7 @@ const rejectTask = async (req, res) => {
     const { _id } = req.user;
     const { daoUrl } = req.query;
     const { taskId } = req.params;
-    const { reopen, rejectionNote, contributionType, isSingleContributor, newContributorId } = req.body;
+    const { reopen, rejectionNote, contributionType, isSingleContributor, newContributorId, rejectUser } = req.body;
     try {
         console.log("DATA : ", daoUrl, taskId, reopen, contributionType);
         let task = await Task.findOne({ _id: taskId });
@@ -544,7 +542,19 @@ const rejectTask = async (req, res) => {
         // simply reject the approved user's submission --- 'submission_rejected'
         // store rejection note (if any)
         // task status to 'rejected'
-
+        else if (contributionType === 'open' && !isSingleContributor) {
+            console.log("CASE 3 : ", rejectUser);
+            let newMembers = task.members;
+            for (var i = 0; i < newMembers.length; i++) {
+                if (newMembers[i].member._id.toString() === rejectUser) {
+                    newMembers[i].status = 'submission_rejected';
+                    newMembers[i].rejectionNote = rejectionNote;
+                }
+            }
+            task.members = newMembers;
+            console.log("new task : ", task);
+            await task.save();
+        }
 
 
         // CASE 4 --- if contributionType is assigned && admin wants to change the contributor ---
