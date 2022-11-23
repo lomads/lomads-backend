@@ -6,6 +6,7 @@ const Safe = require('@server/modules/safe/safe.model');
 const txLabel = require('@server/modules/transaction/txlabel.model');
 const _ = require('lodash');
 const axios = require('axios');
+const moment = require('moment')
 const ObjectId = require('mongodb').ObjectID;
 
 const load = async (req, res) => {
@@ -109,7 +110,7 @@ const executedOnChain = async (req, res) => {
     const { daoId } = req.query;
     try {
         let task = await Task.findOne({ 'compensation.txnHash': safeTx.safeTxHash })
-        if(task){
+        if(task && task.contributionType !== 'open' && task.isSingleContributor === false){
             task.taskStatus = 'paid'
             await task.save()
         }
@@ -137,13 +138,13 @@ const executedOnChain = async (req, res) => {
                 if(symbol) {
                     earnings = earnings.map(e => {
                         if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT'))
-                            return { ...e._doc, value: +e.value + (amount / 10 ** 18) }
+                            return { ...e._doc, value: +e.value + (amount / 10 ** _.get(safeTx, 'token.decimals', 18)) }
                         return e
                     }) 
                 } else {
                     earnings.push({
                         symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
-                        value: amount / 10 ** 18,
+                        value: amount / 10 ** _.get(safeTx, 'token.decimals', 18),
                         currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT'),
                         daoId
                     })
@@ -165,7 +166,7 @@ const executedOnChain = async (req, res) => {
 
 const executeOffChainTransaction = async (req, res) => {
     const { safeTxHash } = req.params;
-    const { rejectedTxn = null } = req.query;
+    const { rejectedTxn = null, decimals = 18 } = req.query;
     const { daoId } = req.query;
     
     console.log(rejectedTxn, "==>", typeof rejectedTxn)
@@ -199,13 +200,13 @@ const executeOffChainTransaction = async (req, res) => {
                     if(symbol) {
                         earnings = earnings.map(e => {
                             if(e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT'))
-                                return { ...e._doc, value: +e.value + (amount / 10 ** 18) }
+                                return { ...e._doc, value: +e.value + (amount / 10 ** (+decimals)) }
                             return e
                         }) 
                     } else {
                         earnings.push({
                             symbol: _.get(offChainTx, 'token.symbol', 'SWEAT'),
-                            value: amount / 10 ** 18,
+                            value: amount / 10 ** (+decimals),
                             currency: _.get(offChainTx, 'token.tokenAddress', 'SWEAT'),
                             daoId
                         })
@@ -225,6 +226,7 @@ const executeOffChainTransaction = async (req, res) => {
             { 
                 isExecuted: true, 
                 isSuccessful: true,
+                executionDate: moment().utc().toDate(),
                 transfers,
                 txType: "MULTISIG_TRANSACTION",
                 confirmations: rejectedTxn && rejectedTxn !== null ? rejectedTxn.confirmations : offChainTx.confirmations,
