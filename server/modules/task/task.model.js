@@ -26,7 +26,7 @@ const TaskSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    submissionLink: [{ type: String }],
+    submissionLink: { type: String },
     compensation: { type: mongoose.Schema.Types.Mixed },
     reviewer: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     contributionType: { type: String },
