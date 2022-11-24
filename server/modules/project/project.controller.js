@@ -418,7 +418,7 @@ const deleteProject = async (req, res) => {
 const addProjectLinks = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { title, link, accessControl, guildId = null, id, platformId } = req.body;
+    const { title, link, accessControl, spaceDomain, guildId = null, id, platformId } = req.body;
     console.log("link details : ", title, link);
     try {
 
@@ -426,7 +426,7 @@ const addProjectLinks = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
-        project.links.push({ id, title, link, accessControl, guildId, platformId, unlocked: [] });
+        project.links.push({ id, title, link, spaceDomain, accessControl, guildId, platformId, unlocked: [] });
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })

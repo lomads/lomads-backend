@@ -121,6 +121,8 @@ const executedOnChain = async (req, res) => {
         else if (_.get(safeTx, 'dataDecoded.method', '') === 'transfer')
             parameters = [{ dataDecoded: safeTx.dataDecoded }]
 
+        const txl = await txLabel.findOne({ safeTxHash: safeTx.safeTxHash });
+
         for (let index = 0; index < parameters.length; index++) {
             const parameter = parameters[index];
             const recipient = _.get(_.find(parameter.dataDecoded.parameters,  p => p.name === 'to'), 'value', null)
@@ -133,12 +135,13 @@ const executedOnChain = async (req, res) => {
             if(recipient) {
                 const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
                 let earnings = user.earnings
-                const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', '' && e.daoId === daoId))
-
+                const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', '') && e.daoId.toString() === daoId.toString())
+                console.log("symbol---------->", symbol)
                 if(symbol) {
                     earnings = earnings.map(e => {
-                        if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT'))
+                        if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT') && e.daoId.toString() === daoId.toString()){
                             return { ...e._doc, value: +e.value + (amount / 10 ** _.get(safeTx, 'token.decimals', 18)) }
+                        }
                         return e
                     }) 
                 } else {
@@ -149,13 +152,26 @@ const executedOnChain = async (req, res) => {
                         daoId
                     })
                 }
-                console.log("earnings", earnings)
+
+                if(txl && txl.sweatConversion) { 
+                    earnings = earnings.map(e => {
+                        console.log(e)
+                        console.log(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString())
+                        if(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString()) {
+                            console.log({ ...e._doc, value: 0 })
+                            return { ...e._doc, value: 0 }
+                        }
+                        return e
+                    }) 
+                }
+
                 await Member.findByIdAndUpdate(
                     { _id: user._id },
                     { earnings }
                 )
             }
         }
+        
         return res.status(200).json({ message: 'success' })
     }
     catch (e) {
@@ -195,11 +211,11 @@ const executeOffChainTransaction = async (req, res) => {
                 if(recipient) {
                     const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
                     let earnings = user.earnings
-                    const symbol = _.find(earnings, e => e.symbol === _.get(offChainTx, 'token.symbol', '') && e.daoId === daoId)
+                    const symbol = _.find(earnings, e => e.symbol === _.get(offChainTx, 'token.symbol', '') && e.daoId.toString() === daoId.toString())
     
                     if(symbol) {
                         earnings = earnings.map(e => {
-                            if(e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT'))
+                            if(e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT') && e.daoId.toString() === daoId.toString())
                                 return { ...e._doc, value: +e.value + (amount / 10 ** (+decimals)) }
                             return e
                         }) 
