@@ -9,11 +9,12 @@ function beautifyHexToken(token) {
 
 module.exports = {
   handle: async ({ $project, $memberList }) => {
-    const members = Member.find({ _id: { $in: $memberList.map(m => ObjectId(m)) } })
+    console.log("$project, $memberList", $project, $memberList)
+    const members = await Member.find({ _id: { $in: $memberList.map(m => ObjectId(m)) } })
     let notifications = []
     for (let index = 0; index < members.length; index++) {
         const member = members[index];
-        const name = _.get(mamber, 'name', '') === '' ? _.get(member, 'wallet', '') : _.get(mamber, 'name', '')
+        const name = _.get(member, 'name', '') === '' ? beautifyHexToken(_.get(member, 'wallet', '')) : _.get(member, 'name', '')
         const payload = {
             daoId: $project.daoId,
             project: $project._id,
@@ -26,6 +27,8 @@ module.exports = {
         }
         notifications.push(payload)
     }
-    await Notification.create(notifications)
+    console.log(notifications)
+    const res = await Notification.create(notifications)
+    console.log(res)
   }
 }
