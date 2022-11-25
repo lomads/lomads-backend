@@ -1,7 +1,8 @@
 const Project = require('@server/modules/project/project.model');
 const Member = require('@server/modules/member/member.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
-const DAO = require('@server/modules/dao/dao.model')
+const DAO = require('@server/modules/dao/dao.model');
+const Task = require('@server/modules/task/task.model');
 const { find, get, uniqBy } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
 const URL = require('url');
@@ -400,6 +401,11 @@ const deleteProject = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        console.log(project.tasks);
+        await Task.updateMany(
+            { _id: { $in: project.tasks } },
+            { $set: { deletedAt: Date.now() } },
+        )
         await Project.findOneAndUpdate(
             { _id: projectId },
             {
