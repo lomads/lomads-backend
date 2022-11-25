@@ -120,13 +120,16 @@ const executedOnChain = async (req, res) => {
             parameters = _.get(safeTx, 'dataDecoded.parameters[0].valueDecoded', [])
         else if (_.get(safeTx, 'dataDecoded.method', '') === 'transfer')
             parameters = [{ dataDecoded: safeTx.dataDecoded }]
+        else {
+            parameters = [{ to: _.get(safeTx, 'to', ''), value: _.get(safeTx, 'value', '') }]
+        }
 
         const txl = await txLabel.findOne({ safeTxHash: safeTx.safeTxHash });
 
         for (let index = 0; index < parameters.length; index++) {
             const parameter = parameters[index];
-            const recipient = _.get(_.find(parameter.dataDecoded.parameters,  p => p.name === 'to'), 'value', null)
-            const amount = _.get(_.find(parameter.dataDecoded.parameters,  p => p.name === 'value'), 'value', null)
+            const recipient = _.get(_.find(_.get(parameter, 'dataDecoded.parameters', []),  p => p.name === 'to'), 'value', _.get(parameter, 'to', null))
+            const amount = _.get(_.find(_.get(parameter, 'dataDecoded.parameters', []),  p => p.name === 'value'), 'value', _.get(parameter, 'value', null))
             transfers.push({
                 to: recipient,
                 value: amount
@@ -409,7 +412,7 @@ const updateTxnLabel = async (req, res) => {
     const { safeAddress, safeTxHash, label, recipient } = req.body;
     try {
         await txLabel.findOneAndUpdate(
-            { safeTxHash, safeAddress, recipient }, 
+            { safeTxHash, safeAddress, recipient: { $regex: new RegExp(`^${recipient}$`, "i") } }, 
             { label, recipient }, 
             { new: true, upsert: true });
         const labels = await txLabel.find({ safeAddress })
