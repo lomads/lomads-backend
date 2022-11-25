@@ -7,5 +7,11 @@ module.exports = {
     ],
     "@events/memberInvitedToProject": [
       "@listeners/sendMemberInviteNotification"
+    ],
+    "@events/projectDeleted": [
+      "@listeners/sendProjectDeleteNotification"
+    ],
+    "@events/projectMemberRemoved": [
+      "@listeners/sendProjectRemovedNotification"
     ]
 }
