@@ -7,6 +7,7 @@ const APIError = require('@server/helpers/APIError');
  * Safe Schema
  */
 const TaskSchema = new mongoose.Schema({
+    daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
     taskStatus: { type: String, default: 'open' },
     name: { type: String },
     description: { type: String },

@@ -11,7 +11,7 @@ const load = async (req, res) => {
             filter = { ...filter, to: _id }
         console.log(filter)
         const notifications = await Notification.find(filter)
-                            .populate('to project')
+                            .populate('to project task')
                             .sort({[sortBy]: sort })
                             .skip((+page - 1) * +limit)
                             .limit(+limit);

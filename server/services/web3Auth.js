@@ -7,7 +7,7 @@ const web3Auth = async (req, res, next) => {
         if(!token)
             return res.status(401).json({ message: 'Authorization token required' })
         const { address = '', body } = await Web3Token.verify(token);
-        console.log(address)
+        console.log("address", address)
         let member = await Member.findOne({ wallet: { $regex : new RegExp(`^${address}$`, "i") } }).exec()
         if(!member) {
             member = new Member({ wallet: address, name: '' })

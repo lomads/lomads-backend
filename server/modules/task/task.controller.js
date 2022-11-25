@@ -8,6 +8,7 @@ const { find, get, uniqBy } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
 const _ = require('lodash');
 const moment = require('moment');
+const { taskCreated, taskAssigned, taskApplied, taskSubmitted } = require('@server/events');
 
 const getById = async (req, res) => {
     const { taskId } = req.params;
@@ -43,6 +44,7 @@ const create = async (req, res) => {
     try {
 
         let task = new Task({
+            daoId,
             taskStatus: applicant ? 'assigned' : 'open',
             name,
             description,
@@ -115,6 +117,8 @@ const create = async (req, res) => {
             }
         }
 
+        const tsk = await Task.findOne({ _id: task._id }).populate({ path: 'project members.member' })
+        taskCreated.emit(tsk);
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -244,6 +248,8 @@ const applyTask = async (req, res) => {
 
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+
+        taskApplied.emit(t)
         return res.status(200).json({ task: t, dao: d });
     }
     catch (e) {
@@ -310,6 +316,9 @@ const assignTask = async (req, res) => {
             }
         }
 
+        const tsk = await Task.findOne({ _id: task._id }).populate({ path: 'project members.member' })
+        const member = await Member.findOne({ _id: memberId })
+        taskAssigned.emit({ $task: tsk, $member: member })
         return res.status(200).json({ task: t, dao: d });
     }
     catch (e) {
@@ -352,7 +361,6 @@ const submitTask = async (req, res) => {
     const { taskId } = req.params;
     const { daoUrl } = req.query;
     const { submissionLink, note } = req.body;
-    console
     try {
         const dao = await DAO.findOne({ url: daoUrl })
         const task = await Task.findOne({ _id: taskId })
@@ -408,6 +416,9 @@ const submitTask = async (req, res) => {
             }
             const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
             const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+
+            taskSubmitted.emit({ $task: t, $member: req.user })
+
             return res.status(200).json({ task: t, dao: d });
         }
         return res.status(500).json({ message: 'Task not found' })

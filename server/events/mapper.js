@@ -13,5 +13,20 @@ module.exports = {
     ],
     "@events/projectMemberRemoved": [
       "@listeners/sendProjectRemovedNotification"
+    ],
+    "@events/taskCreated": [
+      "@listeners/sendTaskCreatedNotification"
+    ],
+    "@events/taskAssigned": [
+      "@listeners/sendTaskAssignedNotification"
+    ],
+    "@events/taskApplied": [
+      "@listeners/sendTaskAppliedNotification"
+    ],
+    "@events/taskSubmitted": [
+      "@listeners/sendTaskSubmittedNotification"
+    ],
+    "@events/taskSubmissionApprove": [
+      "@listeners/sendTaskSubmissionApproveNotification"
     ]
 }

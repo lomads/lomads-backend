@@ -9,7 +9,7 @@ const APIError = require('@server/helpers/APIError');
 const NotificationSchema = new mongoose.Schema({
   daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
   project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', default: null },
-  // taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', default: null },
+  task: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', default: null },
   type: { type: String },
   title: { type: String },
   notification: { type: String },

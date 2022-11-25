@@ -21,14 +21,12 @@ module.exports = {
             type: 'project:member:removed',
             model: 'Project',
             title: $project.name,
-            notification: `${name} <span className="bold">removed</span> from ${$project.name}`,
+            notification: `${name} <span class="bold">removed</span> from ${$project.name}`,
             to: null,
             metadata: { entityId: $project._id }
         }
         notifications.push(payload)
     }
-    console.log(notifications)
     const res = await Notification.create(notifications)
-    console.log(res)
   }
 }
