@@ -7,7 +7,7 @@ const { find, get, uniqBy } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
 const URL = require('url');
 const axios = require('axios')
-const { projectCreated, memberInvitedToProject } = require('@events')
+const { projectCreated, memberInvitedToProject, projectDeleted, projectMemberRemoved } = require('@events')
 const { checkSpaceAdminStatus, findNotionUserByEmail, getSpaceByDomain, prepareInviteObject, inviteUserToNotionBlock, removeUserFromNotionBlock } = require('@services/notion')
 
 const getById = async (req, res) => {
@@ -325,6 +325,8 @@ const deleteProjectMember = async (req, res) => {
         )
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
 
+        projectMemberRemoved.emit({$project: p, $memberList: memberList})
+
         if (daoId) {
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
             if (d.sbt) {
@@ -413,6 +415,7 @@ const deleteProject = async (req, res) => {
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
         removeNotionUser(p)
+        projectDeleted.emit(project)
         return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
@@ -424,7 +427,7 @@ const deleteProject = async (req, res) => {
 const addProjectLinks = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { title, link, accessControl, guildId = null, id, platformId } = req.body;
+    const { title, link, accessControl, spaceDomain, guildId = null, id, platformId } = req.body;
     console.log("link details : ", title, link);
     try {
 
@@ -432,7 +435,7 @@ const addProjectLinks = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
-        project.links.push({ id, title, link, accessControl, guildId, platformId, unlocked: [] });
+        project.links.push({ id, title, link, spaceDomain, accessControl, guildId, platformId, unlocked: [] });
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
