@@ -690,7 +690,7 @@ const editTask = async (req, res) => {
 
         //check if projectId has changed
         let prevProjectId = task.project;
-        if (prevProjectId.toString() !== projectId) {
+        if (projectId && prevProjectId.toString() !== projectId) {
             // add task in new project
             let projectNew = await Project.findOne({ _id: projectId });
             if (projectNew) {
