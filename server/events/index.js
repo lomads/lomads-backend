@@ -9,4 +9,8 @@ module.exports = {
     taskApplied: require('@events/taskApplied'),
     taskSubmitted: require('@events/taskSubmitted'),
     taskSubmissionApprove: require('@events/taskSubmissionApprove'),
+    taskSubmissionRejected: require('@events/taskSubmissionRejected'),
+    taskPaid: require('@events/taskPaid'),
+    taskDeleted: require('@events/taskDeleted'),
+    daoMemberAdded: require('@events/daoMemberAdded'),
 }

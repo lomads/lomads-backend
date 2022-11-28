@@ -6,7 +6,7 @@ const load = async (req, res) => {
     try {
         let filter = { daoId: dao, read: { '$nin': [_id] }  }
         if(timeline)
-            filter = { ...filter, '$or': [ { to: null }, { to: { '$ne': _id } } ] }
+            filter = { ...filter, timeline: true, '$or': [ { to: null }, { to: { '$ne': _id } } ] }
         else
             filter = { ...filter, to: _id }
         console.log(filter)

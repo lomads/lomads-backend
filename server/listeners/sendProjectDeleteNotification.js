@@ -11,7 +11,7 @@ module.exports = {
         type: 'project:deleted',
         model: 'Project',
         title: $project.name,
-        notification: `<span className="bold">${$project.name}</span> deleted`,
+        notification: `<span class="bold">${$project.name}</span> deleted`,
         to: null,
         metadata: { entityId: $project._id }
     }

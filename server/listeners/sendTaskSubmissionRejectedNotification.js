@@ -16,10 +16,10 @@ module.exports = {
         daoId: $task.daoId,
         task: $task._id,
         project: _.get($task, 'project._id', null),
-        type: 'task:member.submission.approve',
+        type: 'task:member.submission.rejected',
         model: 'Task',
         title: $task.name,
-        notification: `${name} submission has been <span class="bold">approved</span>`,
+        notification: `${name} submission has been <span class="bold">rejected</span>`,
         to: $member._id,
         metadata: { entityId: $task._id }
     }

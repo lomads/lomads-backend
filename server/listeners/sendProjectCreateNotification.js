@@ -9,7 +9,7 @@ module.exports = {
         type: 'project:created',
         model: 'Project',
         title: $project.name,
-        notification: `<span className="bold">${$project.name}</span> created`,
+        notification: `<span class="bold">${$project.name}</span> created`,
         to: null,
         metadata: { entityId: $project._id }
     }
@@ -27,7 +27,7 @@ module.exports = {
             type: 'project:member.added',
             model: 'Project',
             title: $project.name,
-            notification: `{{name}} <span className="bold">invited</span>`,
+            notification: `{{name}} <span class="bold">invited</span>`,
             to: member,
             metadata: { entityId: $project._id }
           }

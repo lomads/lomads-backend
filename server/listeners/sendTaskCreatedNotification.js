@@ -3,6 +3,11 @@ const Member = require('@server/modules/member/member.model');
 const ObjectId = require('mongodb').ObjectID;
 const _ = require('lodash')
 
+function beautifyHexToken(token) {
+  return (token.slice(0, 6) + "..." + token.slice(-4))
+}
+
+
 module.exports = {
   handle: async ($task) => {
     const payload = {

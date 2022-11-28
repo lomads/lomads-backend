@@ -7,7 +7,7 @@ const { find, get, uniqBy } = require('lodash');
 const ObjectId = require('mongodb').ObjectID;
 const URL = require('url');
 const axios = require('axios')
-const { projectCreated, memberInvitedToProject, projectDeleted, projectMemberRemoved } = require('@events')
+const { projectCreated, memberInvitedToProject, projectDeleted, projectMemberRemoved, daoMemberAdded } = require('@events')
 const { checkSpaceAdminStatus, findNotionUserByEmail, getSpaceByDomain, prepareInviteObject, inviteUserToNotionBlock, removeUserFromNotionBlock } = require('@services/notion')
 
 const getById = async (req, res) => {
@@ -161,7 +161,7 @@ const addProjectMember = async (req, res) => {
             )
         }
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
-
+        daoMemberAdded.emit({ $dao: d, $members: [m._id] })
         if (d.sbt) {
             const filter = { 'attributes.value': { $regex: new RegExp(`^${address}$`, "i") }, contract: d.sbt._id }
             const metadata = await Metadata.findOne(filter)

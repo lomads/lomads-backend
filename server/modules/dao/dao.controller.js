@@ -3,7 +3,7 @@ const DAO = require('@server/modules/dao/dao.model')
 const Member = require('@server/modules/member/member.model')
 const Safe = require('@server/modules/safe/safe.model')
 const ObjectId = require('mongodb').ObjectID;
-
+const { daoMemberAdded } = require('@server/events');
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -131,6 +131,7 @@ const addDaoMember = async (req, res) => {
             { $addToSet: { members: { member: m._id, creator: false, role } } }
         )
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        daoMemberAdded.emit({ $dao: d, $members: [m._id] })
         return res.status(200).json(d)
     }
     catch (e) {
@@ -176,7 +177,10 @@ const addDaoMemberList = async (req, res) => {
             }
         )
 
+        daoMemberAdded.emit({ $dao: d, $members: mem.map(m => m._id) })
+
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } });
+        daoMemberAdded.emit({ $dao: d, $members: mMembers.map(m => m._id) })
         return res.status(200).json(d);
 
     }

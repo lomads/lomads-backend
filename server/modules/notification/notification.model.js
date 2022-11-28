@@ -14,6 +14,7 @@ const NotificationSchema = new mongoose.Schema({
   title: { type: String },
   notification: { type: String },
   model: { type: String },
+  timeline: { type: mongoose.Schema.Types.Boolean, default: true },
   callToAction: { type: String, default: null },
   metadata: { type: mongoose.Schema.Types.Mixed, default: null },
   to: { type: mongoose.Schema.Types.ObjectId, ref: 'Member', default: null },

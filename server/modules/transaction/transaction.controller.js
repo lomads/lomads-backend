@@ -8,6 +8,7 @@ const _ = require('lodash');
 const axios = require('axios');
 const moment = require('moment')
 const ObjectId = require('mongodb').ObjectID;
+const { taskPaid } = require('@server/events');
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -110,7 +111,7 @@ const executedOnChain = async (req, res) => {
     const { daoId } = req.query;
     try {
         let task = await Task.findOne({ 'compensation.txnHash': safeTx.safeTxHash })
-        if(task && task.contributionType !== 'open' && task.isSingleContributor === false){
+        if(task && ((task.contributionType !== 'open') || (task.contributionType === 'open' && task.isSingleContributor === true))){
             task.taskStatus = 'paid'
             await task.save()
         }
@@ -172,6 +173,9 @@ const executedOnChain = async (req, res) => {
                     { _id: user._id },
                     { earnings }
                 )
+                if(task){
+                    taskPaid.emit({ $task: task, $member: user })
+                }
             }
         }
         
@@ -235,6 +239,11 @@ const executeOffChainTransaction = async (req, res) => {
                         { _id: user._id },
                         { earnings }
                     )
+
+                    let task = await Task.findOne({ 'compensation.txnHash': safeTxHash })
+                    if(task){
+                        taskPaid.emit({ $task: task, $member: user })
+                    }
                 }
             }
         }

@@ -28,5 +28,17 @@ module.exports = {
     ],
     "@events/taskSubmissionApprove": [
       "@listeners/sendTaskSubmissionApproveNotification"
+    ],
+    "@events/taskSubmissionRejected": [
+      "@listeners/sendTaskSubmissionRejectedNotification"
+    ],
+    "@events/taskPaid": [
+      "@listeners/sendTaskPaidNotification"
+    ],
+    "@events/taskDeleted": [
+      "@listeners/sendTaskDeletedNotification"
+    ],
+    "@events/daoMemberAdded": [
+      "@listeners/sendDAOMemberAddedNotification"
     ]
 }
