@@ -14,5 +14,6 @@ router.patch('/:url/manage-member', web3Auth, daoCtrl.manageDaoMember)
 router.patch('/:url/add-links', web3Auth, daoCtrl.addDaoLinks);
 router.patch('/:url/update-links', web3Auth, daoCtrl.updateDaoLinks);
 router.patch('/:url/update-details', web3Auth, daoCtrl.updateDetails);
+router.patch('/:url/sync-safe-owners', web3Auth, daoCtrl.syncSafeOwners);
 
 module.exports = router;

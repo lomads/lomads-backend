@@ -4,6 +4,7 @@ const Member = require('@server/modules/member/member.model')
 const Safe = require('@server/modules/safe/safe.model')
 const ObjectId = require('mongodb').ObjectID;
 const { daoMemberAdded } = require('@server/events');
+const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -310,4 +311,48 @@ const updateSweatPoints = async (req, res) => {
     }
 }
 
-module.exports = { load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };
+const syncSafeOwners = async (req, res) => {
+    const { url } = req.params;
+    const owners = req.body;
+    const dao = await DAO.findOne({ url }).populate({ path: 'members.member', populate: { path: 'owners members members.member' } })
+    if (!dao)
+        return res.status(404).json({ message: 'DAO not found' })
+    let members = []
+    for (let index = 0; index < dao.members.length; index++) {
+        let member = dao.members[index];
+        if(member.role === 'ADMIN') {
+            if(owners.indexOf(toChecksumAddress(member.member.wallet)) === -1) {
+                member.role = 'CONTRIBUTOR'
+            }
+        } else {
+            if(owners.indexOf(toChecksumAddress(member.member.wallet)) > -1) {
+                member.role = 'ADMIN'
+            }
+        }
+        members.push(member)
+    }
+    dao.members = members;
+    await dao.save();
+
+    for (let index = 0; index < owners.length; index++) {
+        const owner = owners[index];
+        let exists = _.find(members, m => toChecksumAddress(m.member.wallet) === owner)
+        if(!exists) {
+            const filter = { wallet: { $regex: new RegExp(`^${owner}$`, "i") } }
+            let m = await Member.findOne(filter);
+            if (!m) {
+                m = new Member({ wallet: address, name: '' })
+                m = await m.save();
+            }
+            await DAO.findOneAndUpdate(
+                { _id: dao._id },
+                { $addToSet: { members: { member: m._id, creator: false, role: 'ADMIN' } } }
+            )
+        }
+    }
+
+    const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+    return res.status(200).json(d);
+}
+
+module.exports = { syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };
