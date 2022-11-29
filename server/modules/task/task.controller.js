@@ -85,37 +85,37 @@ const create = async (req, res) => {
         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project" } })
         // update sbt
 
-        if (d.sbt && applicant) {
-            console.log("update sbt");
-            const filter = { 'attributes.value': { $regex: new RegExp(`^${applicant.address}$`, "i") }, contract: d.sbt._id }
-            const metadata = await Metadata.findOne(filter)
-            if (metadata) {
-                let attrs = [...metadata._doc.attributes];
-                if (!find(attrs, attr => attr.trait_type === 'tasks')) {
-                    attrs.push({ trait_type: 'tasks', value: task._id.toString() })
-                } else {
-                    attrs = attrs.map(attr => {
-                        if (attr.trait_type === 'tasks') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task._id.toString()].join(',') }
-                        }
-                        return attr
-                    })
-                }
-                if (!find(attrs, attr => attr.trait_type === 'task_names')) {
-                    attrs.push({ trait_type: 'task_names', value: task._id.toString() })
-                } else {
-                    attrs = attrs.map(attr => {
-                        if (attr.trait_type === 'task_names') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task.name.toString()].join(',') }
-                        }
-                        return attr
-                    })
-                }
-                console.log("attrs", attrs);
-                metadata._doc.attributes = attrs;
-                await metadata.save();
-            }
-        }
+        // if (d.sbt && applicant) {
+        //     console.log("update sbt");
+        //     const filter = { 'attributes.value': { $regex: new RegExp(`^${applicant.address}$`, "i") }, contract: d.sbt._id }
+        //     const metadata = await Metadata.findOne(filter)
+        //     if (metadata) {
+        //         let attrs = [...metadata._doc.attributes];
+        //         if (!find(attrs, attr => attr.trait_type === 'tasks')) {
+        //             attrs.push({ trait_type: 'tasks', value: task._id.toString() })
+        //         } else {
+        //             attrs = attrs.map(attr => {
+        //                 if (attr.trait_type === 'tasks') {
+        //                     return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task._id.toString()].join(',') }
+        //                 }
+        //                 return attr
+        //             })
+        //         }
+        //         if (!find(attrs, attr => attr.trait_type === 'task_names')) {
+        //             attrs.push({ trait_type: 'task_names', value: task._id.toString() })
+        //         } else {
+        //             attrs = attrs.map(attr => {
+        //                 if (attr.trait_type === 'task_names') {
+        //                     return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task.name.toString()].join(',') }
+        //                 }
+        //                 return attr
+        //             })
+        //         }
+        //         console.log("attrs", attrs);
+        //         metadata._doc.attributes = attrs;
+        //         await metadata.save();
+        //     }
+        // }
 
         const tsk = await Task.findOne({ _id: task._id }).populate({ path: 'project members.member' })
         taskCreated.emit(tsk);
@@ -189,37 +189,37 @@ const draftTask = async (req, res) => {
         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project" } })
         // update sbt
 
-        if (d.sbt && applicant) {
-            console.log("update sbt");
-            const filter = { 'attributes.value': { $regex: new RegExp(`^${applicant.address}$`, "i") }, contract: d.sbt._id }
-            const metadata = await Metadata.findOne(filter)
-            if (metadata) {
-                let attrs = [...metadata._doc.attributes];
-                if (!find(attrs, attr => attr.trait_type === 'tasks')) {
-                    attrs.push({ trait_type: 'tasks', value: task._id.toString() })
-                } else {
-                    attrs = attrs.map(attr => {
-                        if (attr.trait_type === 'tasks') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task._id.toString()].join(',') }
-                        }
-                        return attr
-                    })
-                }
-                if (!find(attrs, attr => attr.trait_type === 'task_names')) {
-                    attrs.push({ trait_type: 'task_names', value: task._id.toString() })
-                } else {
-                    attrs = attrs.map(attr => {
-                        if (attr.trait_type === 'task_names') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task.name.toString()].join(',') }
-                        }
-                        return attr
-                    })
-                }
-                console.log("attrs", attrs);
-                metadata._doc.attributes = attrs;
-                await metadata.save();
-            }
-        }
+        // if (d.sbt && applicant) {
+        //     console.log("update sbt");
+        //     const filter = { 'attributes.value': { $regex: new RegExp(`^${applicant.address}$`, "i") }, contract: d.sbt._id }
+        //     const metadata = await Metadata.findOne(filter)
+        //     if (metadata) {
+        //         let attrs = [...metadata._doc.attributes];
+        //         if (!find(attrs, attr => attr.trait_type === 'tasks')) {
+        //             attrs.push({ trait_type: 'tasks', value: task._id.toString() })
+        //         } else {
+        //             attrs = attrs.map(attr => {
+        //                 if (attr.trait_type === 'tasks') {
+        //                     return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task._id.toString()].join(',') }
+        //                 }
+        //                 return attr
+        //             })
+        //         }
+        //         if (!find(attrs, attr => attr.trait_type === 'task_names')) {
+        //             attrs.push({ trait_type: 'task_names', value: task._id.toString() })
+        //         } else {
+        //             attrs = attrs.map(attr => {
+        //                 if (attr.trait_type === 'task_names') {
+        //                     return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task.name.toString()].join(',') }
+        //                 }
+        //                 return attr
+        //             })
+        //         }
+        //         console.log("attrs", attrs);
+        //         metadata._doc.attributes = attrs;
+        //         await metadata.save();
+        //     }
+        // }
 
         return res.status(200).json({ project: p, dao: d });
     }
@@ -284,37 +284,37 @@ const assignTask = async (req, res) => {
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
 
-        if (d.sbt) {
-            const member = await Member.findOne({ _id: memberId })
-            const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
-            const metadata = await Metadata.findOne(filter)
-            if (metadata) {
-                let attrs = [...metadata._doc.attributes];
-                if (!find(attrs, attr => attr.trait_type === 'tasks')) {
-                    attrs.push({ trait_type: 'tasks', value: task._id.toString() })
-                } else {
-                    attrs = attrs.map(attr => {
-                        if (attr.trait_type === 'tasks') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task._id.toString()].join(',') }
-                        }
-                        return attr
-                    })
-                }
-                if (!find(attrs, attr => attr.trait_type === 'task_names')) {
-                    attrs.push({ trait_type: 'task_names', value: task._id.toString() })
-                } else {
-                    attrs = attrs.map(attr => {
-                        if (attr.trait_type === 'task_names') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task.name.toString()].join(',') }
-                        }
-                        return attr
-                    })
-                }
-                console.log("attrs", attrs);
-                metadata._doc.attributes = attrs;
-                await metadata.save();
-            }
-        }
+        // if (d.sbt) {
+        //     const member = await Member.findOne({ _id: memberId })
+        //     const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
+        //     const metadata = await Metadata.findOne(filter)
+        //     if (metadata) {
+        //         let attrs = [...metadata._doc.attributes];
+        //         if (!find(attrs, attr => attr.trait_type === 'tasks')) {
+        //             attrs.push({ trait_type: 'tasks', value: task._id.toString() })
+        //         } else {
+        //             attrs = attrs.map(attr => {
+        //                 if (attr.trait_type === 'tasks') {
+        //                     return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task._id.toString()].join(',') }
+        //                 }
+        //                 return attr
+        //             })
+        //         }
+        //         if (!find(attrs, attr => attr.trait_type === 'task_names')) {
+        //             attrs.push({ trait_type: 'task_names', value: task._id.toString() })
+        //         } else {
+        //             attrs = attrs.map(attr => {
+        //                 if (attr.trait_type === 'task_names') {
+        //                     return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), task.name.toString()].join(',') }
+        //                 }
+        //                 return attr
+        //             })
+        //         }
+        //         console.log("attrs", attrs);
+        //         metadata._doc.attributes = attrs;
+        //         await metadata.save();
+        //     }
+        // }
 
         const tsk = await Task.findOne({ _id: task._id }).populate({ path: 'project members.member' })
         const member = await Member.findOne({ _id: memberId })
@@ -468,37 +468,45 @@ const approveTask = async (req, res) => {
                 'members.$.status': 'submission_accepted'
             }
         )
-        // const user = await Member.findOne({ _id: recipient })
-        // let earnings = user.earnings
-        // const symbol = _.find(earnings, e => e.symbol === task.compensation.symbol)
 
-        // if(symbol) {
-        //     earnings = earnings.map(e => {
-        //         if(e.symbol === task.compensation.symbol)
-        //             return { ...e._doc, value: +e.value + (+task.compensation.amount) }
-        //         return e
-        //     })
-        //     console.log(earnings)
-        // } else {
-        //     earnings.push({
-        //         symbol: task.compensation.symbol,
-        //         value: task.compensation.amount,
-        //         currency: task.compensation.currency
-        //     })
-        // }
-
-        // await Member.findByIdAndUpdate(
-        //     {_id: recipient},
-        //     { earnings }
-        // )
 
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
-
         const m = await Member.findOne({ _id: recipient })
 
-        taskSubmissionApprove.emit({ $task: t, $member: m })
+        if (d.sbt) {
+            const filter = { 'attributes.value': { $regex: new RegExp(`^${m.wallet}$`, "i") }, contract: d.sbt._id }
+            const metadata = await Metadata.findOne(filter)
+            console.log("metadata====>", metadata)
+            if (metadata) {
+                let attrs = [...metadata._doc.attributes];
+                if (!find(attrs, attr => attr.trait_type === 'tasks')) {
+                    attrs.push({ trait_type: 'tasks', value: t._id.toString() })
+                } else {
+                    attrs = attrs.map(attr => {
+                        if (attr.trait_type === 'tasks') {
+                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), t._id.toString()].join(',') }
+                        }
+                        return attr
+                    })
+                }
+                if (!find(attrs, attr => attr.trait_type === 'task_names')) {
+                    attrs.push({ trait_type: 'task_names', value: t.name.toString() })
+                } else {
+                    attrs = attrs.map(attr => {
+                        if (attr.trait_type === 'task_names') {
+                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), t.name.toString()].join(',') }
+                        }
+                        return attr
+                    })
+                }
+                console.log("attrs", attrs);
+                metadata._doc.attributes = attrs;
+                await metadata.save();
+            }
+        }
 
+        taskSubmissionApprove.emit({ $task: t, $member: m })
         return res.status(200).json({ task: t, dao: d });
     } catch (e) {
         console.log(e)
