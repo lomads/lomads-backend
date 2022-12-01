@@ -109,7 +109,7 @@ const addDaoMember = async (req, res) => {
 
     const { _id } = req.user;
     const { url } = req.params;
-    const { name, address, role } = req.body;
+    const { name, address, role = "CONTRIBUTOR" } = req.body;
 
     try {
         //const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
