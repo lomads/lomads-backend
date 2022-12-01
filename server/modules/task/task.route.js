@@ -16,5 +16,7 @@ router.post('/:taskId/reject', web3Auth, taskCtrl.rejectTask);
 router.patch('/:taskId/archive', web3Auth, taskCtrl.archiveTask);
 router.patch('/:taskId/delete', web3Auth, taskCtrl.deleteTask);
 router.patch('/:taskId/edit', web3Auth, taskCtrl.editTask);
+router.patch('/:taskId/editDraft', web3Auth, taskCtrl.editDraftTask);
+router.patch('/:taskId/convertDraft', web3Auth, taskCtrl.convertDraftTask);
 
 module.exports = router;
