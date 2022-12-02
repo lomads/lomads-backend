@@ -712,7 +712,7 @@ const editTask = async (req, res) => {
 
         //check if projectId has changed
         let prevProjectId = task.project;
-        if (projectId && prevProjectId.toString() !== projectId) {
+        if (projectId && prevProjectId && prevProjectId.toString() !== projectId) {
             // add task in new project
             let projectNew = await Project.findOne({ _id: projectId });
             if (projectNew) {
@@ -752,5 +752,154 @@ const editTask = async (req, res) => {
     }
 }
 
+const editDraftTask = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { taskId } = req.params;
+    console.log("Task id : ", taskId)
+    const {
+        name,
+        description,
+        applicant,
+        projectId,
+        discussionChannel,
+        deadline,
+        submissionLink,
+        compensation,
+        reviewer,
+        contributionType,
+        isSingleContributor,
+        isFilterRoles,
+        validRoles,
+    } = req.body;
+    try {
+        let task = await Task.findOne({ _id: taskId });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' })
+        }
 
-module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask, approveTask, rejectTask, archiveTask, deleteTask, editTask };
+        //check if projectId has changed
+        let prevProjectId = task.project;
+        if (projectId && prevProjectId && prevProjectId.toString() !== projectId) {
+            // add task in new project
+            let projectNew = await Project.findOne({ _id: projectId });
+            if (projectNew) {
+                projectNew.tasks.push(taskId);
+                projectNew = await projectNew.save();
+            }
+            // remove task from old project
+            let projectOld = await Project.findOne({ _id: prevProjectId });
+            if (projectOld) {
+                let tempTasks = projectOld.tasks;
+                tempTasks = tempTasks.filter(e => e.toString() !== taskId)
+                projectOld.tasks = tempTasks;
+                projectOld = await projectOld.save();
+            }
+        }
+        await Task.findOneAndUpdate(
+            { _id: taskId },
+            {
+                taskStatus: applicant?._id ? 'assigned' : 'open',
+                name,
+                description,
+                members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
+                project: projectId,
+                discussionChannel,
+                deadline,
+                submissionLink,
+                compensation,
+                reviewer,
+                contributionType,
+                isSingleContributor,
+                isFilterRoles,
+                validRoles,
+                updatedAt: Date.now(),
+                draftedAt: Date.now()
+            }
+        )
+        const p = await Project.findOne({ _id: prevProjectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } });
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        return res.status(200).json({ task: t, dao: d, project: p });
+    }
+    catch (e) {
+        console.error("task.editDraftTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const convertDraftTask = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { taskId } = req.params;
+    const {
+        name,
+        description,
+        applicant,
+        projectId,
+        discussionChannel,
+        deadline,
+        submissionLink,
+        compensation,
+        reviewer,
+        contributionType,
+        isSingleContributor,
+        isFilterRoles,
+        validRoles,
+    } = req.body;
+    try {
+        let task = await Task.findOne({ _id: taskId });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' })
+        }
+
+        //check if projectId has changed
+        let prevProjectId = task.project;
+        if (projectId && prevProjectId && prevProjectId.toString() !== projectId) {
+            // add task in new project
+            let projectNew = await Project.findOne({ _id: projectId });
+            if (projectNew) {
+                projectNew.tasks.push(taskId);
+                projectNew = await projectNew.save();
+            }
+            // remove task from old project
+            let projectOld = await Project.findOne({ _id: prevProjectId });
+            if (projectOld) {
+                let tempTasks = projectOld.tasks;
+                tempTasks = tempTasks.filter(e => e.toString() !== taskId)
+                projectOld.tasks = tempTasks;
+                projectOld = await projectOld.save();
+            }
+        }
+        await Task.findOneAndUpdate(
+            { _id: taskId },
+            {
+                taskStatus: applicant?._id ? 'assigned' : 'open',
+                name,
+                description,
+                members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
+                project: projectId,
+                discussionChannel,
+                deadline,
+                submissionLink,
+                compensation,
+                reviewer,
+                contributionType,
+                isSingleContributor,
+                isFilterRoles,
+                validRoles,
+                updatedAt: Date.now(),
+                draftedAt: null
+            }
+        )
+        const p = await Project.findOne({ _id: prevProjectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } });
+        const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        return res.status(200).json({ task: t, dao: d, project: p });
+    }
+    catch (e) {
+        console.error("task.convertTask::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+
+module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask, approveTask, rejectTask, archiveTask, deleteTask, editTask, editDraftTask, convertDraftTask };
