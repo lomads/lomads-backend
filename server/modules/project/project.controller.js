@@ -70,17 +70,17 @@ const create = async (req, res) => {
                     } else {
                         attrs = attrs.map(attr => {
                             if (attr.trait_type === 'projects') {
-                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                                return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
                             }
                             return attr
                         })
                     }
                     if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                        attrs.push({ trait_type: 'project_names', value: project._id.toString() })
+                        attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
                     } else {
                         attrs = attrs.map(attr => {
                             if (attr.trait_type === 'project_names') {
-                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project.name.toString()].join(',') }
+                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
                             }
                             return attr
                         })
@@ -172,16 +172,16 @@ const addProjectMember = async (req, res) => {
                 } else {
                     attrs = attrs.map(attr => {
                         if (attr.trait_type === 'projects' && attr.value.indexOf(project._id))
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
                         return attr
                     })
                 }
                 if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                    attrs.push({ trait_type: 'project_names', value: project._id.toString() })
+                    attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
                 } else {
                     attrs = attrs.map(attr => {
                         if (attr.trait_type === 'project_names' && attr.value.indexOf(project._id))
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project.name.toString()].join(',') }
+                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), `${project.name} (${project._id})`].join(',') }
                         return attr
                     })
                 }
@@ -236,11 +236,11 @@ const updateProjectMember = async (req, res) => {
                         })
                     }
                     if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                        attrs.push({ trait_type: 'project_names', value: projectId })
+                        attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
                     } else {
                         attrs = attrs.map(attr => {
                             if (attr.trait_type === 'project_names')
-                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project.name.toString()].join(',') }
+                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
                             return attr
                         })
                     }
@@ -339,15 +339,17 @@ const deleteProjectMember = async (req, res) => {
                         let attrs = [...metadata._doc.attributes];
                         if (find(attrs, attr => attr.trait_type === 'projects')) {
                             attrs = attrs.map(attr => {
-                                if (attr.trait_type === 'projects' && attr.value && attr.value.length > 1)
-                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(',')].filter(p => p !== p._id.toString()).join(',') }
+                                if (attr.trait_type === 'projects' && attr.value && attr.value.length > 1) {
+                                    console.log("n { ...attr._", [...(get(attr, 'value', '').split(','))].filter(prj => prj !== String(p._id)).join(','))
+                                    return { ...attr._doc, value: [...(get(attr, 'value', '').split(','))].filter(prj => prj !== String(p._id)).join(',') }
+                                }
                                 return attr
                             })
                         }
                         if (find(attrs, attr => attr.trait_type === 'project_names')) {
                             attrs = attrs.map(attr => {
                                 if (attr.trait_type === 'project_names' && attr.value && attr.value.length > 1)
-                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(',')].filter(p => p !== p.name.toString()).join(',') }
+                                    return { ...attr._doc, value: [...(get(attr, 'value', '').split(','))].filter(prj => prj !== `${p.name} (${p._id})`).join(',') }
                                 return attr
                             })
                         }

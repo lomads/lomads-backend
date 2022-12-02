@@ -485,17 +485,17 @@ const approveTask = async (req, res) => {
                 } else {
                     attrs = attrs.map(attr => {
                         if (attr.trait_type === 'tasks') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), t._id.toString()].join(',') }
+                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), t._id.toString()].join(',') }
                         }
                         return attr
                     })
                 }
                 if (!find(attrs, attr => attr.trait_type === 'task_names')) {
-                    attrs.push({ trait_type: 'task_names', value: t.name.toString() })
+                    attrs.push({ trait_type: 'task_names', value: `${t.name} (${t._id})` })
                 } else {
                     attrs = attrs.map(attr => {
                         if (attr.trait_type === 'task_names') {
-                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), t.name.toString()].join(',') }
+                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), `${t.name} (${t._id})`].join(',') }
                         }
                         return attr
                     })
