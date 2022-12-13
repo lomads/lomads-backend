@@ -24,7 +24,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     const { _id, wallet } = req.user;
-    const { name, description, members, links, daoId } = req.body;
+    const { name, description, members, links, milestones, kra, daoId } = req.body;
     console.log("data : ", name, description, members, links, daoId);
     let mMembers = [];
     try {
@@ -43,7 +43,7 @@ const create = async (req, res) => {
         let mem = uniqBy(mMembers.map(m => m._id))
 
         let project = new Project({
-            daoId, name, description, members: mem, links, creator: wallet
+            daoId, name, description, members: mem, links, milestones, kra, creator: wallet
         })
 
         project = await project.save();
@@ -325,7 +325,7 @@ const deleteProjectMember = async (req, res) => {
         )
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
 
-        projectMemberRemoved.emit({$project: p, $memberList: memberList})
+        projectMemberRemoved.emit({ $project: p, $memberList: memberList })
 
         if (daoId) {
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
