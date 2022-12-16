@@ -18,6 +18,9 @@ const ProjectSchema = new mongoose.Schema({
         type: Array,
         default: [],
     },
+    compensation: {
+        type: Object
+    },
     milestones: {
         type: Array,
         default: [],

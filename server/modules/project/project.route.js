@@ -18,5 +18,6 @@ router.patch('/:projectId/update-member', web3Auth, projectCtrl.updateProjectMem
 router.patch('/:projectId/delete-member', web3Auth, projectCtrl.deleteProjectMember);
 router.patch('/:projectId/add-links', web3Auth, projectCtrl.addProjectLinks);
 router.patch('/:projectId/update-link', web3Auth, projectCtrl.updateProjectLink);
+router.patch('/:projectId/update-kra', web3Auth, projectCtrl.updateProjectKRAReview);
 
 module.exports = router;
