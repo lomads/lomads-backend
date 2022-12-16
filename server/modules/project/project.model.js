@@ -18,6 +18,16 @@ const ProjectSchema = new mongoose.Schema({
         type: Array,
         default: [],
     },
+    compensation: {
+        type: Object
+    },
+    milestones: {
+        type: Array,
+        default: [],
+    },
+    kra: {
+        type: Object
+    },
     createdAt: {
         type: Date,
         default: Date.now
