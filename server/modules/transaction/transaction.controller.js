@@ -129,6 +129,8 @@ const executedOnChain = async (req, res) => {
 
         const txl = await txLabel.findOne({ safeTxHash: safeTx.safeTxHash });
 
+        
+
         for (let index = 0; index < parameters.length; index++) {
             const parameter = parameters[index];
             const recipient = _.get(_.find(_.get(parameter, 'dataDecoded.parameters', []),  p => p.name === 'to'), 'value', _.get(parameter, 'to', null))
@@ -171,7 +173,7 @@ const executedOnChain = async (req, res) => {
                         }) 
                     }
     
-                    await Member.findByIdAndUpdate(
+                    await Member.findOneAndUpdate(
                         { _id: user._id },
                         { earnings }
                     )
