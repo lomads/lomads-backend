@@ -54,7 +54,15 @@ const create = async (req, res, next) => {
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id, chainId
+            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id, chainId,
+            terminologies: {
+                'Projects': 'Projects',
+                'Tasks': 'Tasks',
+                'Admin': 'Admin',
+                'Core Contributor': 'Core Contributor',
+                'Active Contributor': 'Active Contributor',
+                'Contributor': 'Contributor',
+            }
         })
 
         dao = await dao.save();
@@ -81,6 +89,8 @@ const updateDetails = async (req, res) => {
             { deletedAt: null, url },
             { ...req.body }
         )
+
+        console.log("REQ BODY : ", req.body);
 
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
         return res.status(200).json(d);
@@ -320,12 +330,12 @@ const syncSafeOwners = async (req, res) => {
     let members = []
     for (let index = 0; index < dao.members.length; index++) {
         let member = dao.members[index];
-        if(member.role === 'ADMIN') {
-            if(owners.indexOf(toChecksumAddress(member.member.wallet)) === -1) {
+        if (member.role === 'ADMIN') {
+            if (owners.indexOf(toChecksumAddress(member.member.wallet)) === -1) {
                 member.role = 'CONTRIBUTOR'
             }
         } else {
-            if(owners.indexOf(toChecksumAddress(member.member.wallet)) > -1) {
+            if (owners.indexOf(toChecksumAddress(member.member.wallet)) > -1) {
                 member.role = 'ADMIN'
             }
         }
@@ -337,7 +347,7 @@ const syncSafeOwners = async (req, res) => {
     for (let index = 0; index < owners.length; index++) {
         const owner = owners[index];
         let exists = _.find(members, m => toChecksumAddress(m.member.wallet) === owner)
-        if(!exists) {
+        if (!exists) {
             const filter = { wallet: { $regex: new RegExp(`^${owner}$`, "i") } }
             let m = await Member.findOne(filter);
             if (!m) {
