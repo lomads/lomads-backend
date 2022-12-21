@@ -18,5 +18,6 @@ router.patch('/:projectId/update-member', web3Auth, projectCtrl.updateProjectMem
 router.patch('/:projectId/delete-member', web3Auth, projectCtrl.deleteProjectMember);
 router.patch('/:projectId/add-links', web3Auth, projectCtrl.addProjectLinks);
 router.patch('/:projectId/update-link', web3Auth, projectCtrl.updateProjectLink);
+router.post('/:projectId/join-discord-queue', web3Auth, projectCtrl.joinDiscordQueue);
 
 module.exports = router;

@@ -13,4 +13,6 @@ module.exports = {
     taskPaid: require('@events/taskPaid'),
     taskDeleted: require('@events/taskDeleted'),
     daoMemberAdded: require('@events/daoMemberAdded'),
+    memberJoinedDiscordServer: require('@events/memberJoinedDiscordServer'),
+    onOneMinuteCron: require('@server/events/onOneMinuteCron')
 }

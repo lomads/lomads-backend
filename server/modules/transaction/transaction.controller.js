@@ -9,6 +9,8 @@ const axios = require('axios');
 const moment = require('moment')
 const ObjectId = require('mongodb').ObjectID;
 const { taskPaid } = require('@server/events');
+const RecurringPayment = require('../RecurringPayment/recurringPayment.model');
+const RecurringPaymentQueue = require('../RecurringPayment/recurringPaymentQueue.model');
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -136,47 +138,61 @@ const executedOnChain = async (req, res) => {
                 value: amount
             })
             console.log(recipient, amount)
-            if(recipient) {
+            if(recipient && amount) {
                 const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
-                let earnings = user.earnings
-                const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', '') && e.daoId.toString() === daoId.toString())
-                console.log("symbol---------->", symbol)
-                if(symbol) {
-                    earnings = earnings.map(e => {
-                        if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT') && e.daoId.toString() === daoId.toString()){
-                            return { ...e._doc, value: +e.value + (amount / 10 ** _.get(safeTx, 'token.decimals', 18)) }
-                        }
-                        return e
-                    }) 
-                } else {
-                    earnings.push({
-                        symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
-                        value: amount / 10 ** _.get(safeTx, 'token.decimals', 18),
-                        currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT'),
-                        daoId
-                    })
-                }
-
-                if(txl && txl.sweatConversion) { 
-                    earnings = earnings.map(e => {
-                        console.log(e)
-                        console.log(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString())
-                        if(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString()) {
-                            console.log({ ...e._doc, value: 0 })
-                            return { ...e._doc, value: 0 }
-                        }
-                        return e
-                    }) 
-                }
-
-                await Member.findByIdAndUpdate(
-                    { _id: user._id },
-                    { earnings }
-                )
-                if(task){
-                    taskPaid.emit({ $task: task, $member: user })
+                if(user) {
+                    let earnings = user.earnings
+                    const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', '') && e.daoId.toString() === daoId.toString())
+                    if(symbol) {
+                        earnings = earnings.map(e => {
+                            if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT') && e.daoId.toString() === daoId.toString()){
+                                return { ...e._doc, value: +e.value + (amount / 10 ** _.get(safeTx, 'token.decimals', 18)) }
+                            }
+                            return e
+                        }) 
+                    } else {
+                        earnings.push({
+                            symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
+                            value: amount / 10 ** _.get(safeTx, 'token.decimals', 18),
+                            currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT'),
+                            daoId
+                        })
+                    }
+    
+                    if(txl && txl.sweatConversion) { 
+                        earnings = earnings.map(e => {
+                            console.log(e)
+                            console.log(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString())
+                            if(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString()) {
+                                console.log({ ...e._doc, value: 0 })
+                                return { ...e._doc, value: 0 }
+                            }
+                            return e
+                        }) 
+                    }
+    
+                    await Member.findByIdAndUpdate(
+                        { _id: user._id },
+                        { earnings }
+                    )
+                    if(task){
+                        taskPaid.emit({ $task: task, $member: user })
+                    }
                 }
             }
+        }
+
+        const recurringPayment = await RecurringPayment.findOne({ deletedAt: null, allowanceTxnHash: safeTx.safeTxHash })
+
+        if(recurringPayment) {
+            recurringPayment.active = true;
+            let isPast = moment(recurringPayment.startDate).utc().isBefore(moment().utc())
+            let nextDate = moment(recurringPayment.startDate).startOf('day').utc().toDate()
+            let firstTx = nextDate;
+            const q = await RecurringPaymentQueue.create({ recurringPayment: recurringPayment._id, nonce: `${moment(nextDate).unix()}`})
+            await RecurringPayment.updateOne({ _id: recurringPayment._id },{ $set: { nextDate: nextDate }, $addToSet: { queue: q._id } })
+            recurringPayment.nextDate = firstTx;
+            await recurringPayment.save()
         }
         
         return res.status(200).json({ message: 'success' })

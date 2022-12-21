@@ -429,7 +429,7 @@ const deleteProject = async (req, res) => {
 const addProjectLinks = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { title, link, accessControl, spaceDomain, guildId = null, id, platformId } = req.body;
+    const { title, link, accessControl, spaceDomain, roleId = null, guildId = null, id, platformId } = req.body;
     console.log("link details : ", title, link);
     try {
 
@@ -437,7 +437,7 @@ const addProjectLinks = async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
-        project.links.push({ id, title, link, spaceDomain, accessControl, guildId, platformId, unlocked: [] });
+        project.links.push({ id, title, link, spaceDomain, roleId, accessControl, guildId, platformId, unlocked: [] });
         project = await project.save();
 
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
@@ -552,7 +552,39 @@ const addNotionUserRole = async (req, res) => {
     }
 }
 
+const joinDiscordQueue = async (req, res) => {
+    const { wallet } = req.user;
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { id, discordMemberId } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        if (!id) {
+            return res.status(404).json({ message: 'Link not found' })
+        }
+        project.links = project.links.map(l => {
+            if (l.id === id && (!l.discordJoinQueue || l.discordJoinQueue && l.discordJoinQueue.indexOf(discordMemberId) == -1)) {
+                return { ...l, discordJoinQueue: [...(l.discordJoinQueue ? l.discordJoinQueue : []), discordMemberId ] }
+            }
+            return l
+        })
+        project = await project.save();
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.addProjectLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 module.exports = {
     checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
-    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails
+    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, joinDiscordQueue
 };

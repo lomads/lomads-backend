@@ -40,5 +40,14 @@ module.exports = {
     ],
     "@events/daoMemberAdded": [
       "@listeners/sendDAOMemberAddedNotification"
+    ],
+    "@events/memberJoinedDiscordServer.js": [
+      "@listeners/attachDiscordMemberRole"
+    ],
+    "@events/memberJoinedDiscordServer.js": [
+      "@listeners/attachDiscordMemberRole"
+    ],
+    "@events/onOneMinuteCron.js": [
+      "@listeners/checkRecurringTxn"
     ]
 }

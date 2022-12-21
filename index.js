@@ -7,6 +7,8 @@ const config = require('@config/config');
 const events = require('@config/events');
 const app = require('@config/express');
 
+const schedule = require('@config/cron')
+
 const debug = require('debug');
 
 // make bluebird default Promise
@@ -15,7 +17,8 @@ Promise = require('bluebird'); // eslint-disable-line no-global-assign
 // plugin bluebird promise in mongoose
 mongoose.Promise = Promise;
 
-const discordConnect = require('./config/discord-ws');
+//const discordConnect = require('./config/discord-ws');
+const { discordConnect } = require('./config/discord');
 
 // connect to mongo db
 const mongoUri = config.mongo.host;
@@ -37,7 +40,8 @@ if (!module.parent) {
   // listen on port config.port
   app.listen(config.port, () => {
     events.boot();
-    //discordConnect();
+    discordConnect();
+    schedule();
     console.info(`server started on port ${config.port} (${config.env})`); // eslint-disable-line no-console
   });
 }
