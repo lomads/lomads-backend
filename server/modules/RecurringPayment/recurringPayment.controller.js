@@ -66,6 +66,27 @@ const deleteRecurringTxn = async (req, res, next) => {
     }
 }
 
+const rejectRecurringPayment = async (req, res, next) => {
+    const { txHash } = req.body;
+    try {
+        const rp = await RecurringPayment.findOne({ allowanceTxnHash: txHash })
+        if(rp) {
+            await RecurringPayment.findOneAndUpdate(
+                { _id: rp._id, deletedAt: null },
+                { $set: { deletedAt: moment().utc().toDate() } }
+            )
+            await RecurringPaymentQueue.deleteMany(
+                { recurringPayment: rp._id, moduleTxnHash: null },
+            )
+        }
+        return res.status(200).json({message: 'Success'}) 
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' }) 
+    }
+}
+
 const completeQueuePayment = async (req, res, next) => {
     const { queueId } = req.params;
     const { txHash } = req.body
@@ -108,5 +129,6 @@ module.exports = {
     load,
     create,
     deleteRecurringTxn,
-    completeQueuePayment
+    completeQueuePayment,
+    rejectRecurringPayment
 };
