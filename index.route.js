@@ -10,7 +10,7 @@ const taskRoutes = require('@server/modules/task/task.route');
 const utilityRoutes = require('@server/modules/utility/utility.route');
 const notificationRoutes = require('@server/modules/notification/notification.route');
 const discordRoutes = require('@server/modules/discord/discord.route');
-const recurringPaymentRoutes = require('@server/modules/recurringPayment/recurringPayment.route');
+const recurringPaymentRoutes = require('@server/modules/RecurringPayment/recurringPayment.route');
 
 const contractCtrl = require('@server/modules/contract/contract.controller');
 
