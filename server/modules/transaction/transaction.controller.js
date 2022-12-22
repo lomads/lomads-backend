@@ -235,11 +235,15 @@ const executeOffChainTransaction = async (req, res) => {
                 if(recipient) {
                     const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
                     let earnings = user.earnings
-                    const symbol = _.find(earnings, e => e.symbol === _.get(offChainTx, 'token.symbol', '') && e.daoId.toString() === daoId.toString())
+                    const symbol = _.find(earnings, e =>
+                        { 
+                           console.log(e)
+                           return e.symbol === _.get(offChainTx, 'token.symbol', '') && String(e.daoId) === daoId
+                        })
     
                     if(symbol) {
                         earnings = earnings.map(e => {
-                            if(e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT') && e.daoId.toString() === daoId.toString())
+                            if(e.symbol === _.get(offChainTx, 'token.symbol', 'SWEAT') && String(e.daoId) === daoId)
                                 return { ...e._doc, value: +e.value + (amount / 10 ** (+decimals)) }
                             return e
                         }) 
