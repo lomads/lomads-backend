@@ -210,7 +210,6 @@ const executeOffChainTransaction = async (req, res) => {
     const { rejectedTxn = null, decimals = 18 } = req.query;
     const { daoId } = req.query;
     
-    console.log(rejectedTxn, "==>", typeof rejectedTxn)
     try {
         let offChainTx = await OffChain.findOne({ safeTxHash });
         if(!offChainTx)
