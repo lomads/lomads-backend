@@ -54,15 +54,7 @@ const create = async (req, res, next) => {
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id, chainId,
-            terminologies: {
-                'Projects': 'Projects',
-                'Tasks': 'Tasks',
-                'Admin': 'Admin',
-                'Core Contributor': 'Core Contributor',
-                'Active Contributor': 'Active Contributor',
-                'Contributor': 'Contributor',
-            }
+            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id, chainId
         })
 
         dao = await dao.save();
