@@ -2,6 +2,7 @@ const Contract = require('@server/modules/contract/contract.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model');
 const Member = require('@server/modules/member/member.model');
+const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 
 const getContractTokenMetadata = async (req, res) => {
     const { contractAddress, token } = req.params;
@@ -40,7 +41,7 @@ const create = async (req, res) => {
             const filter = { wallet: { $regex: new RegExp(`^${member.address}$`, "i") } }
             let m = await Member.findOne(filter);
             if (!m) {
-                m = new Member({ wallet: member.address, name: member.name })
+                m = new Member({ wallet: toChecksumAddress(member.address), name: member.name })
                 m = await m.save();
             }
             mMembers.push(m);

@@ -30,7 +30,7 @@ const create = async (req, res, next) => {
             const filter = { wallet: { $regex: new RegExp(`^${member.address}$`, "i") } }
             let m = await Member.findOne(filter);
             if (!m) {
-                m = new Member({ wallet: member.address, name: member.name })
+                m = new Member({ wallet: toChecksumAddress(member.address), name: member.name })
                 m = await m.save();
             }
             console.log(m)
@@ -130,7 +130,7 @@ const addDaoMember = async (req, res) => {
         const filter = { wallet: { $regex: new RegExp(`^${address}$`, "i") } }
         let m = await Member.findOne(filter);
         if (!m) {
-            m = new Member({ wallet: address, name })
+            m = new Member({ wallet: toChecksumAddress(address), name })
             m = await m.save();
         }
         const userExistInDao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [m._id] } })
@@ -169,7 +169,7 @@ const addDaoMemberList = async (req, res) => {
             const filter = { wallet: { $regex: new RegExp(`^${user.address}$`, "i") } }
             let m = await Member.findOne(filter);
             if (!m) {
-                m = new Member({ wallet: user.address, name: user.name })
+                m = new Member({ wallet: toChecksumAddress(user.address), name: user.name })
                 m = await m.save();
             }
             mMembers.push({ ...m, _doc: { ...m._doc, role: user.role } })
@@ -351,7 +351,7 @@ const syncSafeOwners = async (req, res) => {
             const filter = { wallet: { $regex: new RegExp(`^${owner}$`, "i") } }
             let m = await Member.findOne(filter);
             if (!m) {
-                m = new Member({ wallet: address, name: '' })
+                m = new Member({ wallet: toChecksumAddress(owner), name: '' })
                 m = await m.save();
             }
             await DAO.findOneAndUpdate(
@@ -360,6 +360,9 @@ const syncSafeOwners = async (req, res) => {
             )
         }
     }
+
+    let iMembers = await Member.find( { wallet: { $in: owners.map(o => toChecksumAddress(o)) }})
+    await Safe.updateOne({ dao: dao._id }, { owners: iMembers })
 
     const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
     return res.status(200).json(d);

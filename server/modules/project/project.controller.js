@@ -33,7 +33,7 @@ const create = async (req, res) => {
             const filter = { wallet: { $regex: new RegExp(`^${member.address}$`, "i") } }
             let m = await Member.findOne(filter);
             if (!m) {
-                m = new Member({ wallet: member.address, name: member.name })
+                m = new Member({ wallet: toChecksumAddress(member.address), name: member.name })
                 m = await m.save();
             }
             mMembers.push(m);
@@ -139,7 +139,7 @@ const addProjectMember = async (req, res) => {
         const filter = { wallet: { $regex: new RegExp(`^${address}$`, "i") } }
         let m = await Member.findOne(filter);
         if (!m) {
-            m = new Member({ wallet: address, name })
+            m = new Member({ wallet: toChecksumAddress(address), name })
             m = await m.save();
         }
         console.log("Member found in collection");

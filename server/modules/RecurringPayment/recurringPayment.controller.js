@@ -35,6 +35,58 @@ const create = async (req, res, next) => {
     }
 }
 
+const update = async (req, res) => {
+    const { recurringTxId } = req.params;
+    try {
+
+        const oldrp = await RecurringPayment.findOne({ _id: recurringTxId })
+        const rp =  await RecurringPayment.findOneAndUpdate({ _id: recurringTxId }, { $set: { ...req.body } })
+
+        if(rp.active == true) {
+
+            if(oldrp.startDate !== req.body.startDate) {
+                console.log("oldrp.frequency", req.body.startDate)
+                await RecurringPaymentQueue.deleteOne({ recurringPayment: recurringTxId, moduleTxnHash:  null })
+                let nextNonce = moment(req.body.startDate).unix();
+                const q = await RecurringPaymentQueue.create({ recurringPayment: recurringTxId, nonce: nextNonce })
+                await RecurringPayment.updateOne({ _id: recurringTxId },{ $set: { nextDate: moment.unix(nextNonce).toDate() }, $addToSet: { queue: q._id } })
+            }
+
+            if(oldrp.frequency !== req.body.frequency) {
+                const lastPayment = await RecurringPaymentQueue.findOne({ recurringPayment: recurringTxId, moduleTxnHash: { $ne: null } }).sort({ nonce: 'desc' }).exec()
+                await RecurringPaymentQueue.deleteOne({ recurringPayment: recurringTxId, moduleTxnHash:  null })
+                let nextNonce = moment(req.body.startDate).unix();
+                if(lastPayment)
+                    nextNonce = moment.unix(lastPayment.nonce).add(1, req.body.frequency === 'weekly' ? 'week' : 'month').unix();
+                const q = await RecurringPaymentQueue.create({ recurringPayment: recurringTxId, nonce: nextNonce })
+                await RecurringPayment.updateOne({ _id: recurringTxId },{ $set: { nextDate: moment.unix(nextNonce).toDate() }, $addToSet: { queue: q._id } })
+            }
+
+            if(req.body.ends.key === 'AFTER') {
+                const occurances = await RecurringPaymentQueue.find({ recurringPayment: recurringTxId, moduleTxnHash: { $ne: null } })
+                console.log(occurances)
+                if(occurances.length >= req.body.ends.value) {
+                    await RecurringPaymentQueue.deleteMany({ recurringPayment: recurringTxId, moduleTxnHash: null })
+                    rp.nextDate = null
+                    await rp.save()
+                }
+            } else if (req.body.ends.key === 'ON') {
+                const queueP = await RecurringPaymentQueue.findOne({ recurringPayment: recurringTxId, moduleTxnHash: null })
+                if(moment.unix(queueP.nonce).startOf('day').isAfter(moment(req.body.ends.value, 'YYYY-MM-DD').startOf('day'))) {
+                    console.log(queueP)
+                    await RecurringPaymentQueue.deleteMany( { recurringPayment: recurringTxId, moduleTxnHash: null } )
+                    rp.nextDate = null
+                    await rp.save()
+                }
+            }
+        }
+        const rps = await RecurringPayment.find({ _id: recurringTxId, deletedAt: null }).populate({ path: 'queue receiver delegate' })
+        return res.status(200).json(rps) 
+    } catch(e) {
+        console.log(e)
+    }
+}
+
 const deleteRecurringTxn = async (req, res, next) => {
     const { txId } = req.params;
     try {
@@ -128,6 +180,7 @@ const completeQueuePayment = async (req, res, next) => {
 module.exports = {
     load,
     create,
+    update,
     deleteRecurringTxn,
     completeQueuePayment,
     rejectRecurringPayment

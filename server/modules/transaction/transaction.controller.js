@@ -144,10 +144,10 @@ const executedOnChain = async (req, res) => {
                 const user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient}$`, "i") } })
                 if(user) {
                     let earnings = user.earnings
-                    const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', '') && e.daoId.toString() === daoId.toString())
+                    const symbol = _.find(earnings, e => e.symbol === _.get(safeTx, 'token.symbol', '') && String(e.daoId) === daoId)
                     if(symbol) {
                         earnings = earnings.map(e => {
-                            if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT') && e.daoId.toString() === daoId.toString()){
+                            if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT') && String(e.daoId) === daoId){
                                 return { ...e._doc, value: +e.value + (amount / 10 ** _.get(safeTx, 'token.decimals', 18)) }
                             }
                             return e
@@ -164,8 +164,8 @@ const executedOnChain = async (req, res) => {
                     if(txl && txl.sweatConversion) { 
                         earnings = earnings.map(e => {
                             console.log(e)
-                            console.log(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString())
-                            if(e.symbol === 'SWEAT' && e.daoId.toString() === daoId.toString()) {
+                            console.log(e.symbol === 'SWEAT' && String(e.daoId) === daoId)
+                            if(e.symbol === 'SWEAT' && String(e.daoId) === daoId) {
                                 console.log({ ...e._doc, value: 0 })
                                 return { ...e._doc, value: 0 }
                             }
@@ -187,13 +187,15 @@ const executedOnChain = async (req, res) => {
         const recurringPayment = await RecurringPayment.findOne({ deletedAt: null, allowanceTxnHash: safeTx.safeTxHash })
 
         if(recurringPayment) {
+            if(recurringPayment.active === false) {
+                let isPast = moment(recurringPayment.startDate).utc().isBefore(moment().utc())
+                let nextDate = moment(recurringPayment.startDate).startOf('day').utc().toDate()
+                let firstTx = nextDate;
+                const q = await RecurringPaymentQueue.create({ recurringPayment: recurringPayment._id, nonce: `${moment(nextDate).unix()}`})
+                await RecurringPayment.updateOne({ _id: recurringPayment._id },{ $set: { nextDate: nextDate }, $addToSet: { queue: q._id } })
+                recurringPayment.nextDate = firstTx;
+            }
             recurringPayment.active = true;
-            let isPast = moment(recurringPayment.startDate).utc().isBefore(moment().utc())
-            let nextDate = moment(recurringPayment.startDate).startOf('day').utc().toDate()
-            let firstTx = nextDate;
-            const q = await RecurringPaymentQueue.create({ recurringPayment: recurringPayment._id, nonce: `${moment(nextDate).unix()}`})
-            await RecurringPayment.updateOne({ _id: recurringPayment._id },{ $set: { nextDate: nextDate }, $addToSet: { queue: q._id } })
-            recurringPayment.nextDate = firstTx;
             await recurringPayment.save()
         }
         
