@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const _ = require('lodash');
+const config = require('./config');
 const wait = require("timers/promises").setTimeout;
 const { memberJoinedDiscordServer, discordMessageCreated } = require('@events')
 
@@ -75,7 +76,7 @@ const connect = () => {
       const { guild_id, channel_id } = message;
       discordMessageCreated.emit({ guild_id, channel_id })
     })
-    client.login(`MTA0OTcyNDc0MTMwNjU2NDY2OQ.Gy0JHN.NSofSPV53mR53X1m-zvd9IOkEQm7x05p3Iakg4`);
+    client.login(config.discordBotToken);
 }
 
 module.exports = { discordConnect: connect, client };

@@ -60,7 +60,8 @@ const config = {
   safe: {
     [`${SupportedChainId.POLYGON}`]: 'https://safe-transaction-polygon.safe.global',
     [`${SupportedChainId.GOERLI}`]: 'https://safe-transaction-goerli.safe.global'
-  }
+  },
+  discordBotToken: envVars.DISCORD_BOT_TOKEN
 };
 
 module.exports = config;

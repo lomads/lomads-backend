@@ -2,7 +2,8 @@ const Promise = require('bluebird');
 const mongoose = require('mongoose');
 const httpStatus = require('http-status');
 const APIError = require('@server/helpers/APIError');
-const { encrypt } = require('@server/services/aes')
+const { encrypt } = require('@server/services/aes');
+const { number } = require('joi');
 
 /**
  * Safe Schema
@@ -26,7 +27,15 @@ const ProjectSchema = new mongoose.Schema({
         default: [],
     },
     kra: {
-        type: Object
+        frequency: { type: String },
+        results: [
+                {
+                    _id: { type: String },
+                    name: { type: String, default: '' },
+                    progress: { type: Number, default: 0 },
+                    color: { type: String },
+                }
+        ]
     },
     createdAt: {
         type: Date,

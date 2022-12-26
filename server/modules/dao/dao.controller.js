@@ -10,7 +10,7 @@ const load = async (req, res) => {
     const { _id } = req.user;
     const { chainId = 5 } = req.query;
     try {
-        const dao = await DAO.find({ chainId, deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } }).exec()
+        const dao = await DAO.find({ chainId, deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -104,7 +104,7 @@ const updateDetails = async (req, res) => {
 const getByUrl = async (req, res) => {
     const { url } = req.params;
     try {
-        const dao = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const dao = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
         return res.status(200).json(dao)
