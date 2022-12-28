@@ -48,7 +48,7 @@ const create = async (req, res) => {
         }
 
         let mem = mMembers.map(m => {
-            return { member: m._id, creator: false, role: 'CONTRIBUTOR' }
+            return { member: m._id, creator: false, role: 'role4' }
         })
 
         const dao = await DAO.findOne({ _id: daoId });
@@ -61,7 +61,7 @@ const create = async (req, res) => {
                 }
             )
         }
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
 
         // return res.status(200).json({ message: 'Contract created successfully' })
@@ -78,7 +78,7 @@ const update = async (req, res) => {
     try {
 
         await Contract.findOneAndUpdate({ address: contractAddress }, { contactDetail, whitelisted });
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
     catch (e) {

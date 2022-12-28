@@ -28,13 +28,16 @@ const ProjectSchema = new mongoose.Schema({
     },
     kra: {
         frequency: { type: String },
-        results: [
-                {
+        results: [{
                     _id: { type: String },
-                    name: { type: String, default: '' },
-                    progress: { type: Number, default: 0 },
-                    color: { type: String },
-                }
+                    name: { type: String, default: '' }
+                }],
+        tracker:[
+            {
+                results: [{ type: mongoose.Schema.Types.Object }],
+                start: { type: Number },
+                end: { type: Number },
+            }
         ]
     },
     createdAt: {

@@ -48,7 +48,7 @@ const create = async (req, res, next) => {
         }
 
         let mem = mMembers.map(m => {
-            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'CONTRIBUTOR') }
+            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
         })
 
         let daoURL = url;
@@ -92,7 +92,7 @@ const updateDetails = async (req, res) => {
 
         console.log("REQ BODY : ", req.body);
 
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
     catch (e) {
@@ -119,7 +119,7 @@ const addDaoMember = async (req, res) => {
 
     const { _id } = req.user;
     const { url } = req.params;
-    const { name, address, role = "CONTRIBUTOR" } = req.body;
+    const { name, address, role = "role4" } = req.body;
 
     try {
         //const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
@@ -141,7 +141,7 @@ const addDaoMember = async (req, res) => {
             { _id: dao._id },
             { $addToSet: { members: { member: m._id, creator: false, role } } }
         )
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         daoMemberAdded.emit({ $dao: d, $members: [m._id] })
         return res.status(200).json(d)
     }
@@ -178,7 +178,7 @@ const addDaoMemberList = async (req, res) => {
         mMembers = mMembers.map(m => m._doc);
 
         let mem = mMembers.map(m => {
-            return { member: m._id, creator: false, role: _.get(m, 'role', 'CONTRIBUTOR') }
+            return { member: m._id, creator: false, role: _.get(m, 'role', 'role4') }
         })
 
         await DAO.findOneAndUpdate(
@@ -188,9 +188,9 @@ const addDaoMemberList = async (req, res) => {
             }
         )
 
-        daoMemberAdded.emit({ $dao: d, $members: mem.map(m => m._id) })
+        //daoMemberAdded.emit({ $dao: d, $members: mem.map(m => m._id) })
 
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } });
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         daoMemberAdded.emit({ $dao: d, $members: mMembers.map(m => m._id) })
         return res.status(200).json(d);
 
@@ -241,7 +241,7 @@ const manageDaoMember = async (req, res) => {
         console.log("members after : ", members);
         await DAO.findOneAndUpdate({ url }, { members });
 
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } });
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         return res.status(200).json(d);
     }
 
@@ -264,7 +264,7 @@ const addDaoLinks = async (req, res) => {
         dao.links.push({ title, link });
         dao = await dao.save();
 
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
     catch (e) {
@@ -298,7 +298,7 @@ const updateDaoLinks = async (req, res) => {
             { links: tempArray }
         )
 
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
     catch (e) {
@@ -312,7 +312,7 @@ const updateSweatPoints = async (req, res) => {
     const { status } = req.body;
     try {
         await DAO.findOneAndUpdate({ url }, { sweatPoints: status })
-        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
     catch (e) {
@@ -330,13 +330,13 @@ const syncSafeOwners = async (req, res) => {
     let members = []
     for (let index = 0; index < dao.members.length; index++) {
         let member = dao.members[index];
-        if (member.role === 'ADMIN') {
+        if (member.role === 'role1') {
             if (owners.indexOf(toChecksumAddress(member.member.wallet)) === -1) {
-                member.role = 'CONTRIBUTOR'
+                member.role = 'role4'
             }
         } else {
             if (owners.indexOf(toChecksumAddress(member.member.wallet)) > -1) {
-                member.role = 'ADMIN'
+                member.role = 'role1'
             }
         }
         members.push(member)
@@ -356,7 +356,7 @@ const syncSafeOwners = async (req, res) => {
             }
             await DAO.findOneAndUpdate(
                 { _id: dao._id },
-                { $addToSet: { members: { member: m._id, creator: false, role: 'ADMIN' } } }
+                { $addToSet: { members: { member: m._id, creator: false, role: 'role1' } } }
             )
         }
     }
@@ -364,7 +364,7 @@ const syncSafeOwners = async (req, res) => {
     let iMembers = await Member.find( { wallet: { $in: owners.map(o => toChecksumAddress(o)) }})
     await Safe.updateOne({ dao: dao._id }, { owners: iMembers })
 
-    const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project' } })
+    const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
     return res.status(200).json(d);
 }
 

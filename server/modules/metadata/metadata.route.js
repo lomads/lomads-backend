@@ -5,5 +5,6 @@ const router = express.Router(); // eslint-disable-line new-cap
 
 router.post('/:contractAddress', web3Auth, metaDataCtrl.addMetaData);
 router.get('/:contractAddress', web3Auth, metaDataCtrl.getMetadata);
+router.patch('/:contractAddress', web3Auth, metaDataCtrl.update);
 
 module.exports = router;
