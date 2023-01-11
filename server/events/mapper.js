@@ -49,5 +49,8 @@ module.exports = {
     ],
     "@events/onOneMinuteCron.js": [
       "@listeners/checkRecurringTxn"
+    ],
+    "@events/guildRoleMemberUpdated.js": [
+      "@listeners/syncRolesMembers"
     ]
 }

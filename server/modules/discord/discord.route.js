@@ -9,4 +9,5 @@ router.get('/guild/:guildId/roles', web3Auth, discordCtrl.getDiscordGuildRoles)
 router.get('/guild/:guildId/member/:memberId/role/:roleId/check', web3Auth, discordCtrl.checkMemberHasRole)
 router.get('/guild/:guildId/member/:memberId/role/:roleId/add', web3Auth, discordCtrl.addGuildMemberRole)
 router.get('/guild/:guildId/:channelId/invite-code', web3Auth, discordCtrl.getInviteCode)
+router.post('/guild/:guildId/sync-roles', web3Auth, discordCtrl.syncRoles)
 module.exports = router;

@@ -1,4 +1,5 @@
-const { getGuild, hasNecessaryPermissions, getGuildRoles, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
+const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
+const DAO = require('@server/modules/dao/dao.model');
 
 const getDiscordGuild = async (req, res) => {
     const { guildId } = req.params
@@ -77,5 +78,27 @@ const addGuildMemberRole = async (req, res) => {
     }
 }
 
+const syncRoles = async (req, res) => {
+    const { guildId } = req.params;
+    const { daoId } = req.body
+    try {
+        await hasNecessaryPermissions(guildId);
+        let guildRoles = await getGuildRoles(guildId);
+        let guildMembers = await getGuildMembers(guildId);
+        guildMembers = JSON.parse(JSON.stringify(guildMembers))
+        await DAO.findOneAndUpdate({ _id: daoId }, {
+            $set: { 
+                [`discord.${guildId}.roles`]: guildRoles.map(gr => { return { id: gr.id, name: gr.name } }),
+                [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
+            }
+        })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
+        return res.status(200).json(d)
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: e })
+    }
+}
 
-module.exports = { getDiscordGuild, getDiscordGuildRoles, createDiscordGuildRole, getInviteCode, checkMemberHasRole, addGuildMemberRole };
+
+module.exports = { syncRoles, getDiscordGuild, getDiscordGuildRoles, createDiscordGuildRole, getInviteCode, checkMemberHasRole, addGuildMemberRole };

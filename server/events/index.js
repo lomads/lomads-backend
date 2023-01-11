@@ -14,5 +14,6 @@ module.exports = {
     taskDeleted: require('@events/taskDeleted'),
     daoMemberAdded: require('@events/daoMemberAdded'),
     memberJoinedDiscordServer: require('@events/memberJoinedDiscordServer'),
+    guildRoleMemberUpdated: require('@events/guildRoleMemberUpdated'),
     onOneMinuteCron: require('@server/events/onOneMinuteCron')
 }

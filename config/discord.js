@@ -2,7 +2,7 @@ const Discord = require('discord.js');
 const _ = require('lodash');
 const config = require('./config');
 const wait = require("timers/promises").setTimeout;
-const { memberJoinedDiscordServer, discordMessageCreated } = require('@events')
+const { memberJoinedDiscordServer, discordMessageCreated, guildRoleMemberUpdated } = require('@events')
 
 const {
     IntentsBitField,
@@ -61,7 +61,14 @@ const connect = () => {
     client.on("guildDelete", (guild) => {
       delete invites[guild.id]
     });
+    client.on("guildMemberRemove", (member) => {
+      guildRoleMemberUpdated.emit(member.guild.id)
+    });
+    client.on("guildMemberUpdate", (member) => {
+      guildRoleMemberUpdated.emit(member.guild.id)
+    });
     client.on('guildMemberAdd', async member => {
+      guildRoleMemberUpdated.emit(member.guild.id)
       const newInvites = await member.guild.invites.fetch()
       const oldInvites = invites[member.guild.id]
       const invite = newInvites.find(i => {
@@ -75,6 +82,15 @@ const connect = () => {
     client.on("messageCreate", message => {
       const { guild_id, channel_id } = message;
       discordMessageCreated.emit({ guild_id, channel_id })
+    })
+    client.on("roleCreate", role => {
+      guildRoleMemberUpdated.emit(role.guild.id)
+    })
+    client.on("roleDelete", role => {
+      guildRoleMemberUpdated.emit(role.guild.id)
+    })
+    client.on("roleUpdate", (oldRole, newRole) => {
+      guildRoleMemberUpdated.emit(newRole.guild.id)
     })
     client.login(config.discordBotToken);
 }

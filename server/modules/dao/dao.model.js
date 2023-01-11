@@ -57,6 +57,9 @@ const DAOSchema = new mongoose.Schema({
     type: Array,
     default: [],
   },
+  discord: {
+    type: Object
+  },
   createdAt: {
     type: Date,
     default: Date.now

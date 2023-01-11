@@ -115,6 +115,12 @@ const getGuildRoles = async (guildId) => {
     return roles
 }
 
+const getGuildMembers = async (guildId) => {
+  const guild = await client.guilds.fetch(guildId);
+  const members = guild.members.cache.map(m => m)
+  return members
+}
+
 const getGuildMember = async (guildId, memberId) => {
   const guild = await client.guilds.fetch(guildId);
   const member = await guild.members.fetch(memberId)
@@ -154,5 +160,6 @@ module.exports = {
     createGuildRole,
     attachRole,
     memberHasRole,
-    attachGuildMemberRole
+    attachGuildMemberRole,
+    getGuildMembers
 }
