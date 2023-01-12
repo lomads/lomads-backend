@@ -1,6 +1,7 @@
 const AWS = require('@config/aws');
 const config = require('@config/config');
 const axios = require('axios');
+const util = require('@metamask/eth-sig-util')
 
 const getUploadURL = async (req, res, next) => {
     try {
@@ -37,5 +38,26 @@ const getUploadURL = async (req, res, next) => {
         return res.status(200).json(false)
     }
   }
+
+  const encryptData = (req, res) => {
+    const { publicKey, data } = req.body
+    try {
+        const encryptedMessage = Buffer.from(
+            JSON.stringify(
+            util.encrypt({
+                publicKey: publicKey,
+                data: data,
+                version: 'x25519-xsalsa20-poly1305',
+              })
+            ),
+            'utf8'
+      ).toString('hex')
+      return res.status(200).json({ message: encryptedMessage })
+    } catch (e) {
+        console.log(e)
+        return res.status(200).json(false)
+    }
+        
+  }
   
-  module.exports = { getUploadURL, checkLomadsBot };
+  module.exports = { getUploadURL, checkLomadsBot, encryptData };

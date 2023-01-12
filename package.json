@@ -27,6 +27,7 @@
   },
   "keywords": [],
   "dependencies": {
+    "@metamask/eth-sig-util": "^5.0.2",
     "@nishans/cache": "^0.0.38",
     "@nishans/constants": "^0.0.24",
     "@nishans/core": "^0.0.35",
