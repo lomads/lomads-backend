@@ -360,4 +360,24 @@ const syncSafeOwners = async (req, res) => {
     return res.status(200).json(d);
 }
 
-module.exports = { syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };
+const updateUserDiscord = async (req, res) => {
+    try {
+        const { url } = req.params;
+        const { userId, discordId } = req.body;
+        let dao = await DAO.findOne({ url })
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+        await DAO.findOneAndUpdate(
+            {
+              url: url,
+              members: { $elemMatch: { member: userId } }
+            },
+            { $set: { "members.$.discordId" : discordId } }
+         )
+        return res.status(200).json({ message: 'Success' });
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+module.exports = { updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };
