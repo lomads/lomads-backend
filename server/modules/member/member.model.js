@@ -74,6 +74,8 @@ MemberSchema.statics = {
 
 };
 
+MemberSchema.index({ wallet: 'text' });
+
 /**
  * @typedef User
  */

@@ -8,6 +8,7 @@ const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-a
 
 const load = async (req, res) => {
     const { _id } = req.user;
+    console.log(req.user);
     const { chainId = 5 } = req.query;
     try {
         const dao = await DAO.find({ chainId, deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()

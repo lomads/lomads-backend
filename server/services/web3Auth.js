@@ -8,11 +8,16 @@ const web3Auth = async (req, res, next) => {
         if(!token)
             return res.status(401).json({ message: 'Authorization token required' })
         const { address = '', body } = await Web3Token.verify(token);
-        console.log("address", address)
-        let member = await Member.findOne({ wallet: { $regex : new RegExp(`^${address}$`, "i") } })
+        console.log("address", toChecksumAddress(address))
+        let member = await Member.findOne({ wallet: toChecksumAddress(address) })
         if(!member) {
-            member = new Member({ wallet: toChecksumAddress(address), name: '' })
-            member = await member.save()
+            if(req.url === '/me') {
+                console.log('CREATING_ACCOUNT')
+                member = new Member({ wallet: toChecksumAddress(address), name: '' })
+                member = await member.save()
+            } else {
+                return res.status(500).json({ message: 'Authorization token required' })
+            }
         } else {
             if(!checkAddressChecksum(member.wallet)){
                 member.wallet = toChecksumAddress(member.wallet)
