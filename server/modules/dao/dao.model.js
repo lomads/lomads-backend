@@ -49,7 +49,9 @@ const DAOSchema = new mongoose.Schema({
     member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     creator: { type: mongoose.Schema.Types.Boolean, default: false },
     joined: { type: Date, default: Date.now },
-    role: { type: String }
+    role: { type: String },
+    discordId: { type: String },
+    discordRoles: { type: Object }
   }],
   projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],

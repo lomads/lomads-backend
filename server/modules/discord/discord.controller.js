@@ -1,5 +1,7 @@
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 const DAO = require('@server/modules/dao/dao.model');
+const Project = require('@server/modules/project/project.model');
+const _ = require('lodash')
 
 const getDiscordGuild = async (req, res) => {
     const { guildId } = req.params
@@ -92,6 +94,24 @@ const syncRoles = async (req, res) => {
                 [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
             }
         })
+        let daoIds = await DAO.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+        daoIds = daoIds.map(d => d._id)
+        let proj = await Project.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+        daoIds = daoIds.concat(proj.map(p => p.daoId))
+        daoIds = _.uniq(daoIds)
+        daoIds.push(daoId)
+        for (let index = 0; index < guildMembers.length; index++) {
+            const guildMember = guildMembers[index];
+            console.log(guildId, guildMember.roles)
+            const up = await DAO.updateMany(
+              {
+                _id: { $in: daoIds },
+                members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }]} }
+              }
+              ,
+              { $set: { [`members.$.discordRoles.${guildId}`] : guildMember.roles } }
+           )
+        }
         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         return res.status(200).json(d)
     } catch (e) {
