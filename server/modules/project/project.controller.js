@@ -385,6 +385,121 @@ const deleteProjectMember = async (req, res) => {
     }
 }
 
+const editProjectMember = async (req, res) => {
+    const { projectId } = req.params;
+    const { memberList, daoId } = req.body;
+    try {
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        let newMembers = [];
+        let deletedMembers = [];
+
+        // getting new members
+        for (var i = 0; i < memberList.length; i++) {
+            let person = memberList[i];
+            if (project.members.indexOf(person) === -1) {
+                newMembers.push(person);
+            }
+        }
+
+        // getting old members who are getting removed
+        for (var i = 0; i < project.members.length; i++) {
+            let person = project.members[i].toString();
+            if (memberList.indexOf(person) === -1) {
+                deletedMembers.push(person);
+            }
+        }
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            {
+                members: memberList
+            }
+        )
+
+        if (daoId) {
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+            if (d.sbt) {
+
+                // for removing members
+                const members = await Member.find({ _id: { $in: deletedMembers } })
+                for (let index = 0; index < members.length; index++) {
+                    const member = members[index];
+                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
+                    const metadata = await Metadata.findOne(filter)
+                    if (metadata) {
+                        let attrs = [...metadata._doc.attributes];
+                        if (find(attrs, attr => attr.trait_type === 'projects')) {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'projects' && attr.value && attr.value.length > 1) {
+                                    console.log("n { ...attr._", [...(get(attr, 'value', '').split(','))].filter(prj => prj !== String(p._id)).join(','))
+                                    return { ...attr._doc, value: [...(get(attr, 'value', '').split(','))].filter(prj => prj !== String(p._id)).join(',') }
+                                }
+                                return attr
+                            })
+                        }
+                        if (find(attrs, attr => attr.trait_type === 'project_names')) {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'project_names' && attr.value && attr.value.length > 1)
+                                    return { ...attr._doc, value: [...(get(attr, 'value', '').split(','))].filter(prj => prj !== `${p.name} (${p._id})`).join(',') }
+                                return attr
+                            })
+                        }
+                        metadata._doc.attributes = attrs;
+                        await metadata.save();
+                    }
+                }
+
+                // for adding new members
+                for (let index = 0; index < newMembers.length; index++) {
+                    const memberid = newMembers[index];
+                    const member = await Member.findOne({ _id: memberid })
+                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
+                    const metadata = await Metadata.findOne(filter)
+                    if (metadata) {
+                        let attrs = [...metadata._doc.attributes];
+                        if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                            attrs.push({ trait_type: 'projects', value: projectId })
+                        } else {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'projects')
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                                return attr
+                            })
+                        }
+                        if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                            attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                        } else {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'project_names')
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                return attr
+                            })
+                        }
+                        console.log(attrs)
+                        metadata._doc.attributes = attrs;
+                        await metadata.save();
+                    }
+                }
+            }
+        }
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+
+        memberInvitedToProject.emit({ project: p, members: newMembers })
+        projectMemberRemoved.emit({ $project: p, $memberList: deletedMembers })
+        removeNotionUser(p);
+
+        return res.status(200).json(p);
+    }
+    catch (e) {
+        console.error("project.editProjectMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const archiveProject = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
@@ -461,6 +576,32 @@ const addProjectLinks = async (req, res) => {
     }
     catch (e) {
         console.error("project.addProjectLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const editProjectLinks = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { resourceList } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            { links: resourceList }
+        )
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.editProjectLinks::", e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
@@ -677,6 +818,6 @@ const updateProjectMilestones = async (req, res) => {
 }
 
 module.exports = {
-    checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
-    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, editProjectKRA, updateProjectMilestones, joinDiscordQueue
+    checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, editProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
+    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, editProjectKRA, updateProjectMilestones, joinDiscordQueue, editProjectLinks
 };
