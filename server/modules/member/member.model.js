@@ -19,6 +19,7 @@ const MemberSchema = new mongoose.Schema({
   },
   wallet: {
     type: String,
+    unique: true,
     required: true
   },
   createdAt: {
