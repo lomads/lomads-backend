@@ -24,5 +24,6 @@ router.post('/:projectId/join-discord-queue', web3Auth, projectCtrl.joinDiscordQ
 router.patch('/:projectId/update-kra', web3Auth, projectCtrl.updateProjectKRAReview);
 router.patch('/:projectId/edit-kra', web3Auth, projectCtrl.editProjectKRA);
 router.patch('/:projectId/update-milestones', web3Auth, projectCtrl.updateProjectMilestones);
+router.patch('/:projectId/edit-milestones', web3Auth, projectCtrl.editProjectMilestone);
 
 module.exports = router;
