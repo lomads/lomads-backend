@@ -820,7 +820,7 @@ const updateProjectMilestones = async (req, res) => {
 const editProjectMilestone = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { milestones } = req.body;
+    const { milestones, compensation } = req.body;
     try {
 
         let project = await Project.findOne({ _id: projectId });
@@ -830,7 +830,7 @@ const editProjectMilestone = async (req, res) => {
 
         await Project.findOneAndUpdate(
             { _id: projectId },
-            { milestones }
+            { milestones, compensation }
         )
 
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
