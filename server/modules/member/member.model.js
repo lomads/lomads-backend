@@ -34,10 +34,8 @@ const MemberSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  sbtMetaData: {
-    type: Array,
-    default: []
-  },
+  sbtTokens: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contract' }],
+  sbtMetaData: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Metadata' }],
   notionUserId: {
     type: String,
     required: false,

@@ -1,8 +1,11 @@
 const Metadata = require('@server/modules/metadata/metadata.model');
 const Contract = require('@server/modules/contract/contract.model');
+const Member = require('@server/modules/member/member.model');
 const DAO = require('@server/modules/dao/dao.model');
+const ObjectId = require('mongodb').ObjectID;
 
 const addMetaData = async (req, res) => {
+    const { _id } = req.user;
     const { contractAddress } = req.params;
     const { id, description, name, image, attributes, daoUrl } = req.body;
 
@@ -19,6 +22,12 @@ const addMetaData = async (req, res) => {
         metaData = await metaData.save();
         c.metadata.push(metaData);
         c = await c.save();
+
+        await Member.findOneAndUpdate(
+            { _id },             
+            { $addToSet: { sbtTokens: ObjectId(c._id), sbtMetaData: ObjectId(metaData._id) } }
+        )
+
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }

@@ -2,6 +2,10 @@ const AWS = require('@config/aws');
 const config = require('@config/config');
 const axios = require('axios');
 const util = require('@metamask/eth-sig-util')
+const Member = require('@server/modules/member/member.model');
+const Metadata = require('@server/modules/metadata/metadata.model');
+const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
+const ObjectId = require('mongodb').ObjectID;
 
 const getUploadURL = async (req, res, next) => {
     try {
@@ -56,8 +60,30 @@ const getUploadURL = async (req, res, next) => {
     } catch (e) {
         console.log(e)
         return res.status(200).json(false)
-    }
-        
+    }      
+  }
+
+  const syncMetadata = async (req, res) => {
+    try {
+        const members = await Member.find({})
+        for (let index = 0; index < members.length; index++) {
+            const member = members[index];
+            const metaData = await Metadata.find({'attributes.value': toChecksumAddress(member.wallet) })
+            const tokensId = metaData.map(m => ObjectId(m.contract))
+            const metaDataId = metaData.map(m => ObjectId(m._id))
+            console.log(tokensId)
+            console.log(metaDataId)
+            await Member.findOneAndUpdate(
+                { _id: member._id },        
+                //{ $set: { sbtTokens: [], sbtMetaData: [] } }     
+                { $addToSet: { sbtTokens: { $each: tokensId }, sbtMetaData: { $each: metaDataId } } }
+            )
+        }
+        return res.status(200).json(true)
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(false)
+    } 
   }
   
-  module.exports = { getUploadURL, checkLomadsBot, encryptData };
+  module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata };
