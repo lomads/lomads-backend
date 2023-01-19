@@ -9,7 +9,8 @@ const ObjectId = require('mongodb').ObjectID;
 const URL = require('url');
 const axios = require('axios')
 const { projectCreated, memberInvitedToProject, projectDeleted, projectMemberRemoved, daoMemberAdded } = require('@events')
-const { checkSpaceAdminStatus, findNotionUserByEmail, getSpaceByDomain, prepareInviteObject, inviteUserToNotionBlock, removeUserFromNotionBlock } = require('@services/notion')
+const { checkSpaceAdminStatus, findNotionUserByEmail, getSpaceByDomain, prepareInviteObject, inviteUserToNotionBlock, removeUserFromNotionBlock } = require('@services/notion');
+const { toChecksumAddress } = require('ethereum-checksum-address');
 
 const getById = async (req, res) => {
     const { projectId } = req.params;
@@ -622,7 +623,7 @@ const updateProjectLink = async (req, res) => {
         }
         project.links = project.links.map(l => {
             if (l.id === id)
-                return { ...l, unlocked: [...(l.unlocked ? l.unlocked : []), wallet.toLowerCase()] }
+                return { ...l, unlocked: [...(l.unlocked ? l.unlocked : []), toChecksumAddress(wallet)] }
             return l
         })
         project = await project.save();
@@ -690,7 +691,8 @@ const addNotionUserRole = async (req, res) => {
                 const pathname = url.pathname;
                 let blockId = null;
                 if (pathname.indexOf('-') == -1) {
-                    blockId = pathname.replace('/', '')
+                    blockId = pathname.split('/')
+                    blockId = blockId[blockId.length - 1]
                 } else {
                     let path = pathname.split('-');
                     blockId = path[path.length - 1]

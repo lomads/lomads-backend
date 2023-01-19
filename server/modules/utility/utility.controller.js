@@ -2,10 +2,17 @@ const AWS = require('@config/aws');
 const config = require('@config/config');
 const axios = require('axios');
 const util = require('@metamask/eth-sig-util')
+const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
+const Safe = require('@server/modules/safe/safe.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const ObjectId = require('mongodb').ObjectID;
+
+function beautifyHexToken(token) {
+    return (token.slice(0, 6) + "..." + token.slice(-4))
+  }
+  
 
 const getUploadURL = async (req, res, next) => {
     try {
@@ -85,5 +92,77 @@ const getUploadURL = async (req, res, next) => {
         return res.status(500).json(false)
     } 
   }
+
+  const createNotification = async (req, res) => {
+    const { event, safeAddress, account } = req.body;
+    try {
+        if(event === 'transaction:execution.required') {
+            const safe = await Safe.findOne({ address: safeAddress }).populate({ path: 'owners' })
+            const notifications = []
+            for (let index = 0; index < safe.owners.length; index++) {
+                const p = {
+                daoId: safe.dao,
+                type: event,
+                model: 'Transaction',
+                title: 'Transaction',
+                notification: `Transaction needs <span class="bold">Execution</span>`,
+                to: safe.owners[i]._id,
+                timeline: false,
+                metadata: { entityId: safeAddress }
+                }
+                notifications.push(p)
+            }
+            await Notification.create(notifications)
+
+            const creator = await Member.findOne({  wallet: account })
+            let name = creator.name && creator.name !== '' ? creator.name : beautifyHexToken(account)
+            const payload = {
+                daoId: safe.dao,
+                type: event,
+                model: 'Transaction',
+                title: 'Transaction',
+                notification: `${name} <span class="bold">created</span> a transaction`,
+                to: null,
+                metadata: { entityId: safeAddress } 
+            }
+            await Notification.create(payload)
+
+        } else if(event === 'transaction:confirmation.required') {
+            const safe = await Safe.findOne({ address: safeAddress }).populate({ path: 'owners' })
+            console.log(safe)
+            const notifications = []
+            for (let index = 0; index < safe.owners.length; index++) {
+                const p = {
+                    daoId: safe.dao,
+                    type: event,
+                    model: 'Transaction',
+                    title: 'Transaction',
+                    notification: `Transaction needs <span class="bold">Confirmation</span>`,
+                    timeline: false,
+                    to: safe.owners[index]._id,
+                    metadata: { entityId: safeAddress }
+                }
+                notifications.push(p)
+            }
+            await Notification.create(notifications)
+            const creator = await Member.findOne({  wallet: account })
+            let name = creator.name && creator.name !== '' ? creator.name : beautifyHexToken(account)
+            const payload = {
+                daoId: safe.dao,
+                type: event,
+                model: 'Transaction',
+                title: 'Transaction',
+                notification: `${name} <span class="bold">created</span> a transaction`,
+                to: null,
+                metadata: { entityId: safeAddress } 
+            }
+            await Notification.create(payload)
+        }
+        return res.status(200).json(true)
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(false)
+    } 
+  }
   
-  module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata };
+  module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata, createNotification };
