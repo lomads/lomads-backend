@@ -157,6 +157,48 @@ const getUploadURL = async (req, res, next) => {
                 metadata: { entityId: safeAddress } 
             }
             await Notification.create(payload)
+        } else if(event === 'transaction:executed') {
+            const safe = await Safe.findOne({ address: safeAddress }).populate({ path: 'owners' })
+            const creator = await Member.findOne({  wallet: account })
+            let name = creator.name && creator.name !== '' ? creator.name : beautifyHexToken(account)
+            const payload = {
+                daoId: safe.dao,
+                type: event,
+                model: 'Transaction',
+                title: 'Transaction',
+                notification: `${name} <span class="bold">executed</span> a transaction`,
+                to: null,
+                metadata: { entityId: safeAddress } 
+            }
+            await Notification.create(payload)
+        } else if(event === 'transaction:confirmed') {
+            const safe = await Safe.findOne({ address: safeAddress }).populate({ path: 'owners' })
+            const creator = await Member.findOne({  wallet: account })
+            let name = creator.name && creator.name !== '' ? creator.name : beautifyHexToken(account)
+            const payload = {
+                daoId: safe.dao,
+                type: event,
+                model: 'Transaction',
+                title: 'Transaction',
+                notification: `${name} <span class="bold">confirmed</span> a transaction`,
+                to: null,
+                metadata: { entityId: safeAddress } 
+            }
+            await Notification.create(payload)
+        } else if(event === 'transaction:rejected') {
+            const safe = await Safe.findOne({ address: safeAddress }).populate({ path: 'owners' })
+            const creator = await Member.findOne({  wallet: account })
+            let name = creator.name && creator.name !== '' ? creator.name : beautifyHexToken(account)
+            const payload = {
+                daoId: safe.dao,
+                type: event,
+                model: 'Transaction',
+                title: 'Transaction',
+                notification: `${name} <span class="bold">rejected</span> a transaction`,
+                to: null,
+                metadata: { entityId: safeAddress } 
+            }
+            await Notification.create(payload)
         }
         return res.status(200).json(true)
     } catch (e) {
