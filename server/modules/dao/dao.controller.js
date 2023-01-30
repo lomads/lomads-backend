@@ -9,9 +9,11 @@ const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-a
 const load = async (req, res) => {
     const { _id } = req.user;
     console.log(req.user);
+    console.log("query : ", req.query);
     const { chainId = 5 } = req.query;
     try {
         const dao = await DAO.find({ chainId, deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
+        console.log("DAO : ", dao);
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -354,7 +356,7 @@ const syncSafeOwners = async (req, res) => {
         }
     }
 
-    let iMembers = await Member.find( { wallet: { $in: owners.map(o => toChecksumAddress(o)) }})
+    let iMembers = await Member.find({ wallet: { $in: owners.map(o => toChecksumAddress(o)) } })
     await Safe.updateOne({ dao: dao._id }, { owners: iMembers })
 
     const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
@@ -370,11 +372,11 @@ const updateUserDiscord = async (req, res) => {
             return res.status(404).json({ message: 'DAO not found' })
         await DAO.findOneAndUpdate(
             {
-              url: url,
-              members: { $elemMatch: { member: userId } }
+                url: url,
+                members: { $elemMatch: { member: userId } }
             },
-            { $set: { "members.$.discordId" : discordId } }
-         )
+            { $set: { "members.$.discordId": discordId } }
+        )
         return res.status(200).json({ message: 'Success' });
     } catch (e) {
         console.log(e)

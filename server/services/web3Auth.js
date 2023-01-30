@@ -6,12 +6,12 @@ const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-a
 const web3Auth = async (req, res, next) => {
     try {
         const token = req.headers['authorization']
-        if(!token)
+        if (!token)
             return res.status(401).json({ message: 'Authorization token required' })
         const { address = '', body } = await Web3Token.verify(token);
         console.log("address", toChecksumAddress(address))
         let member = await Member.findOne({ wallet: toChecksumAddress(address) })
-        if(!member) {
+        if (!member) {
             return res.status(500).json({ message: 'Authorization token required' })
         }
         req.user = member;
