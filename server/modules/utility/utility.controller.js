@@ -106,7 +106,7 @@ const getUploadURL = async (req, res, next) => {
                 model: 'Transaction',
                 title: 'Transaction',
                 notification: `Transaction needs <span class="bold">Execution</span>`,
-                to: safe.owners[i]._id,
+                to: safe.owners[index]._id,
                 timeline: false,
                 metadata: { entityId: safeAddress }
                 }
