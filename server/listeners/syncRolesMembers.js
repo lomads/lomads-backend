@@ -6,11 +6,12 @@ const { getGuildRoles, getGuildMembers } = require('@services/discord');
 module.exports = {
   handle: async ($data) => {
     const guildRoles = await getGuildRoles($data)
+    console.log("guildRoles", guildRoles)
     let guildMembers = await getGuildMembers($data)
     guildMembers = JSON.parse(JSON.stringify(guildMembers))
     await DAO.updateMany({ [`discord.${$data}`]: { $ne: null } }, {
         $set: { 
-            [`discord.${$data}.roles`]: guildRoles.map(gr => { return { id: gr.id, name: gr.name } }),
+            [`discord.${$data}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone').map(gr => { return { id: gr.id, name: gr.name, color: gr.color ? `#${gr.color.toString(16)}` : `#${Math.floor(Math.random()*16777215).toString(16)}` } }),
             [`discord.${$data}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } })
         }
     })
