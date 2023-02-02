@@ -11,6 +11,7 @@ router.get('/me', web3Auth, (req, res) => {
 router.patch('/me', web3Auth, authCtrl.update);
 
 router.post('/create-account', createAccount);
+router.post('/create-account-aikon', authCtrl.createAccountAikon);
 
 
 
