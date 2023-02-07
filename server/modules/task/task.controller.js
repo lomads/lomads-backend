@@ -389,13 +389,13 @@ const submitTask = async (req, res) => {
                 }
             }
             else if (task.isSingleContributor === false && task.contributionType === 'open') {
-                if (task.isFilterRoles) {
-                    const roles = task.validRoles.map(r => r.replace(' ', '_').toUpperCase())
-                    const eligible = _.find(_.get(dao, 'members', []), m => m.member.toString() === _id.toString() && roles.indexOf(m.role) > -1)
-                    if (!eligible)
-                        return res.status(500).json({ message: 'Not permitted' })
+                // if (task.isFilterRoles) {
+                //     const roles = _.get(task, 'validRoles', [])
+                //     const eligible = _.find(_.get(dao, 'members', []), m => m.member.toString() === _id.toString() && roles.indexOf(m.role) > -1)
+                //     if (!eligible)
+                //         return res.status(500).json({ message: 'Not permitted' })
 
-                }
+                // }
                 await Task.updateOne({ _id: taskId }, {
                     $addToSet: {
                         members: {
