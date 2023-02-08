@@ -13,6 +13,10 @@ const ProjectSchema = new mongoose.Schema({
     name: { type: String },
     description: { type: String },
     creator: { type: String },
+    inviteType: {
+        type: String,
+        default: 'Open'
+    },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
     tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     links: {
@@ -29,10 +33,10 @@ const ProjectSchema = new mongoose.Schema({
     kra: {
         frequency: { type: String },
         results: [{
-                    _id: { type: String },
-                    name: { type: String, default: '' }
-                }],
-        tracker:[
+            _id: { type: String },
+            name: { type: String, default: '' }
+        }],
+        tracker: [
             {
                 results: [{ type: mongoose.Schema.Types.Object }],
                 start: { type: Number },
