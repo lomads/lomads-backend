@@ -90,7 +90,7 @@ const syncRoles = async (req, res) => {
         guildMembers = JSON.parse(JSON.stringify(guildMembers))
         await DAO.findOneAndUpdate({ _id: daoId }, {
             $set: { 
-                [`discord.${guildId}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone' && !gr.tags).map(gr => { return { id: gr.id, name: gr.name, roleColor: gr.color ? `#${gr.color.toString(16)}` : `#99aab5` } }),
+                [`discord.${guildId}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone' && !_.get(gr, 'tags.botId', null)).map(gr => { return { id: gr.id, name: gr.name, roleColor: gr.color ? `#${gr.color.toString(16)}` : `#99aab5` } }),
                 [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
             }
         })
