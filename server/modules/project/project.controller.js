@@ -26,7 +26,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     const { _id, wallet } = req.user;
-    const { name, description, members, links, milestones, compensation, kra, daoId, inviteType } = req.body;
+    const { name, description, members, links, milestones, compensation, kra, daoId, inviteType, validRoles } = req.body;
     let mMembers = [];
     try {
 
@@ -57,7 +57,7 @@ const create = async (req, res) => {
         }
 
         let project = new Project({
-            daoId, name, description, members: mem, links, milestones, compensation, kra: kra1, creator: wallet, inviteType
+            daoId, name, description, members: mem, links, milestones, compensation, kra: kra1, creator: wallet, inviteType, validRoles
         })
 
         project = await project.save();
@@ -388,7 +388,7 @@ const deleteProjectMember = async (req, res) => {
 
 const editProjectMember = async (req, res) => {
     const { projectId } = req.params;
-    const { memberList, daoId, inviteType } = req.body;
+    const { memberList, daoId, inviteType, validRoles } = req.body;
     try {
         let project = await Project.findOne({ _id: projectId });
         if (!project) {
@@ -417,9 +417,12 @@ const editProjectMember = async (req, res) => {
             { _id: projectId },
             {
                 members: memberList,
-                inviteType
+                inviteType,
+                validRoles
             }
         )
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
 
         if (daoId) {
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
@@ -487,8 +490,6 @@ const editProjectMember = async (req, res) => {
                 }
             }
         }
-
-        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
 
         memberInvitedToProject.emit({ project: p, members: newMembers })
         projectMemberRemoved.emit({ $project: p, $memberList: deletedMembers })

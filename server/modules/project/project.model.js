@@ -17,6 +17,10 @@ const ProjectSchema = new mongoose.Schema({
         type: String,
         default: 'Open'
     },
+    validRoles: {
+        type: Array,
+        default: []
+    },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
     tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     links: {
