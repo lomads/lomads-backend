@@ -244,7 +244,6 @@ const storeGithubIssues = async (req, res) => {
             for (let i = 0; i < docs.length; i++) {
                 arr.push(docs[i]._id);
             }
-            console.log("final arr : ", arr)
             await DAO.findOneAndUpdate(
                 { _id: daoId },
                 {
