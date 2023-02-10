@@ -68,7 +68,7 @@ const connect = () => {
       guildRoleMemberUpdated.emit(member.guild.id)
     });
     client.on('guildMemberAdd', async member => {
-      guildRoleMemberUpdated.emit(member.guild.id)
+      console.log("guildRoleMemberUpdated.emit(member.guild.id)")
       const newInvites = await member.guild.invites.fetch()
       const oldInvites = invites[member.guild.id]
       const invite = newInvites.find(i => {
@@ -78,6 +78,7 @@ const connect = () => {
       memberJoinedDiscordServer.emit({
         member, invite
       })
+      guildRoleMemberUpdated.emit(member.guild.id)
     });
     client.on("messageCreate", message => {
       const { guild_id, channel_id } = message;

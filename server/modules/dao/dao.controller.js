@@ -1,10 +1,12 @@
 const _ = require('lodash');
 const DAO = require('@server/modules/dao/dao.model')
+const Project = require('@server/modules/project/project.model')
 const Member = require('@server/modules/member/member.model')
 const Safe = require('@server/modules/safe/safe.model')
 const ObjectId = require('mongodb').ObjectID;
 const { daoMemberAdded } = require('@server/events');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
+const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -366,7 +368,7 @@ const syncSafeOwners = async (req, res) => {
 const updateUserDiscord = async (req, res) => {
     try {
         const { url } = req.params;
-        const { userId, discordId } = req.body;
+        const { userId, discordId, daoId } = req.body;
         let dao = await DAO.findOne({ url })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
@@ -377,6 +379,43 @@ const updateUserDiscord = async (req, res) => {
             },
             { $set: { "members.$.discordId": discordId } }
         )
+
+        for (let index = 0; index < dao.links.length; index++) {
+            const link = dao.links[index];
+            if(link.link.indexOf('discord.') > -1) {
+                const url = new URL(link.link)
+                const guildId = url.pathname.split('/')[2]
+                await hasNecessaryPermissions(guildId);
+                let guildRoles = await getGuildRoles(guildId);
+                let guildMembers = await getGuildMembers(guildId);
+                guildMembers = JSON.parse(JSON.stringify(guildMembers))
+                await DAO.findOneAndUpdate({ _id: daoId }, {
+                    $set: { 
+                        [`discord.${guildId}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone' && !_.get(gr, 'tags.botId', null)).map(gr => { return { id: gr.id, name: gr.name, roleColor: gr.color ? `#${gr.color.toString(16)}` : `#99aab5` } }),
+                        [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
+                    }
+                })
+                let daoIds = await DAO.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+                daoIds = daoIds.map(d => d._id)
+                let proj = await Project.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+                daoIds = daoIds.concat(proj.map(p => p.daoId))
+                daoIds = _.uniq(daoIds)
+                daoIds.push(daoId)
+                for (let index = 0; index < guildMembers.length; index++) {
+                    const guildMember = guildMembers[index];
+                    console.log(guildId, guildMember.roles)
+                    const up = await DAO.updateMany(
+                      {
+                        _id: { $in: daoIds },
+                        members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }]} }
+                      }
+                      ,
+                      { $set: { [`members.$.discordRoles.${guildId}`] : guildMember.roles } }
+                   )
+                }
+            }
+        }
+
         return res.status(200).json({ message: 'Success' });
     } catch (e) {
         console.log(e)
