@@ -44,6 +44,7 @@ const getMissingPermissions = (bot) => [
 const hasNecessaryPermissions = async (guildId) => {
     const guild = await getGuild(guildId)
     const bot = guild.members.me;
+    console.log(bot)
     const botPermissions = getMissingPermissions(bot);
     if (botPermissions.some((bp) => !bp.value)) {
       const errorMessage = botPermissions

@@ -90,6 +90,7 @@ const connect = () => {
       guildRoleMemberUpdated.emit(role.guild.id)
     })
     client.on("roleUpdate", (oldRole, newRole) => {
+      console.log(newRole)
       guildRoleMemberUpdated.emit(newRole.guild.id)
     })
     client.login(config.discordBotToken);
