@@ -12,7 +12,7 @@ const handleProjectShare = async (req, res) => {
         title: `${_.get(dao, 'name', '')} | ${_.get(project, 'name', '')}`,
         description: `${_.get(project, 'description', '')}`,
         baseUrl: config.baseUrl,
-        script: config.baseUrl.indexOf('app-dev') > -1 ? '/project.dev.js' : '/project.prod.js'
+        script: config.baseUrl.indexOf('app-dev') > -1 ? '/share/project.dev.js' : '/share/project.prod.js'
     });
 }
 
