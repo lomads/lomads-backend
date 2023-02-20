@@ -4,7 +4,7 @@ const web3Auth = require('@server/services/web3Auth');
 
 const router = express.Router(); // eslint-disable-line new-cap
 
-router.get('/:taskId', web3Auth, taskCtrl.getById);
+router.get('/:taskId', taskCtrl.getById);
 router.post('/', web3Auth, taskCtrl.create);
 router.post('/storeGithubIssues', web3Auth, taskCtrl.storeGithubIssues);
 router.post('/draft', web3Auth, taskCtrl.draftTask);
