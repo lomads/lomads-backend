@@ -864,6 +864,7 @@ const editDraftTask = async (req, res) => {
 const convertDraftTask = async (req, res) => {
     const { daoUrl } = req.query;
     const { taskId } = req.params;
+    const { _id, wallet } = req.user;
     const {
         name,
         description,
@@ -916,6 +917,7 @@ const convertDraftTask = async (req, res) => {
                 submissionLink,
                 compensation,
                 reviewer,
+                creator: _id,
                 contributionType,
                 isSingleContributor,
                 isFilterRoles,
