@@ -47,25 +47,37 @@ const DAOSchema = new mongoose.Schema({
   terminologies: {
     type: Object,
     default: {
-      "role1" : {
+      "roles": {
+        "role1" : {
           "label": 'Admin',
           "value": 'ADMIN',
           "permissions": ["*"]
+        },
+        "role2" : {
+            "label": 'Core Contributor',
+            "value": 'CORE_CONTRIBUTOR',
+            "permissions": ["*"]
+        },
+        "role3" : {
+            "label": 'Active Contributor',
+            "value": 'ACTIVE_CONTRIBUTOR',
+            "permissions": ["*"]
+        },
+        "role4" : {
+            "label": 'Contributor',
+            "value": 'CONTRIBUTOR',
+            "permissions": ["*"]
+        },
       },
-      "role2" : {
-          "label": 'Core Contributor',
-          "value": 'CORE_CONTRIBUTOR',
-          "permissions": ["*"]
+      "task": {
+        "label": "Task",
+        "labelPlural": "Tasks",
+        "value":  "TASK"
       },
-      "role3" : {
-          "label": 'Active Contributor',
-          "value": 'ACTIVE_CONTRIBUTOR',
-          "permissions": ["*"]
-      },
-      "role4" : {
-          "label": 'Contributor',
-          "value": 'CONTRIBUTOR',
-          "permissions": ["*"]
+      "workspace": {
+        "label": "Workspace",
+        "labelPlural": "Workspaces",
+        "value":  "WORKSPACE"
       },
    }
   },
