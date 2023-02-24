@@ -12,10 +12,6 @@ const DAOSchema = new mongoose.Schema({
     default: 5,
     required: true
   },
-  githubIssues: {
-    type: Boolean,
-    default: false,
-  },
   contractAddress: {
     type: String,
     default: null,
@@ -98,6 +94,9 @@ const DAOSchema = new mongoose.Schema({
     default: [],
   },
   discord: {
+    type: Object
+  },
+  github: {
     type: Object
   },
   createdAt: {

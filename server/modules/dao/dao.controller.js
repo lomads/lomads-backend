@@ -25,7 +25,7 @@ const load = async (req, res) => {
 }
 
 const create = async (req, res, next) => {
-    const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null, chainId = 5 } = req.body;
+    const { contractAddress = "", url = null, name, description = null, image, members = [], safe = null, chainId = 5 } = req.body;
     if (!name)
         return res.status(400).json({ message: 'Organisation name is required' })
     let mMembers = []
@@ -382,7 +382,7 @@ const updateUserDiscord = async (req, res) => {
 
         for (let index = 0; index < dao.links.length; index++) {
             const link = dao.links[index];
-            if(link.link.indexOf('discord.') > -1) {
+            if (link.link.indexOf('discord.') > -1) {
                 const url = new URL(link.link)
                 const guildId = url.pathname.split('/')[2]
                 await hasNecessaryPermissions(guildId);
@@ -390,7 +390,7 @@ const updateUserDiscord = async (req, res) => {
                 let guildMembers = await getGuildMembers(guildId);
                 guildMembers = JSON.parse(JSON.stringify(guildMembers))
                 await DAO.findOneAndUpdate({ _id: daoId }, {
-                    $set: { 
+                    $set: {
                         [`discord.${guildId}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone' && !_.get(gr, 'tags.botId', null)).map(gr => { return { id: gr.id, name: gr.name, roleColor: gr.color ? `#${gr.color.toString(16)}` : `#99aab5` } }),
                         [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
                     }
@@ -405,13 +405,13 @@ const updateUserDiscord = async (req, res) => {
                     const guildMember = guildMembers[index];
                     console.log(guildId, guildMember.roles)
                     const up = await DAO.updateMany(
-                      {
-                        _id: { $in: daoIds },
-                        members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }]} }
-                      }
-                      ,
-                      { $set: { [`members.$.discordRoles.${guildId}`] : guildMember.roles } }
-                   )
+                        {
+                            _id: { $in: daoIds },
+                            members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }] } }
+                        }
+                        ,
+                        { $set: { [`members.$.discordRoles.${guildId}`]: guildMember.roles } }
+                    )
                 }
             }
         }
