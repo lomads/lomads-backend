@@ -1,6 +1,7 @@
 const express = require('express');
 const logger = require('morgan');
 const bodyParser = require('body-parser');
+const path = require('path')
 const cookieParser = require('cookie-parser');
 const compress = require('compression');
 const methodOverride = require('method-override');
@@ -10,11 +11,15 @@ const expressWinston = require('express-winston');
 const expressValidation = require('express-validation');
 const helmet = require('helmet');
 const winstonInstance = require('./winston');
+const shareRoutes = require('@root/server/modules/share/share.route');
 const routes = require('@root/index.route');
 const config = require('@config/config');
 const APIError = require('@server/helpers/APIError');
 
 const app = express();
+
+app.set('view engine', 'ejs');
+//app.set('views', path.join(__dirname, 'views'));
 
 if (config.env === 'development') {
   app.use(logger('dev'));
@@ -47,8 +52,12 @@ app.options('*', cors())
 //   }));
 // }
 
+app.use('/', shareRoutes)
+
 // mount all routes on /api path
 app.use('/v1', routes);
+
+app.use(express.static('public'))
 
 // if error is not an instanceOf APIError, convert it.
 app.use((err, req, res, next) => {

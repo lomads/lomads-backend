@@ -9,7 +9,7 @@ router.get('/discord-server-exists/:discordServerId', web3Auth, projectCtrl.chec
 router.get('/notion/space-admin-status', web3Auth, projectCtrl.checkNotionSpaceAdminStatus);
 router.get('/notion/notion-user', web3Auth, projectCtrl.getNotionUser);
 router.post('/notion/add-role', web3Auth, projectCtrl.addNotionUserRole);
-router.get('/:projectId', web3Auth, projectCtrl.getById);
+router.get('/:projectId', projectCtrl.getById);
 router.patch('/:projectId/update-project', web3Auth, projectCtrl.updateProjectDetails);
 router.patch('/:projectId/archive', web3Auth, projectCtrl.archiveProject);
 router.patch('/:projectId/delete', web3Auth, projectCtrl.deleteProject);
