@@ -12,6 +12,9 @@ const ObjectId = require('mongodb').ObjectID;
 const CLIENT_ID = "8472b2207a0e12684382";
 const CLIENT_SECRET = "03aea473a13431fdfea15a2dfe105d47701f30cb";
 
+const Task = require('@server/modules/task/task.model');
+const DAO = require('@server/modules/dao/dao.model')
+
 function beautifyHexToken(token) {
     return (token.slice(0, 6) + "..." + token.slice(-4))
 }
@@ -210,8 +213,7 @@ const createNotification = async (req, res) => {
 }
 
 const getGithubAccessToken = async (req, res) => {
-    console.log("Hello")
-    const { code } = req.query;
+    const { code, repoInfo } = req.query;
     const params = `?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&code=${code}`;
 
     await fetch("https://github.com/login/oauth/access_token" + params, {
@@ -219,23 +221,11 @@ const getGithubAccessToken = async (req, res) => {
         headers: {
             "Accept": "application/json"
         }
-    }).then((response) => {
-        return response.json();
-    }).then(async (data) => {
-        console.log("data : ", data);
-        await fetch(`https://api.github.com/repos/Lomads-Technologies/soulbound-token/issues`,
-            {
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': `token ${data.access_token}`
-                }
-            })
-            .then(r => r.json())
-            .then(d => {
-                console.log("github issues : ", d);
-            })
-        return res.json(data);
     })
+        .then(response => response.json())
+        .then(async (data) => {
+            return res.json(data);
+        })
 }
 
 const getUserData = async (req, res) => {
@@ -251,18 +241,153 @@ const getUserData = async (req, res) => {
     })
 }
 
-const issuesListener = async (req, res) => {
-    console.log("github issue listener: ", req.body);
+const getIssues = async (req, res) => {
+    const { token, repoInfo, daoId } = req.query;
+    try {
+        fetch(`https://api.github.com/repos/${repoInfo}/issues`,
+            {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `token ${token}`
+                }
+            })
+            .then((r) => {
+                if (r.ok) {
+                    return r.json();
+                }
+                else {
+                    throw new Error("Not allowed!");
+                }
+            })
+            .then(async issues => {
+                var newArray = issues.map((i) => (
+                    {
+                        daoId: daoId,
+                        provider: 'Github',
+                        metaData: {
+                            externalId: i.id.toString(),
+                            repoUrl: new URL(i.html_url).origin + '/' + new URL(i.html_url).pathname.split("/")[1] + '/' + new URL(i.html_url).pathname.split("/")[2]
+                        },
+                        name: i.title,
+                        description: i.body,
+                        creator: null,
+                        members: [],
+                        project: null,
+                        discussionChannel: i.html_url,
+                        deadline: null,
+                        submissionLink: i.html_url,
+                        compensation: null,
+                        reviewer: null,
+                        contributionType: 'open',
+                        createdAt: i.created_at,
+                        draftedAt: Date.now(),
+                    }
+                ))
+                return res.json({ data: newArray, message: 'success' });
+            })
+            .catch((e) => {
+                console.log("request error : ", e);
+                return res.json({ data: [], message: 'error' });
+            })
+    }
+    catch (e) {
+        console.log("try catch error : ", e)
+    }
 }
 
-const createWebhook = async (req, res) => {
-    const { token, repoInfo } = req.body;
-    console.log("repo info : ", repoInfo)
+const storeIssues = async (req, res) => {
+    const { token, repoInfo, daoId, issueList } = req.body;
+    const result = await createWebhook(token, repoInfo);
+
+    if (result) {
+        let arr = [];
+        try {
+            let insertMany = await Task.insertMany(issueList, async function (error, docs) {
+                for (let i = 0; i < docs.length; i++) {
+                    arr.push(docs[i]._id);
+                }
+                if (arr.length > 0) {
+                    const dao = await DAO.findOne({ _id: daoId });
+                    if (dao) {
+
+                        await DAO.findOneAndUpdate(
+                            { _id: daoId },
+                            {
+                                [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
+                                $addToSet: { tasks: { $each: arr } },
+                            }
+                        )
+                    }
+
+                    const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+                    return res.status(200).json({ dao: d });
+                }
+            })
+        }
+        catch (e) {
+            console.log("error : ", e);
+        }
+    }
+}
+
+const issuesListener = async (req, res) => {
+    const payload = req.body;
+    console.log("github issue listener: ", payload);
+
+    if (payload.action === 'opened') {
+        console.log("opened");
+        // creation of task requires daoId
+    }
+    else if (payload.action === 'reopened') {
+        console.log("reopened");
+        try {
+            await Task.findOneAndUpdate(
+                { "metaData.externalId": payload.issue.id.toString() },
+                {
+                    reopenedAt: Date.now(),
+                    deletedAt: null
+                }
+            );
+        } catch (error) {
+            console.log("error : ", error)
+        }
+    }
+    else if (payload.action === 'edited') {
+        console.log("edited");
+        try {
+            await Task.findOneAndUpdate(
+                { "metaData.externalId": payload.issue.id.toString() },
+                {
+                    name: payload.issue.title
+                }
+            )
+        } catch (error) {
+            console.log("error : ", error)
+        }
+    }
+    else if (payload.action === 'closed') {
+        console.log("closed");
+        try {
+            await Task.findOneAndUpdate(
+                { "metaData.externalId": payload.issue.id.toString() },
+                {
+                    deletedAt: Date.now(),
+                }
+            );
+        } catch (error) {
+            console.log("error : ", error)
+        }
+    }
+}
+
+const createWebhook = async (token, repoInfo) => {
     let _body = {
         name: 'web',
         active: true,
         config: {
-            url: "https://f06e-202-142-103-104.in.ngrok.io/v1/utility/github/issues-listener",
+            url: `${config.baseUrl}/v1/utility/github/issues-listener`,
             content_type: 'json',
             insecure_ssl: '0'
         },
@@ -280,19 +405,19 @@ const createWebhook = async (req, res) => {
         ]
     }
 
-    axios.post(`https://api.github.com/repos/Lomads-Technologies/soulbound-token/hooks`, JSON.stringify(_body), {
+    return axios.post(`https://api.github.com/repos/${repoInfo}/hooks`, JSON.stringify(_body), {
         headers: {
             "Authorization": `token ${token}`,
             "cache-control": "no-cache"
         }
     })
         .then((response) => {
-            res.json(response.data);
+            console.log("webhook res : ", response);
+            return response.data;
         })
         .catch(e => {
             console.log("error : ", e);
-            res.status(500).json(e);
         })
 }
 
-module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata, createNotification, getGithubAccessToken, getUserData, createWebhook, issuesListener };
+module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata, createNotification, getGithubAccessToken, getUserData, getIssues, storeIssues, createWebhook, issuesListener };

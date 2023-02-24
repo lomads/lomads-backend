@@ -12,6 +12,8 @@ router.post('/create-notification', web3Auth, utilityCtrl.createNotification)
 // github oauth proxy server
 
 router.get('/getGithubAccessToken', utilityCtrl.getGithubAccessToken);
+router.get('/get-issues', utilityCtrl.getIssues);
+router.post('/store-issues', utilityCtrl.storeIssues);
 router.post('/create-webhook', utilityCtrl.createWebhook);
 router.post('/github/issues-listener', utilityCtrl.issuesListener);
 

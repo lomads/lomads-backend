@@ -248,7 +248,6 @@ const storeGithubIssues = async (req, res) => {
                 { _id: daoId },
                 {
                     $addToSet: { tasks: { $each: arr } },
-                    githubIssues: true
                 }
             )
         })
