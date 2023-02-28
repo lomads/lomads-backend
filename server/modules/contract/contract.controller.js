@@ -33,7 +33,6 @@ const create = async (req, res) => {
     const { membersList, daoId } = req.body;
     let mMembers = [];
     try {
-        console.log(req.body)
         let contract = await Contract.create({ ...req.body, admin: _id })
 
         for (let index = 0; index < membersList.length; index++) {
@@ -56,7 +55,7 @@ const create = async (req, res) => {
             await DAO.findOneAndUpdate(
                 { _id: dao._id },
                 {
-                    $addToSet: { members: { $each: mem } },
+                    //$addToSet: { members: { $each: mem } },
                     sbt: contract._id
                 }
             )

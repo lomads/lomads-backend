@@ -20,8 +20,12 @@ const addMetaData = async (req, res) => {
             contract: c._id
         })
         metaData = await metaData.save();
-        c.metadata.push(metaData);
-        c = await c.save();
+        // c.metadata.push(metaData);
+        // c = await c.save();
+
+        await Contract.findOneAndUpdate({ address: contractAddress }, 
+            { $addToSet : { metadata: ObjectId(metaData._id) } }
+        )
 
         await Member.findOneAndUpdate(
             { _id },             
