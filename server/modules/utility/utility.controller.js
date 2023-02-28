@@ -393,7 +393,7 @@ const createWebhook = async (token, repoInfo) => {
         name: 'web',
         active: true,
         config: {
-            url: `${config.baseUrl}/v1/utility/github/issues-listener`,
+            url: `${config.baseUrlWithExt}/v1/utility/github/issues-listener`,
             content_type: 'json',
             insecure_ssl: '0'
         },

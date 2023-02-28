@@ -42,7 +42,6 @@ if (error) {
 const config = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
-  baseUrl: envVars.BASE_URL,
   mongooseDebug: envVars.MONGOOSE_DEBUG,
   jwtSecret: envVars.JWT_SECRET,
   aesPassPhrase: envVars.AES_PASS_PHRASE,
@@ -64,7 +63,8 @@ const config = {
     [`${SupportedChainId.GOERLI}`]: 'https://safe-transaction-goerli.safe.global'
   },
   discordBotToken: envVars.DISCORD_BOT_TOKEN,
-  baseUrl: envVars.BASE_URL
+  baseUrl: envVars.BASE_URL,
+  baseUrlWithExt: envVars.BASE_URL_WITH_EXT
 };
 
 module.exports = config;
