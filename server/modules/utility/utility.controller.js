@@ -340,6 +340,7 @@ const issuesListener = async (req, res) => {
         console.log("opened");
         // creation of task requires daoId
     }
+
     else if (payload.action === 'reopened') {
         console.log("reopened");
         try {
@@ -354,6 +355,7 @@ const issuesListener = async (req, res) => {
             console.log("error : ", error)
         }
     }
+
     else if (payload.action === 'edited') {
         console.log("edited");
         try {
@@ -361,12 +363,14 @@ const issuesListener = async (req, res) => {
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
                     name: payload.issue.title
+                    // description
                 }
             )
         } catch (error) {
             console.log("error : ", error)
         }
     }
+
     else if (payload.action === 'closed') {
         console.log("closed");
         try {
@@ -380,6 +384,8 @@ const issuesListener = async (req, res) => {
             console.log("error : ", error)
         }
     }
+
+    // else if(payload.action === 'assigned'){}
 }
 
 const createWebhook = async (token, repoInfo) => {
