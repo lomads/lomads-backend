@@ -1,6 +1,7 @@
 const AWS = require('@config/aws');
 const config = require('@config/config');
 const axios = require('axios');
+const _ = require('lodash');
 const util = require('@metamask/eth-sig-util')
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
@@ -301,33 +302,54 @@ const storeIssues = async (req, res) => {
     const result = await createWebhook(token, repoInfo);
 
     if (result) {
-        let arr = [];
-        try {
-            let insertMany = await Task.insertMany(issueList, async function (error, docs) {
-                for (let i = 0; i < docs.length; i++) {
-                    arr.push(docs[i]._id);
-                }
-                if (arr.length > 0) {
-                    const dao = await DAO.findOne({ _id: daoId });
-                    if (dao) {
-
-                        await DAO.findOneAndUpdate(
-                            { _id: daoId },
-                            {
-                                [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
-                                $addToSet: { tasks: { $each: arr } },
-                            }
-                        )
+        console.log("305 result : ", result);
+        if (issueList.length > 0) {
+            console.log("issues present")
+            let arr = [];
+            try {
+                let insertMany = await Task.insertMany(issueList, async function (error, docs) {
+                    for (let i = 0; i < docs.length; i++) {
+                        arr.push(docs[i]._id);
                     }
+                    if (arr.length > 0) {
+                        const dao = await DAO.findOne({ _id: daoId });
+                        if (dao) {
 
-                    const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+                            await DAO.findOneAndUpdate(
+                                { _id: daoId },
+                                {
+                                    [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
+                                    $addToSet: { tasks: { $each: arr } },
+                                }
+                            )
+                        }
 
-                    return res.status(200).json({ dao: d });
-                }
-            })
+                        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+                        return res.status(200).json({ dao: d });
+                    }
+                })
+            }
+            catch (e) {
+                console.log("error : ", e);
+            }
         }
-        catch (e) {
-            console.log("error : ", e);
+        else {
+            console.log("no issues present")
+            const dao = await DAO.findOne({ _id: daoId });
+            if (dao) {
+
+                await DAO.findOneAndUpdate(
+                    { _id: daoId },
+                    {
+                        [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
+                    }
+                )
+            }
+
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+            return res.status(200).json({ dao: d });
         }
     }
 }
@@ -337,9 +359,49 @@ const issuesListener = async (req, res) => {
     console.log("github issue listener: ", payload);
 
     if (payload.action === 'opened') {
-        console.log("opened");
-        // creation of task requires daoId
+        let daoIds = await DAO.find({
+            [`github.${payload.repository.full_name}`]: { $ne: null }
+        })
+
+        daoIds = daoIds.map(d => d._id);
+
+        for (let i = 0; i < daoIds.length; i++) {
+            // create task with daoId
+
+            let task = new Task({
+                daoId: daoIds[i],
+                provider: 'Github',
+                metaData: {
+                    externalId: payload.issue.id.toString(),
+                    repoUrl: new URL(payload.issue.html_url).origin + '/' + new URL(payload.issue.html_url).pathname.split("/")[1] + '/' + new URL(payload.issue.html_url).pathname.split("/")[2]
+                },
+                name: payload.issue.title,
+                description: payload.issue.body,
+                creator: null,
+                members: [],
+                project: null,
+                discussionChannel: payload.issue.html_url,
+                deadline: null,
+                submissionLink: payload.issue.html_url,
+                compensation: null,
+                reviewer: null,
+                contributionType: 'open',
+                createdAt: payload.issue.created_at,
+                draftedAt: Date.now(),
+            })
+
+            task = await task.save();
+            if (task) {
+                // update dao
+                let dao = await DAO.findOne({ _id: daoIds[i] });
+                if (dao) {
+                    dao.tasks.push(task._id);
+                    dao = await dao.save();
+                }
+            }
+        }
     }
+
     else if (payload.action === 'reopened') {
         console.log("reopened");
         try {
@@ -354,19 +416,22 @@ const issuesListener = async (req, res) => {
             console.log("error : ", error)
         }
     }
+
     else if (payload.action === 'edited') {
         console.log("edited");
         try {
             await Task.findOneAndUpdate(
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
-                    name: payload.issue.title
+                    name: payload.issue.title,
+                    description: payload.issue.body
                 }
             )
         } catch (error) {
             console.log("error : ", error)
         }
     }
+
     else if (payload.action === 'closed') {
         console.log("closed");
         try {
@@ -380,6 +445,9 @@ const issuesListener = async (req, res) => {
             console.log("error : ", error)
         }
     }
+
+    // else if(payload.action === 'assigned'){}
+    // else if(payload.action === 'deleted'){}
 }
 
 const createWebhook = async (token, repoInfo) => {
@@ -405,19 +473,39 @@ const createWebhook = async (token, repoInfo) => {
         ]
     }
 
-    return axios.post(`https://api.github.com/repos/${repoInfo}/hooks`, JSON.stringify(_body), {
-        headers: {
-            "Authorization": `token ${token}`,
-            "cache-control": "no-cache"
-        }
-    })
-        .then((response) => {
-            console.log("webhook res : ", response);
-            return response.data;
+    try {
+        return axios.post(`https://api.github.com/repos/${repoInfo}/hooks`, JSON.stringify(_body), {
+            headers: {
+                "Authorization": `token ${token}`,
+                "cache-control": "no-cache"
+            }
         })
-        .catch(e => {
-            console.log("error : ", e);
-        })
+            .then((response) => {
+                return response.data;
+            })
+            .catch(async (e) => {
+                console.log("error : ", typeof (e.response.status));
+                if (e.response.status === 422) {
+                    const dao = await DAO.findOne({ [`github.${repoInfo}`]: { $ne: null } });
+                    if (dao) {
+                        const githubOb = _.get(dao, 'github', null);
+                        if (githubOb) {
+                            if (_.get(dao, `github.${repoInfo}`, null)) {
+                                return { id: _.get(dao, `github.${repoInfo}`, null).webhookId }
+                            }
+                            else {
+                                console.log("doesnt exists")
+                            }
+                        }
+                    }
+                    else {
+                        console.log("NF")
+                    }
+                }
+            })
+    } catch (error) {
+        console.log("try catch error : ", e)
+    }
 }
 
 module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata, createNotification, getGithubAccessToken, getUserData, getIssues, storeIssues, createWebhook, issuesListener };
