@@ -420,7 +420,7 @@ const issuesListener = async (req, res) => {
     else if (payload.action === 'edited') {
         console.log("edited");
         try {
-            await Task.findOneAndUpdate(
+            await Task.updateMany(
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
                     name: payload.issue.title,
