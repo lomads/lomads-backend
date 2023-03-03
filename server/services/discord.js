@@ -136,8 +136,9 @@ const createGuildRole = async (guildId, name) => {
 const attachRole = async (guildId, roleId, member) => {
   const roles = await getGuildRoles(guildId)
   const role = _.find(roles, r => r.id === roleId)
-  if(role)
-    return await member.roles.add(roleId)
+    if(role)
+      return await member.roles.add(roleId)
+      .catch(e => { console.log(e); return null })
 }
 
 const memberHasRole = async (guildId, memberId, roleId) => {
@@ -149,8 +150,14 @@ const memberHasRole = async (guildId, memberId, roleId) => {
 
 const attachGuildMemberRole = async (guildId, memberId, roleId) => {
   const member = await getGuildMember(guildId, memberId)
-  if(member)
-    return await member.roles.add(roleId)
+  if(member) {
+    const roles = await getGuildRoles(guildId)
+    const role = _.find(roles, r => r.id === roleId)
+    if(role)
+      return await member.roles.add(roleId)
+    return null
+  }
+  return null
 }
 
 module.exports = {

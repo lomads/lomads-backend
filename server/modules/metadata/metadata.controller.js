@@ -46,8 +46,10 @@ const getMetadata = async (req, res) => {
     try {
         const { contractAddress } = req.params;
         const { wallet } = req.user;
+        console.log(wallet)
+        let c = await Contract.findOne({ address: contractAddress });
         const metadata = await Metadata.findOne({
-            contract: contractAddress,
+            contract: c._id,
             "attributes.value": { $regex: new RegExp(`^${wallet}$`, "i") }
         })
         if (!metadata)

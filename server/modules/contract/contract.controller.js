@@ -73,10 +73,10 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
     const { contractAddress } = req.params;
-    const { daoId, contactDetail, whitelisted } = req.body;
+    const { daoId, contactDetail, whitelisted, mintPrice } = req.body;
     try {
 
-        await Contract.findOneAndUpdate({ address: contractAddress }, { contactDetail, whitelisted });
+        await Contract.findOneAndUpdate({ address: contractAddress }, { contactDetail, whitelisted, mintPrice });
         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
