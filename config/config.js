@@ -64,7 +64,9 @@ const config = {
   },
   discordBotToken: envVars.DISCORD_BOT_TOKEN,
   baseUrl: envVars.BASE_URL,
-  baseUrlWithExt: envVars.BASE_URL_WITH_EXT
+  baseUrlWithExt: envVars.BASE_URL_WITH_EXT,
+  githubClientId: envVars.GITHUB_CLIENT_ID,
+  githubClientSecret: envVars.GITHUB_CLIENT_SECRET
 };
 
 module.exports = config;

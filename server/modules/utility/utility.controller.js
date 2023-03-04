@@ -215,7 +215,7 @@ const createNotification = async (req, res) => {
 
 const getGithubAccessToken = async (req, res) => {
     const { code, repoInfo } = req.query;
-    const params = `?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&code=${code}`;
+    const params = `?client_id=${config.githubClientId}&client_secret=${config.githubClientSecret}&code=${code}`;
 
     await fetch("https://github.com/login/oauth/access_token" + params, {
         method: 'POST',
