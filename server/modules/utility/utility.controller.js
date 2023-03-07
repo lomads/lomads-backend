@@ -482,7 +482,7 @@ const createWebhook = async (token, repoInfo) => {
     try {
         return axios.post(`https://api.github.com/repos/${repoInfo}/hooks`, JSON.stringify(_body), {
             headers: {
-                "Authorization": `token ${token}`,
+                "Authorization": `Bearer ${token}`,
                 "cache-control": "no-cache"
             }
         })

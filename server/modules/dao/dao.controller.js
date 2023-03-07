@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const DAO = require('@server/modules/dao/dao.model')
+const Task = require('@server/modules/task/task.model')
 const Project = require('@server/modules/project/project.model')
 const Member = require('@server/modules/member/member.model')
 const Safe = require('@server/modules/safe/safe.model')
@@ -304,6 +305,60 @@ const updateDaoLinks = async (req, res) => {
     }
 }
 
+const deleteDaoLink = async (req, res) => {
+    const { url } = req.params;
+    const { link, repoInfo, webhookId, token } = req.body;
+    try {
+
+        let dao = await DAO.findOne({ deletedAt: null, url });
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+
+        // remove link from the array
+        let linkArray = [...dao.links];
+        linkArray = linkArray.filter((item) => item.link !== link.link);
+        // remove repoInfo from github object
+        let githubOb = { ...dao.github };
+        delete githubOb[`${repoInfo}`];
+
+        let daoIds = await DAO.find({
+            [`github.${repoInfo}`]: { $ne: null }
+        })
+
+        daoIds = daoIds.map(d => d._id);
+
+        if (daoIds.length === 1) {
+            // delete webhook
+            axios.delete(`https://api.github.com/repos/${repoInfo}/hooks/${webhookId}`, JSON.stringify(_body), {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "cache-control": "no-cache"
+                }
+            })
+        }
+
+        try {
+            await DAO.findOneAndUpdate(
+                { url },
+                {
+                    links: linkArray,
+                    github: githubOb
+                }
+            )
+        }
+        catch (e) {
+            console.log("error : ", e);
+        }
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.deleteDaoLink::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const updateSweatPoints = async (req, res) => {
     const { url } = req.params;
     const { status } = req.body;
@@ -422,4 +477,4 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
-module.exports = { updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };
+module.exports = { updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink };
