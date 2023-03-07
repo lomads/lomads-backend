@@ -298,13 +298,11 @@ const getIssues = async (req, res) => {
 }
 
 const storeIssues = async (req, res) => {
-    const { token, repoInfo, daoId, issueList } = req.body;
+    const { token, repoInfo, daoId, issueList, linkOb } = req.body;
     const result = await createWebhook(token, repoInfo);
 
     if (result) {
-        console.log("305 result : ", result);
         if (issueList.length > 0) {
-            console.log("issues present")
             let arr = [];
             try {
                 let insertMany = await Task.insertMany(issueList, async function (error, docs) {
@@ -315,11 +313,19 @@ const storeIssues = async (req, res) => {
                         const dao = await DAO.findOne({ _id: daoId });
                         if (dao) {
 
+                            let tempLink = linkOb.link;
+                            if (tempLink.indexOf('https://') === -1 && tempLink.indexOf('http://') === -1) {
+                                tempLink = 'https://' + linkOb.link;
+                            }
+
                             await DAO.findOneAndUpdate(
                                 { _id: daoId },
                                 {
                                     [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
-                                    $addToSet: { tasks: { $each: arr } },
+                                    $addToSet: {
+                                        tasks: { $each: arr },
+                                        links: { title: linkOb.title, link: tempLink }
+                                    },
                                 }
                             )
                         }
