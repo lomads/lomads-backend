@@ -22,6 +22,10 @@ const DAOSchema = new mongoose.Schema({
     default: null,
     required: false
   },
+  walkthrough: {
+    type: Boolean,
+    default: false,
+  },
   name: {
     type: String,
     required: true
