@@ -345,7 +345,6 @@ const deleteDaoLink = async (req, res) => {
                 })
         }
 
-        console.log("miltiple dao")
         try {
             await DAO.findOneAndUpdate(
                 { url },

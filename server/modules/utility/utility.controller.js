@@ -218,7 +218,7 @@ const getGithubAccessToken = async (req, res) => {
     const { code, repoInfo } = req.query;
     const params = `?client_id=${config.githubClientId}&client_secret=${config.githubClientSecret}&code=${code}`;
 
-    await fetch("https://github.com/login/oauth/access_token" + params, {
+    fetch("https://github.com/login/oauth/access_token" + params, {
         method: 'POST',
         headers: {
             "Accept": "application/json"
@@ -230,18 +230,6 @@ const getGithubAccessToken = async (req, res) => {
         })
 }
 
-const getUserData = async (req, res) => {
-    await fetch("https://api.github.com/user", {
-        method: 'GET',
-        headers: {
-            "Authorization": req.get("Authorization")
-        }
-    }).then((response) => {
-        return response.json();
-    }).then((data) => {
-        return res.json(data);
-    })
-}
 
 const getIssues = async (req, res) => {
     const { token, repoInfo, daoId } = req.query;
@@ -471,7 +459,7 @@ const issuesListener = async (req, res) => {
     }
 
     else if (payload.action === 'deleted') {
-        console.log("closed");
+        console.log("deleted");
         try {
             await Task.findOneAndUpdate(
                 { "metaData.externalId": payload.issue.id.toString() },
@@ -550,4 +538,4 @@ const createWebhook = async (token, repoInfo) => {
     }
 }
 
-module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata, createNotification, getGithubAccessToken, getUserData, getIssues, storeIssues, createWebhook, issuesListener };
+module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata, createNotification, getGithubAccessToken, getIssues, storeIssues, createWebhook, issuesListener };
