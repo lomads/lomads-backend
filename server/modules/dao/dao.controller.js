@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const axios = require('axios');
 const DAO = require('@server/modules/dao/dao.model')
 const Task = require('@server/modules/task/task.model')
 const Project = require('@server/modules/project/project.model')
@@ -329,14 +330,22 @@ const deleteDaoLink = async (req, res) => {
 
         if (daoIds.length === 1) {
             // delete webhook
-            axios.delete(`https://api.github.com/repos/${repoInfo}/hooks/${webhookId}`, JSON.stringify(_body), {
+            console.log("only one dao");
+            await axios.delete(`https://api.github.com/repos/${repoInfo}/hooks/${webhookId}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "cache-control": "no-cache"
                 }
             })
+                .then((r) => {
+                    console.log("340 r : ", r);
+                })
+                .catch((e) => {
+                    console.log("343 e : ", e);
+                })
         }
 
+        console.log("miltiple dao")
         try {
             await DAO.findOneAndUpdate(
                 { url },

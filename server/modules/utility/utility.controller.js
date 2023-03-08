@@ -299,6 +299,11 @@ const getIssues = async (req, res) => {
 
 const storeIssues = async (req, res) => {
     const { token, repoInfo, daoId, issueList, linkOb } = req.body;
+
+    let tempLink = linkOb.link;
+    if (tempLink.indexOf('https://') === -1 && tempLink.indexOf('http://') === -1) {
+        tempLink = 'https://' + linkOb.link;
+    }
     const result = await createWebhook(token, repoInfo);
 
     if (result) {
@@ -312,12 +317,6 @@ const storeIssues = async (req, res) => {
                     if (arr.length > 0) {
                         const dao = await DAO.findOne({ _id: daoId });
                         if (dao) {
-
-                            let tempLink = linkOb.link;
-                            if (tempLink.indexOf('https://') === -1 && tempLink.indexOf('http://') === -1) {
-                                tempLink = 'https://' + linkOb.link;
-                            }
-
                             await DAO.findOneAndUpdate(
                                 { _id: daoId },
                                 {
@@ -349,6 +348,9 @@ const storeIssues = async (req, res) => {
                     { _id: daoId },
                     {
                         [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
+                        $addToSet: {
+                            links: { title: linkOb.title, link: tempLink }
+                        },
                     }
                 )
             }
