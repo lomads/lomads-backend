@@ -2,6 +2,7 @@ const AWS = require('@config/aws');
 const config = require('@config/config');
 const axios = require('axios');
 const _ = require('lodash');
+const moment = require('moment')
 const util = require('@metamask/eth-sig-util')
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
@@ -396,6 +397,7 @@ const issuesListener = async (req, res) => {
                 contributionType: 'open',
                 createdAt: payload.issue.created_at,
                 draftedAt: Date.now(),
+                updatedAt: Date.now()
             })
 
             task = await task.save();
@@ -416,10 +418,16 @@ const issuesListener = async (req, res) => {
             await Task.findOneAndUpdate(
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
-                    reopenedAt: Date.now(),
-                    deletedAt: null
+                    $set: {
+                        reopenedAt: moment().toDate(),
+                        updatedAt: moment().toDate(),
+                        deletedAt: null,
+                        archivedAt: null
+                    }
                 }
             );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
         } catch (error) {
             console.log("error : ", error)
         }
@@ -432,9 +440,12 @@ const issuesListener = async (req, res) => {
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
                     name: payload.issue.title,
-                    description: payload.issue.body
+                    description: payload.issue.body,
+                    updatedAt: Date.now()
                 }
-            )
+            );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
         } catch (error) {
             console.log("error : ", error)
         }
@@ -446,16 +457,39 @@ const issuesListener = async (req, res) => {
             await Task.findOneAndUpdate(
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
-                    deletedAt: Date.now(),
+                    $set: {
+                        archivedAt: moment().toDate(),
+                        updatedAt: moment().toDate()
+                    }
                 }
             );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
+        } catch (error) {
+            console.log("error : ", error)
+        }
+    }
+
+    else if (payload.action === 'deleted') {
+        console.log("closed");
+        try {
+            await Task.findOneAndUpdate(
+                { "metaData.externalId": payload.issue.id.toString() },
+                {
+                    $set: {
+                        deletedAt: moment().toDate(),
+                        updatedAt: moment().toDate()
+                    }
+                }
+            );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
         } catch (error) {
             console.log("error : ", error)
         }
     }
 
     // else if(payload.action === 'assigned'){}
-    // else if(payload.action === 'deleted'){}
 }
 
 const createWebhook = async (token, repoInfo) => {
