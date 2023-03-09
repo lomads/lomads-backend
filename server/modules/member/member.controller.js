@@ -28,4 +28,20 @@ const updateEarnings = async (req, res) => {
   // }
 }
 
-module.exports = { update, updateEarnings };
+
+const updateUserOnboardingCount = async (req, res) => {
+  const { _id } = req.user;
+  const { daoId } = req.body;
+  try {
+      let member = await Member.findOneAndUpdate({ _id }, {
+         $addToSet: { onboardingViewCount: daoId } 
+      })
+      member = await Member.findOne({ _id })
+      return res.status(200).json(member);
+  } catch (e) {
+      console.log(e)
+      return res.status(500).json({ message: "Something went wrong" });
+  }
+}
+
+module.exports = { update, updateEarnings, updateUserOnboardingCount };

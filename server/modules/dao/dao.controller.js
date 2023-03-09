@@ -422,4 +422,5 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
+
 module.exports = { updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };
