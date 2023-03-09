@@ -22,6 +22,10 @@ const MemberSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  onboardingViewCount: {
+    type: [{ type: mongoose.Schema.Types.ObjectId }],
+    default: []
+  },
   createdAt: {
     type: Date,
     default: Date.now
