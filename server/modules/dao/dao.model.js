@@ -22,6 +22,10 @@ const DAOSchema = new mongoose.Schema({
     default: null,
     required: false
   },
+  walkthrough: {
+    type: Boolean,
+    default: false,
+  },
   name: {
     type: String,
     required: true
@@ -41,7 +45,41 @@ const DAOSchema = new mongoose.Schema({
     default: false,
   },
   terminologies: {
-    type: Object
+    type: Object,
+    default: {
+      "roles": {
+        "role1" : {
+          "label": 'Admin',
+          "value": 'ADMIN',
+          "permissions": ["*"]
+        },
+        "role2" : {
+            "label": 'Core Contributor',
+            "value": 'CORE_CONTRIBUTOR',
+            "permissions": ["*"]
+        },
+        "role3" : {
+            "label": 'Active Contributor',
+            "value": 'ACTIVE_CONTRIBUTOR',
+            "permissions": ["*"]
+        },
+        "role4" : {
+            "label": 'Contributor',
+            "value": 'CONTRIBUTOR',
+            "permissions": ["*"]
+        },
+      },
+      "task": {
+        "label": "Task",
+        "labelPlural": "Tasks",
+        "value":  "TASK"
+      },
+      "workspace": {
+        "label": "Workspace",
+        "labelPlural": "Workspaces",
+        "value":  "WORKSPACE"
+      },
+   }
   },
   safe: { type: mongoose.Schema.Types.ObjectId, ref: 'Safe' },
   sbt: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
@@ -49,7 +87,9 @@ const DAOSchema = new mongoose.Schema({
     member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     creator: { type: mongoose.Schema.Types.Boolean, default: false },
     joined: { type: Date, default: Date.now },
-    role: { type: String }
+    role: { type: String },
+    discordId: { type: String },
+    discordRoles: { type: Object }
   }],
   projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
@@ -58,6 +98,9 @@ const DAOSchema = new mongoose.Schema({
     default: [],
   },
   discord: {
+    type: Object
+  },
+  github: {
     type: Object
   },
   createdAt: {

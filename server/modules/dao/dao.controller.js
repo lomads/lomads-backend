@@ -1,16 +1,21 @@
 const _ = require('lodash');
 const DAO = require('@server/modules/dao/dao.model')
+const Project = require('@server/modules/project/project.model')
 const Member = require('@server/modules/member/member.model')
 const Safe = require('@server/modules/safe/safe.model')
 const ObjectId = require('mongodb').ObjectID;
 const { daoMemberAdded } = require('@server/events');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
+const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 
 const load = async (req, res) => {
     const { _id } = req.user;
+    console.log(req.user);
+    console.log("query : ", req.query);
     const { chainId = 5 } = req.query;
     try {
         const dao = await DAO.find({ chainId, deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
+        console.log("DAO : ", dao);
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -20,7 +25,7 @@ const load = async (req, res) => {
 }
 
 const create = async (req, res, next) => {
-    const { contractAddress = "", url = null, name, description = null, image = null, members = [], safe = null, chainId = 5 } = req.body;
+    const { contractAddress = "", url = null, name, description = null, image, members = [], safe = null, chainId = 5 } = req.body;
     if (!name)
         return res.status(400).json({ message: 'Organisation name is required' })
     let mMembers = []
@@ -353,11 +358,69 @@ const syncSafeOwners = async (req, res) => {
         }
     }
 
-    let iMembers = await Member.find( { wallet: { $in: owners.map(o => toChecksumAddress(o)) }})
+    let iMembers = await Member.find({ wallet: { $in: owners.map(o => toChecksumAddress(o)) } })
     await Safe.updateOne({ dao: dao._id }, { owners: iMembers })
 
     const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
     return res.status(200).json(d);
 }
 
-module.exports = { syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };
+const updateUserDiscord = async (req, res) => {
+    try {
+        const { url } = req.params;
+        const { userId, discordId, daoId } = req.body;
+        let dao = await DAO.findOne({ url })
+        if (!dao)
+            return res.status(404).json({ message: 'DAO not found' })
+        await DAO.findOneAndUpdate(
+            {
+                url: url,
+                members: { $elemMatch: { member: userId } }
+            },
+            { $set: { "members.$.discordId": discordId } }
+        )
+
+        for (let index = 0; index < dao.links.length; index++) {
+            const link = dao.links[index];
+            if (link.link.indexOf('discord.') > -1) {
+                const url = new URL(link.link)
+                const guildId = url.pathname.split('/')[2]
+                await hasNecessaryPermissions(guildId);
+                let guildRoles = await getGuildRoles(guildId);
+                let guildMembers = await getGuildMembers(guildId);
+                guildMembers = JSON.parse(JSON.stringify(guildMembers))
+                await DAO.findOneAndUpdate({ _id: daoId }, {
+                    $set: {
+                        [`discord.${guildId}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone' && !_.get(gr, 'tags.botId', null)).map(gr => { return { id: gr.id, name: gr.name, roleColor: gr.color ? `#${gr.color.toString(16)}` : `#99aab5` } }),
+                        [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
+                    }
+                })
+                let daoIds = await DAO.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+                daoIds = daoIds.map(d => d._id)
+                let proj = await Project.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+                daoIds = daoIds.concat(proj.map(p => p.daoId))
+                daoIds = _.uniq(daoIds)
+                daoIds.push(daoId)
+                for (let index = 0; index < guildMembers.length; index++) {
+                    const guildMember = guildMembers[index];
+                    console.log(guildId, guildMember.roles)
+                    const up = await DAO.updateMany(
+                        {
+                            _id: { $in: daoIds },
+                            members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }] } }
+                        }
+                        ,
+                        { $set: { [`members.$.discordRoles.${guildId}`]: guildMember.roles } }
+                    )
+                }
+            }
+        }
+
+        return res.status(200).json({ message: 'Success' });
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+
+module.exports = { updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints };

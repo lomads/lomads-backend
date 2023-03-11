@@ -44,9 +44,6 @@ module.exports = {
     "@events/memberJoinedDiscordServer.js": [
       "@listeners/attachDiscordMemberRole"
     ],
-    "@events/memberJoinedDiscordServer.js": [
-      "@listeners/attachDiscordMemberRole"
-    ],
     "@events/onOneMinuteCron.js": [
       "@listeners/checkRecurringTxn"
     ],

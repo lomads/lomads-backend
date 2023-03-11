@@ -8,6 +8,8 @@ const APIError = require('@server/helpers/APIError');
  */
 const TaskSchema = new mongoose.Schema({
     daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
+    provider: { type: String, default: 'Lomads' },
+    metaData: { type: mongoose.Schema.Types.Mixed, default: null },
     taskStatus: { type: String, default: 'open' },
     name: { type: String },
     description: { type: String },

@@ -1,8 +1,11 @@
 const Metadata = require('@server/modules/metadata/metadata.model');
 const Contract = require('@server/modules/contract/contract.model');
+const Member = require('@server/modules/member/member.model');
 const DAO = require('@server/modules/dao/dao.model');
+const ObjectId = require('mongodb').ObjectID;
 
 const addMetaData = async (req, res) => {
+    const { _id } = req.user;
     const { contractAddress } = req.params;
     const { id, description, name, image, attributes, daoUrl } = req.body;
 
@@ -17,8 +20,18 @@ const addMetaData = async (req, res) => {
             contract: c._id
         })
         metaData = await metaData.save();
-        c.metadata.push(metaData);
-        c = await c.save();
+        // c.metadata.push(metaData);
+        // c = await c.save();
+
+        await Contract.findOneAndUpdate({ address: contractAddress }, 
+            { $addToSet : { metadata: ObjectId(metaData._id) } }
+        )
+
+        await Member.findOneAndUpdate(
+            { _id },             
+            { $addToSet: { sbtTokens: ObjectId(c._id), sbtMetaData: ObjectId(metaData._id) } }
+        )
+
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
@@ -33,8 +46,10 @@ const getMetadata = async (req, res) => {
     try {
         const { contractAddress } = req.params;
         const { wallet } = req.user;
+        console.log(wallet)
+        let c = await Contract.findOne({ address: contractAddress });
         const metadata = await Metadata.findOne({
-            contract: contractAddress,
+            contract: c._id,
             "attributes.value": { $regex: new RegExp(`^${wallet}$`, "i") }
         })
         if (!metadata)

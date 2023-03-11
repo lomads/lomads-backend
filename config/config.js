@@ -5,6 +5,7 @@ require('dotenv').config();
 const { SupportedChainId } = require('@config/constants');
 // define validation for all the env vars
 const envVarsSchema = Joi.object({
+  BASE_URL: Joi.string().default('https://app.lomads.xyz/api'),
   NODE_ENV: Joi.string()
     .allow('development', 'production', 'test', 'provision')
     .default('development'),
@@ -23,13 +24,13 @@ const envVarsSchema = Joi.object({
   MONGO_PORT: Joi.number()
     .default(27017),
   AWS_REGION: Joi.string()
-  .default('eu-west-3'),
+    .default('eu-west-3'),
   S3_BUCKET_URL: Joi.string()
-  .default('https://lomads-dao-development.s3.eu-west-3.amazonaws.com/'),
+    .default('https://lomads-dao-development.s3.eu-west-3.amazonaws.com/'),
   S3_BUCKET: Joi.string()
-  .default('lomads-dao-development'),
+    .default('lomads-dao-development'),
   AES_PASS_PHRASE: Joi.string()
-  .default('lomads-dao')
+    .default('lomads-dao')
 }).unknown()
   .required();
 
@@ -61,7 +62,11 @@ const config = {
     [`${SupportedChainId.POLYGON}`]: 'https://safe-transaction-polygon.safe.global',
     [`${SupportedChainId.GOERLI}`]: 'https://safe-transaction-goerli.safe.global'
   },
-  discordBotToken: envVars.DISCORD_BOT_TOKEN
+  discordBotToken: envVars.DISCORD_BOT_TOKEN,
+  baseUrl: envVars.BASE_URL,
+  baseUrlWithExt: envVars.BASE_URL_WITH_EXT,
+  githubClientId: envVars.GITHUB_CLIENT_ID,
+  githubClientSecret: envVars.GITHUB_CLIENT_SECRET
 };
 
 module.exports = config;

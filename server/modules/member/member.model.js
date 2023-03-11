@@ -19,7 +19,12 @@ const MemberSchema = new mongoose.Schema({
   },
   wallet: {
     type: String,
+    unique: true,
     required: true
+  },
+  onboardingViewCount: {
+    type: [{ type: mongoose.Schema.Types.ObjectId }],
+    default: []
   },
   createdAt: {
     type: Date,
@@ -33,10 +38,8 @@ const MemberSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  sbtMetaData: {
-    type: Array,
-    default: []
-  },
+  sbtTokens: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contract' }],
+  sbtMetaData: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Metadata' }],
   notionUserId: {
     type: String,
     required: false,
@@ -72,6 +75,8 @@ MemberSchema.method({
 MemberSchema.statics = {
 
 };
+
+MemberSchema.index({ wallet: 'text' });
 
 /**
  * @typedef User

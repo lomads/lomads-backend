@@ -9,7 +9,8 @@ const ObjectId = require('mongodb').ObjectID;
 const URL = require('url');
 const axios = require('axios')
 const { projectCreated, memberInvitedToProject, projectDeleted, projectMemberRemoved, daoMemberAdded } = require('@events')
-const { checkSpaceAdminStatus, findNotionUserByEmail, getSpaceByDomain, prepareInviteObject, inviteUserToNotionBlock, removeUserFromNotionBlock } = require('@services/notion')
+const { checkSpaceAdminStatus, findNotionUserByEmail, getSpaceByDomain, prepareInviteObject, inviteUserToNotionBlock, removeUserFromNotionBlock } = require('@services/notion');
+const { toChecksumAddress } = require('ethereum-checksum-address');
 
 const getById = async (req, res) => {
     const { projectId } = req.params;
@@ -25,7 +26,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     const { _id, wallet } = req.user;
-    const { name, description, members, links, milestones, compensation, kra, daoId } = req.body;
+    const { name, description, members, links, milestones, compensation, kra, daoId, inviteType, validRoles } = req.body;
     let mMembers = [];
     try {
 
@@ -43,20 +44,20 @@ const create = async (req, res) => {
         let mem = uniqBy(mMembers.map(m => m._id))
 
         let kra1 = {
-            ...kra, 
-            tracker: [{ 
-                start: moment().startOf('day').unix(), 
-                end:  moment().startOf('day').add(1, kra.frequency === 'daily' ? 'day': kra.frequency === 'weekly' ? 'week' : kra.frequency === 'monthly' ? 'month' : 'month').endOf('day').unix(),
+            ...kra,
+            tracker: [{
+                start: moment().startOf('day').unix(),
+                end: moment().startOf('day').add(1, kra.frequency === 'daily' ? 'day' : kra.frequency === 'weekly' ? 'week' : kra.frequency === 'monthly' ? 'month' : 'month').endOf('day').unix(),
                 results: kra.results.map(result => {
                     return {
                         ...result, progress: 0, color: "#FFCC18"
                     }
                 })
-            }] 
+            }]
         }
 
         let project = new Project({
-            daoId, name, description, members: mem, links, milestones, compensation, kra: kra1, creator: wallet
+            daoId, name, description, members: mem, links, milestones, compensation, kra: kra1, creator: wallet, inviteType, validRoles
         })
 
         project = await project.save();
@@ -385,6 +386,123 @@ const deleteProjectMember = async (req, res) => {
     }
 }
 
+const editProjectMember = async (req, res) => {
+    const { projectId } = req.params;
+    const { memberList, daoId, inviteType, validRoles } = req.body;
+    try {
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        let newMembers = [];
+        let deletedMembers = [];
+
+        // getting new members
+        for (var i = 0; i < memberList.length; i++) {
+            let person = memberList[i];
+            if (project.members.indexOf(person) === -1) {
+                newMembers.push(person);
+            }
+        }
+
+        // getting old members who are getting removed
+        for (var i = 0; i < project.members.length; i++) {
+            let person = project.members[i].toString();
+            if (memberList.indexOf(person) === -1) {
+                deletedMembers.push(person);
+            }
+        }
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            {
+                members: memberList,
+                inviteType,
+                validRoles
+            }
+        )
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+
+        if (daoId) {
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+            if (d.sbt) {
+
+                // for removing members
+                const members = await Member.find({ _id: { $in: deletedMembers } })
+                for (let index = 0; index < members.length; index++) {
+                    const member = members[index];
+                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
+                    const metadata = await Metadata.findOne(filter)
+                    if (metadata) {
+                        let attrs = [...metadata._doc.attributes];
+                        if (find(attrs, attr => attr.trait_type === 'projects')) {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'projects' && attr.value && attr.value.length > 1) {
+                                    console.log("n { ...attr._", [...(get(attr, 'value', '').split(','))].filter(prj => prj !== String(p._id)).join(','))
+                                    return { ...attr._doc, value: [...(get(attr, 'value', '').split(','))].filter(prj => prj !== String(p._id)).join(',') }
+                                }
+                                return attr
+                            })
+                        }
+                        if (find(attrs, attr => attr.trait_type === 'project_names')) {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'project_names' && attr.value && attr.value.length > 1)
+                                    return { ...attr._doc, value: [...(get(attr, 'value', '').split(','))].filter(prj => prj !== `${p.name} (${p._id})`).join(',') }
+                                return attr
+                            })
+                        }
+                        metadata._doc.attributes = attrs;
+                        await metadata.save();
+                    }
+                }
+
+                // for adding new members
+                for (let index = 0; index < newMembers.length; index++) {
+                    const memberid = newMembers[index];
+                    const member = await Member.findOne({ _id: memberid })
+                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.wallet}$`, "i") }, contract: d.sbt._id }
+                    const metadata = await Metadata.findOne(filter)
+                    if (metadata) {
+                        let attrs = [...metadata._doc.attributes];
+                        if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                            attrs.push({ trait_type: 'projects', value: projectId })
+                        } else {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'projects')
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), project._id.toString()].join(',') }
+                                return attr
+                            })
+                        }
+                        if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                            attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                        } else {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'project_names')
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                return attr
+                            })
+                        }
+                        console.log(attrs)
+                        metadata._doc.attributes = attrs;
+                        await metadata.save();
+                    }
+                }
+            }
+        }
+
+        memberInvitedToProject.emit({ project: p, members: newMembers })
+        projectMemberRemoved.emit({ $project: p, $memberList: deletedMembers })
+        removeNotionUser(p);
+
+        return res.status(200).json(p);
+    }
+    catch (e) {
+        console.error("project.editProjectMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const archiveProject = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
@@ -465,6 +583,32 @@ const addProjectLinks = async (req, res) => {
     }
 }
 
+const editProjectLinks = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { resourceList } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            { links: resourceList }
+        )
+
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.editProjectLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const updateProjectLink = async (req, res) => {
     const { wallet } = req.user;
     const { daoUrl } = req.query;
@@ -481,7 +625,7 @@ const updateProjectLink = async (req, res) => {
         }
         project.links = project.links.map(l => {
             if (l.id === id)
-                return { ...l, unlocked: [...(l.unlocked ? l.unlocked : []), wallet.toLowerCase()] }
+                return { ...l, unlocked: [...(l.unlocked ? l.unlocked : []), toChecksumAddress(wallet)] }
             return l
         })
         project = await project.save();
@@ -549,7 +693,8 @@ const addNotionUserRole = async (req, res) => {
                 const pathname = url.pathname;
                 let blockId = null;
                 if (pathname.indexOf('-') == -1) {
-                    blockId = pathname.replace('/', '')
+                    blockId = pathname.split('/')
+                    blockId = blockId[blockId.length - 1]
                 } else {
                     let path = pathname.split('-');
                     blockId = path[path.length - 1]
@@ -569,32 +714,30 @@ const addNotionUserRole = async (req, res) => {
 
 const joinDiscordQueue = async (req, res) => {
     try {
-    const { wallet } = req.user;
-    const { daoUrl } = req.query;
-    const { projectId } = req.params;
-    const { id, discordMemberId } = req.body;
-    if (!id) {
-        return res.status(404).json({ message: 'Link not found' })
-    }
-    project.links = project.links.map(l => {
-        if (l.id === id && (!l.discordJoinQueue || l.discordJoinQueue && l.discordJoinQueue.indexOf(discordMemberId) == -1)) {
-            return { ...l, discordJoinQueue: [...(l.discordJoinQueue ? l.discordJoinQueue : []), discordMemberId ] }
+        const { wallet } = req.user;
+        const { daoUrl } = req.query;
+        const { projectId } = req.params;
+        const { id, discordMemberId } = req.body;
+        if (!id) {
+            return res.status(404).json({ message: 'Link not found' })
         }
-        return l
-    })
-    project = await project.save();
+        project.links = project.links.map(l => {
+            if (l.id === id && (!l.discordJoinQueue || l.discordJoinQueue && l.discordJoinQueue.indexOf(discordMemberId) == -1)) {
+                return { ...l, discordJoinQueue: [...(l.discordJoinQueue ? l.discordJoinQueue : []), discordMemberId] }
+            }
+            return l
+        })
+        project = await project.save();
 
-    const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
-    const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
-    return res.status(200).json({ project: p, dao: d });
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json({ project: p, dao: d });
     }
     catch (e) {
-        console.error("project.addProjectLinks::", e)        
+        console.error("project.addProjectLinks::", e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
-
-
 
 const updateProjectKRAReview = async (req, res) => {
     const { daoUrl } = req.query;
@@ -610,6 +753,36 @@ const updateProjectKRAReview = async (req, res) => {
         await Project.findOneAndUpdate(
             { _id: projectId },
             { kra }
+        )
+
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("dao.updateProjectKraReview::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const editProjectKRA = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { frequency, results } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        let ob = { ...project.kra };
+        ob.frequency = frequency;
+        ob.results = results;
+
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            { kra: ob }
         )
 
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
@@ -648,7 +821,33 @@ const updateProjectMilestones = async (req, res) => {
     }
 }
 
+const editProjectMilestone = async (req, res) => {
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    const { milestones, compensation } = req.body;
+    try {
+
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            { milestones, compensation }
+        )
+
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("dao.editProjectMilestone::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 module.exports = {
-    checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
-    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, updateProjectMilestones, joinDiscordQueue
+    checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, editProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
+    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, editProjectKRA, updateProjectMilestones, joinDiscordQueue, editProjectLinks, editProjectMilestone
 };

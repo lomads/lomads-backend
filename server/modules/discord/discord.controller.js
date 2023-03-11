@@ -1,5 +1,7 @@
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 const DAO = require('@server/modules/dao/dao.model');
+const Project = require('@server/modules/project/project.model');
+const _ = require('lodash')
 
 const getDiscordGuild = async (req, res) => {
     const { guildId } = req.params
@@ -88,10 +90,28 @@ const syncRoles = async (req, res) => {
         guildMembers = JSON.parse(JSON.stringify(guildMembers))
         await DAO.findOneAndUpdate({ _id: daoId }, {
             $set: { 
-                [`discord.${guildId}.roles`]: guildRoles.map(gr => { return { id: gr.id, name: gr.name } }),
+                [`discord.${guildId}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone' && !_.get(gr, 'tags.botId', null)).map(gr => { return { id: gr.id, name: gr.name, roleColor: gr.color ? `#${gr.color.toString(16)}` : `#99aab5` } }),
                 [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
             }
         })
+        let daoIds = await DAO.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+        daoIds = daoIds.map(d => d._id)
+        let proj = await Project.find({ "links.link": { "$regex": guildId, "$options": "i" } })
+        daoIds = daoIds.concat(proj.map(p => p.daoId))
+        daoIds = _.uniq(daoIds)
+        daoIds.push(daoId)
+        for (let index = 0; index < guildMembers.length; index++) {
+            const guildMember = guildMembers[index];
+            console.log(guildId, guildMember.roles)
+            const up = await DAO.updateMany(
+              {
+                _id: { $in: daoIds },
+                members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }]} }
+              }
+              ,
+              { $set: { [`members.$.discordRoles.${guildId}`] : guildMember.roles } }
+           )
+        }
         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         return res.status(200).json(d)
     } catch (e) {

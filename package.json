@@ -27,6 +27,7 @@
   },
   "keywords": [],
   "dependencies": {
+    "@metamask/eth-sig-util": "^5.0.2",
     "@nishans/cache": "^0.0.38",
     "@nishans/constants": "^0.0.24",
     "@nishans/core": "^0.0.35",
@@ -48,6 +49,7 @@
     "debug": "^4.3.4",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.2",
+    "ejs": "^3.1.8",
     "emittery": "^1.0.0",
     "erlpack": "^0.1.4",
     "ethereum-checksum-address": "^0.0.8",

@@ -27,6 +27,7 @@ const create = async (req, res) => {
     const { _id, wallet } = req.user;
     const {
         daoId,
+        provider,
         name,
         description,
         applicant,
@@ -45,6 +46,7 @@ const create = async (req, res) => {
 
         let task = new Task({
             daoId,
+            provider,
             taskStatus: applicant ? 'assigned' : 'open',
             name,
             description,
@@ -131,6 +133,7 @@ const draftTask = async (req, res) => {
     const { _id, wallet } = req.user;
     const {
         daoId,
+        provider,
         name,
         description,
         applicant,
@@ -148,6 +151,8 @@ const draftTask = async (req, res) => {
     try {
 
         let task = new Task({
+            daoId,
+            provider,
             taskStatus: applicant ? 'assigned' : 'open',
             name,
             description,
@@ -225,6 +230,34 @@ const draftTask = async (req, res) => {
     }
     catch (e) {
         console.error("task.controller::draft::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const storeGithubIssues = async (req, res) => {
+    const { _id, wallet } = req.user;
+    const { daoId, issueList } = req.body;
+    try {
+
+        let result = await Task.insertMany(issueList, async function (error, docs) {
+            let arr = [];
+            for (let i = 0; i < docs.length; i++) {
+                arr.push(docs[i]._id);
+            }
+            await DAO.findOneAndUpdate(
+                { _id: daoId },
+                {
+                    $addToSet: { tasks: { $each: arr } },
+                }
+            )
+        })
+
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+        return res.status(200).json({ dao: d });
+    }
+    catch (e) {
+        console.error("task.controller::storeGithubIssues::", e)
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
@@ -389,13 +422,13 @@ const submitTask = async (req, res) => {
                 }
             }
             else if (task.isSingleContributor === false && task.contributionType === 'open') {
-                if (task.isFilterRoles) {
-                    const roles = task.validRoles.map(r => r.replace(' ', '_').toUpperCase())
-                    const eligible = _.find(_.get(dao, 'members', []), m => m.member.toString() === _id.toString() && roles.indexOf(m.role) > -1)
-                    if (!eligible)
-                        return res.status(500).json({ message: 'Not permitted' })
+                // if (task.isFilterRoles) {
+                //     const roles = _.get(task, 'validRoles', [])
+                //     const eligible = _.find(_.get(dao, 'members', []), m => m.member.toString() === _id.toString() && roles.indexOf(m.role) > -1)
+                //     if (!eligible)
+                //         return res.status(500).json({ message: 'Not permitted' })
 
-                }
+                // }
                 await Task.updateOne({ _id: taskId }, {
                     $addToSet: {
                         members: {
@@ -830,6 +863,7 @@ const editDraftTask = async (req, res) => {
 const convertDraftTask = async (req, res) => {
     const { daoUrl } = req.query;
     const { taskId } = req.params;
+    const { _id, wallet } = req.user;
     const {
         name,
         description,
@@ -882,6 +916,7 @@ const convertDraftTask = async (req, res) => {
                 submissionLink,
                 compensation,
                 reviewer,
+                creator: _id,
                 contributionType,
                 isSingleContributor,
                 isFilterRoles,
@@ -902,4 +937,4 @@ const convertDraftTask = async (req, res) => {
 }
 
 
-module.exports = { getById, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask, approveTask, rejectTask, archiveTask, deleteTask, editTask, editDraftTask, convertDraftTask };
+module.exports = { getById, storeGithubIssues, create, draftTask, applyTask, assignTask, rejectTaskMember, submitTask, approveTask, rejectTask, archiveTask, deleteTask, editTask, editDraftTask, convertDraftTask };
