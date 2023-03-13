@@ -48,38 +48,38 @@ const DAOSchema = new mongoose.Schema({
     type: Object,
     default: {
       "roles": {
-        "role1" : {
+        "role1": {
           "label": 'Admin',
           "value": 'ADMIN',
           "permissions": ["*"]
         },
-        "role2" : {
-            "label": 'Core Contributor',
-            "value": 'CORE_CONTRIBUTOR',
-            "permissions": ["*"]
+        "role2": {
+          "label": 'Core Contributor',
+          "value": 'CORE_CONTRIBUTOR',
+          "permissions": ["*"]
         },
-        "role3" : {
-            "label": 'Active Contributor',
-            "value": 'ACTIVE_CONTRIBUTOR',
-            "permissions": ["*"]
+        "role3": {
+          "label": 'Active Contributor',
+          "value": 'ACTIVE_CONTRIBUTOR',
+          "permissions": ["*"]
         },
-        "role4" : {
-            "label": 'Contributor',
-            "value": 'CONTRIBUTOR',
-            "permissions": ["*"]
+        "role4": {
+          "label": 'Contributor',
+          "value": 'CONTRIBUTOR',
+          "permissions": ["*"]
         },
       },
       "task": {
         "label": "Task",
         "labelPlural": "Tasks",
-        "value":  "TASK"
+        "value": "TASK"
       },
       "workspace": {
         "label": "Workspace",
         "labelPlural": "Workspaces",
-        "value":  "WORKSPACE"
+        "value": "WORKSPACE"
       },
-   }
+    }
   },
   safe: { type: mongoose.Schema.Types.ObjectId, ref: 'Safe' },
   sbt: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
@@ -101,6 +101,9 @@ const DAOSchema = new mongoose.Schema({
     type: Object
   },
   github: {
+    type: Object
+  },
+  trello: {
     type: Object
   },
   createdAt: {

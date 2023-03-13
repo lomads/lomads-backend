@@ -66,7 +66,9 @@ const config = {
   baseUrl: envVars.BASE_URL,
   baseUrlWithExt: envVars.BASE_URL_WITH_EXT,
   githubClientId: envVars.GITHUB_CLIENT_ID,
-  githubClientSecret: envVars.GITHUB_CLIENT_SECRET
+  githubClientSecret: envVars.GITHUB_CLIENT_SECRET,
+  trelloApiKey: envVars.REACT_APP_TRELLO_API_KEY,
+  trelloSecret: envVars.REACT_APP_TRELLO_SECRET,
 };
 
 module.exports = config;

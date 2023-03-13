@@ -508,4 +508,96 @@ const createWebhook = async (token, repoInfo) => {
     }
 }
 
-module.exports = { getUploadURL, checkLomadsBot, encryptData, syncMetadata, createNotification, getGithubAccessToken, getUserData, getIssues, storeIssues, createWebhook, issuesListener };
+
+const getTrelloOrganization = async (req, res) => {
+    const { accessToken } = req.query;
+    try {
+        // getting member information for all the organizations
+        axios.get(`https://api.trello.com/1/members/me/?key=${config.trelloApiKey}&token=${accessToken}`)
+            .then(async (response) => {
+                if (response.data && response.data.idOrganizations.length > 0) {
+                    let organizationArray = [];
+                    let organizationIds = response.data.idOrganizations;
+                    for (let i = 0; i < organizationIds.length; i++) {
+                        let id = organizationIds[i];
+
+                        // fetching organization one by one
+                        const org = await axios.get(`https://api.trello.com/1/organizations/${id}?key=${config.trelloApiKey}&token=${accessToken}`);
+                        if (org) {
+                            organizationArray.push(org.data);
+                        }
+                    }
+                    return res.json({ type: 'success', message: 'Organizations found', data: organizationArray });
+                }
+                else {
+                    return res.json({ type: 'error', message: 'No organization found', data: null });
+                }
+            })
+            .catch(async (e) => {
+                console.log("error : ", e);
+                return res.json({ type: 'error', message: 'Something went wrong!', data: null });
+            })
+    } catch (error) {
+        console.log("try catch error : ", e)
+    }
+}
+
+const getTrelloBoards = async (req, res) => {
+    const { orgId, accessToken } = req.query;
+    try {
+        //fetching all the boards in an organization
+        axios.get(`https://api.trello.com/1/organizations/${orgId}/boards?key=${config.trelloApiKey}&token=${accessToken}`)
+            .then(async (response) => {
+                if (response.data && response.data.length > 0) {
+                    console.log("response : ", response.data);
+                    return res.json({ type: 'success', message: 'Boards found', data: response.data });
+                }
+                else {
+                    return res.json({ type: 'error', message: 'No boards found', data: null });
+                }
+            })
+            .catch(async (e) => {
+                console.log("error : ", e);
+                return res.json({ type: 'error', message: 'Something went wrong!', data: null });
+            })
+    } catch (error) {
+        console.log("try catch error : ", e)
+    }
+}
+
+const trelloListener = async (req, res) => {
+    const payload = req.body;
+    console.log("trello listener: ", payload);
+    return res.status(200).json({ success: true });
+}
+
+const syncTrelloData = async (req, res) => {
+    // params --- array of boards,accessToken,idModel 
+    const { boardsArray, daoId, accessToken, idModel } = req.body;
+    const result = await createTrelloWebhook(accessToken, idModel);
+    // 1.create webhook on the worskpace
+    // 2.get all the cards in the boards
+}
+
+const createTrelloWebhook = async (accessToken, idModel) => {
+    console.log("accessToken : ", accessToken);
+    console.log("idModel : ", idModel);
+}
+
+module.exports = {
+    getUploadURL,
+    checkLomadsBot,
+    encryptData,
+    syncMetadata,
+    createNotification,
+    getGithubAccessToken,
+    getUserData,
+    getIssues,
+    storeIssues,
+    createWebhook,
+    issuesListener,
+    getTrelloOrganization,
+    getTrelloBoards,
+    trelloListener,
+    syncTrelloData
+};
