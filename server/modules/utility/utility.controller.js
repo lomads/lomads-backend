@@ -2,6 +2,7 @@ const AWS = require('@config/aws');
 const config = require('@config/config');
 const axios = require('axios');
 const _ = require('lodash');
+const moment = require('moment')
 const util = require('@metamask/eth-sig-util')
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
@@ -217,7 +218,7 @@ const getGithubAccessToken = async (req, res) => {
     const { code, repoInfo } = req.query;
     const params = `?client_id=${config.githubClientId}&client_secret=${config.githubClientSecret}&code=${code}`;
 
-    await fetch("https://github.com/login/oauth/access_token" + params, {
+    fetch("https://github.com/login/oauth/access_token" + params, {
         method: 'POST',
         headers: {
             "Accept": "application/json"
@@ -229,18 +230,6 @@ const getGithubAccessToken = async (req, res) => {
         })
 }
 
-const getUserData = async (req, res) => {
-    await fetch("https://api.github.com/user", {
-        method: 'GET',
-        headers: {
-            "Authorization": req.get("Authorization")
-        }
-    }).then((response) => {
-        return response.json();
-    }).then((data) => {
-        return res.json(data);
-    })
-}
 
 const getIssues = async (req, res) => {
     const { token, repoInfo, daoId } = req.query;
@@ -298,13 +287,16 @@ const getIssues = async (req, res) => {
 }
 
 const storeIssues = async (req, res) => {
-    const { token, repoInfo, daoId, issueList } = req.body;
+    const { token, repoInfo, daoId, issueList, linkOb } = req.body;
+
+    let tempLink = linkOb.link;
+    if (tempLink.indexOf('https://') === -1 && tempLink.indexOf('http://') === -1) {
+        tempLink = 'https://' + linkOb.link;
+    }
     const result = await createWebhook(token, repoInfo);
 
     if (result) {
-        console.log("305 result : ", result);
         if (issueList.length > 0) {
-            console.log("issues present")
             let arr = [];
             try {
                 let insertMany = await Task.insertMany(issueList, async function (error, docs) {
@@ -314,12 +306,14 @@ const storeIssues = async (req, res) => {
                     if (arr.length > 0) {
                         const dao = await DAO.findOne({ _id: daoId });
                         if (dao) {
-
                             await DAO.findOneAndUpdate(
                                 { _id: daoId },
                                 {
                                     [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
-                                    $addToSet: { tasks: { $each: arr } },
+                                    $addToSet: {
+                                        tasks: { $each: arr },
+                                        links: { title: linkOb.title, link: tempLink }
+                                    },
                                 }
                             )
                         }
@@ -343,6 +337,9 @@ const storeIssues = async (req, res) => {
                     { _id: daoId },
                     {
                         [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
+                        $addToSet: {
+                            links: { title: linkOb.title, link: tempLink }
+                        },
                     }
                 )
             }
@@ -388,6 +385,7 @@ const issuesListener = async (req, res) => {
                 contributionType: 'open',
                 createdAt: payload.issue.created_at,
                 draftedAt: Date.now(),
+                updatedAt: Date.now()
             })
 
             task = await task.save();
@@ -408,10 +406,16 @@ const issuesListener = async (req, res) => {
             await Task.findOneAndUpdate(
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
-                    reopenedAt: Date.now(),
-                    deletedAt: null
+                    $set: {
+                        reopenedAt: moment().toDate(),
+                        updatedAt: moment().toDate(),
+                        deletedAt: null,
+                        archivedAt: null
+                    }
                 }
             );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
         } catch (error) {
             console.log("error : ", error)
         }
@@ -424,9 +428,12 @@ const issuesListener = async (req, res) => {
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
                     name: payload.issue.title,
-                    description: payload.issue.body
+                    description: payload.issue.body,
+                    updatedAt: Date.now()
                 }
-            )
+            );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
         } catch (error) {
             console.log("error : ", error)
         }
@@ -438,16 +445,39 @@ const issuesListener = async (req, res) => {
             await Task.findOneAndUpdate(
                 { "metaData.externalId": payload.issue.id.toString() },
                 {
-                    deletedAt: Date.now(),
+                    $set: {
+                        archivedAt: moment().toDate(),
+                        updatedAt: moment().toDate()
+                    }
                 }
             );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
+        } catch (error) {
+            console.log("error : ", error)
+        }
+    }
+
+    else if (payload.action === 'deleted') {
+        console.log("deleted");
+        try {
+            await Task.findOneAndUpdate(
+                { "metaData.externalId": payload.issue.id.toString() },
+                {
+                    $set: {
+                        deletedAt: moment().toDate(),
+                        updatedAt: moment().toDate()
+                    }
+                }
+            );
+            const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
+            console.log(tsk)
         } catch (error) {
             console.log("error : ", error)
         }
     }
 
     // else if(payload.action === 'assigned'){}
-    // else if(payload.action === 'deleted'){}
 }
 
 const createWebhook = async (token, repoInfo) => {
@@ -476,7 +506,7 @@ const createWebhook = async (token, repoInfo) => {
     try {
         return axios.post(`https://api.github.com/repos/${repoInfo}/hooks`, JSON.stringify(_body), {
             headers: {
-                "Authorization": `token ${token}`,
+                "Authorization": `Bearer ${token}`,
                 "cache-control": "no-cache"
             }
         })

@@ -13,6 +13,7 @@ router.patch('/:url/add-member-list', web3Auth, daoCtrl.addDaoMemberList)
 router.patch('/:url/manage-member', web3Auth, daoCtrl.manageDaoMember)
 router.patch('/:url/add-links', web3Auth, daoCtrl.addDaoLinks);
 router.patch('/:url/update-links', web3Auth, daoCtrl.updateDaoLinks);
+router.patch('/:url/delete-link', web3Auth, daoCtrl.deleteDaoLink);
 router.patch('/:url/update-details', web3Auth, daoCtrl.updateDetails);
 router.patch('/:url/sync-safe-owners', web3Auth, daoCtrl.syncSafeOwners);
 router.patch('/:url/update-user-discord', web3Auth, daoCtrl.updateUserDiscord);
