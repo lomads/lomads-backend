@@ -690,8 +690,9 @@ const addNotionUserRole = async (req, res) => {
             if (space && space.spaceId) {
                 console.log(link.link)
                 let url = URL.parse(link.link);
-                const pathname = url.pathname;
+                let pathname = url.pathname;
                 let blockId = null;
+                pathname = pathname.replace(`/${space.spaceDomain}`, '')
                 if (pathname.indexOf('-') == -1) {
                     blockId = pathname.split('/')
                     blockId = blockId[blockId.length - 1]
