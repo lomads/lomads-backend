@@ -277,12 +277,12 @@ const getIssues = async (req, res) => {
                 return res.json({ data: newArray, message: 'success' });
             })
             .catch((e) => {
-                console.log("request error : ", e);
+                console.log("request error 280 : ", e);
                 return res.json({ data: [], message: 'error' });
             })
     }
     catch (e) {
-        console.log("try catch error : ", e)
+        console.log("try catch error 285 : ", e)
     }
 }
 
@@ -325,7 +325,7 @@ const storeIssues = async (req, res) => {
                 })
             }
             catch (e) {
-                console.log("error : ", e);
+                console.log("error 328: ", e);
             }
         }
         else {
@@ -347,6 +347,39 @@ const storeIssues = async (req, res) => {
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
             return res.status(200).json({ dao: d });
+        }
+    }
+    else {
+        console.log("Cannot create webhook ... just pull issues");
+        let arr = [];
+        try {
+            let insertMany = await Task.insertMany(issueList, async function (error, docs) {
+                for (let i = 0; i < docs.length; i++) {
+                    arr.push(docs[i]._id);
+                }
+                if (arr.length > 0) {
+                    const dao = await DAO.findOne({ _id: daoId });
+                    if (dao) {
+                        await DAO.findOneAndUpdate(
+                            { _id: daoId },
+                            {
+                                [`github.${repoInfo}`]: { 'webhookId': '' },
+                                $addToSet: {
+                                    tasks: { $each: arr },
+                                    links: { title: linkOb.title, link: tempLink }
+                                },
+                            }
+                        )
+                    }
+
+                    const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+                    return res.status(200).json({ dao: d });
+                }
+            })
+        }
+        catch (e) {
+            console.log("error 328: ", e);
         }
     }
 }
@@ -417,7 +450,7 @@ const issuesListener = async (req, res) => {
             const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
             console.log(tsk)
         } catch (error) {
-            console.log("error : ", error)
+            console.log("error 420 : ", error)
         }
     }
 
@@ -435,7 +468,7 @@ const issuesListener = async (req, res) => {
             const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
             console.log(tsk)
         } catch (error) {
-            console.log("error : ", error)
+            console.log("error 438 : ", error)
         }
     }
 
@@ -454,7 +487,7 @@ const issuesListener = async (req, res) => {
             const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
             console.log(tsk)
         } catch (error) {
-            console.log("error : ", error)
+            console.log("error 457 : ", error)
         }
     }
 
@@ -473,7 +506,7 @@ const issuesListener = async (req, res) => {
             const tsk = await Task.findOne({ "metaData.externalId": payload.issue.id.toString() })
             console.log(tsk)
         } catch (error) {
-            console.log("error : ", error)
+            console.log("error 476 : ", error)
         }
     }
 
@@ -514,7 +547,7 @@ const createWebhook = async (token, repoInfo) => {
                 return response.data;
             })
             .catch(async (e) => {
-                console.log("error : ", typeof (e.response.status));
+                console.log("517 response : ", e);
                 if (e.response.status === 422) {
                     const dao = await DAO.findOne({ [`github.${repoInfo}`]: { $ne: null } });
                     if (dao) {
@@ -525,16 +558,21 @@ const createWebhook = async (token, repoInfo) => {
                             }
                             else {
                                 console.log("doesnt exists")
+                                return null;
                             }
                         }
                     }
                     else {
-                        console.log("NF")
+                        console.log("NF");
+                        return null;
                     }
+                }
+                else {
+                    return null;
                 }
             })
     } catch (error) {
-        console.log("try catch error : ", e)
+        console.log("try catch error 537 : ", e)
     }
 }
 
@@ -564,11 +602,11 @@ const getTrelloOrganization = async (req, res) => {
                 }
             })
             .catch(async (e) => {
-                console.log("error : ", e);
+                console.log("error 567 : ", e);
                 return res.json({ type: 'error', message: 'Something went wrong!', data: null });
             })
     } catch (error) {
-        console.log("try catch error : ", e)
+        console.log("try catch error 571 : ", e)
     }
 }
 
@@ -587,11 +625,11 @@ const getTrelloBoards = async (req, res) => {
                 }
             })
             .catch(async (e) => {
-                console.log("error : ", e);
+                console.log("error 590 : ", e);
                 return res.json({ type: 'error', message: 'Something went wrong!', data: null });
             })
     } catch (error) {
-        console.log("try catch error : ", e)
+        console.log("try catch error 594 : ", e)
     }
 }
 
@@ -621,7 +659,6 @@ module.exports = {
     syncMetadata,
     createNotification,
     getGithubAccessToken,
-    getUserData,
     getIssues,
     storeIssues,
     createWebhook,
