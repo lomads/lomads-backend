@@ -74,6 +74,7 @@
     "nanoid": "^4.0.1",
     "nft.storage": "^7.0.3",
     "node-cron": "^3.0.2",
+    "node-fetch": "2",
     "web3": "^1.8.2",
     "web3-token": "^1.0.2",
     "winston": "^3.8.2",
