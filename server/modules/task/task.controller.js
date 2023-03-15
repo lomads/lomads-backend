@@ -61,7 +61,7 @@ const create = async (req, res) => {
             contributionType,
             isSingleContributor,
             isFilterRoles,
-            validRoles
+            validRoles,
         })
 
         task = await task.save();
@@ -740,7 +740,10 @@ const editTask = async (req, res) => {
         isSingleContributor,
         isFilterRoles,
         validRoles,
+        members
     } = req.body;
+
+    let taskStatus = contributionType === 'open' ? 'open' : 'assigned';
 
     console.log("req body : ", req.body)
     try {
@@ -782,7 +785,8 @@ const editTask = async (req, res) => {
                 isSingleContributor,
                 isFilterRoles,
                 validRoles,
-                members: [],
+                members,
+                taskStatus,
                 updatedAt: Date.now(),
             }
         )
