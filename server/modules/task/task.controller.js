@@ -61,7 +61,7 @@ const create = async (req, res) => {
             contributionType,
             isSingleContributor,
             isFilterRoles,
-            validRoles
+            validRoles,
         })
 
         task = await task.save();
@@ -736,7 +736,16 @@ const editTask = async (req, res) => {
         deadline,
         submissionLink,
         compensation,
+        contributionType,
+        isSingleContributor,
+        isFilterRoles,
+        validRoles,
+        members
     } = req.body;
+
+    let taskStatus = contributionType === 'open' ? 'open' : 'assigned';
+
+    console.log("req body : ", req.body)
     try {
         let task = await Task.findOne({ _id: taskId });
         if (!task) {
@@ -761,6 +770,7 @@ const editTask = async (req, res) => {
                 projectOld = await projectOld.save();
             }
         }
+
         await Task.findOneAndUpdate(
             { _id: taskId },
             {
@@ -771,6 +781,12 @@ const editTask = async (req, res) => {
                 deadline,
                 submissionLink,
                 compensation,
+                contributionType,
+                isSingleContributor,
+                isFilterRoles,
+                validRoles,
+                members,
+                taskStatus,
                 updatedAt: Date.now(),
             }
         )

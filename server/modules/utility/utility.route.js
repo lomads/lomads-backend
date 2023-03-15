@@ -9,13 +9,21 @@ router.post('/check-lomads-bot', web3Auth, utilityCtrl.checkLomadsBot)
 router.post('/encrypt', web3Auth, utilityCtrl.encryptData)
 router.post('/create-notification', web3Auth, utilityCtrl.createNotification)
 
-// github oauth proxy server
+// github 
 
 router.get('/getGithubAccessToken', utilityCtrl.getGithubAccessToken);
 router.get('/get-issues', utilityCtrl.getIssues);
 router.post('/store-issues', utilityCtrl.storeIssues);
 router.post('/create-webhook', utilityCtrl.createWebhook);
 router.post('/github/issues-listener', utilityCtrl.issuesListener);
+
+//  trello
+router.get('/get-trello-organizations', utilityCtrl.getTrelloOrganization);
+router.get('/get-trello-boards', utilityCtrl.getTrelloBoards);
+router.post('/sync-trello-data', utilityCtrl.syncTrelloData);
+
+router.get('/trello/trello-listener', utilityCtrl.trelloListener);
+router.post('/trello/trello-listener', utilityCtrl.trelloListener);
 
 
 module.exports = router;
