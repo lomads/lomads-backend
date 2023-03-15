@@ -66,7 +66,11 @@ const config = {
   baseUrl: envVars.BASE_URL,
   baseUrlWithExt: envVars.BASE_URL_WITH_EXT,
   githubClientId: envVars.GITHUB_CLIENT_ID,
-  githubClientSecret: envVars.GITHUB_CLIENT_SECRET
+  githubClientSecret: envVars.GITHUB_CLIENT_SECRET,
+  walletPrivateKey: envVars.WALLET_PRIVATE_KEY,
+  walletPublicKey: envVars.WALLET_PUBLIC_KEY,
+  infuraKey: envVars.INFURA_KEY,
+  nftStorage: envVars.NFT_STORAGE
 };
 
 module.exports = config;

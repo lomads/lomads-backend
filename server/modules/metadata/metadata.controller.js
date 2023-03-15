@@ -2,6 +2,7 @@ const Metadata = require('@server/modules/metadata/metadata.model');
 const Contract = require('@server/modules/contract/contract.model');
 const Member = require('@server/modules/member/member.model');
 const DAO = require('@server/modules/dao/dao.model');
+const { storeNFTMetadata } = require('../../services/nft.storage');
 const ObjectId = require('mongodb').ObjectID;
 
 const addMetaData = async (req, res) => {
@@ -83,4 +84,17 @@ const update = async (req, res) => {
     }
 }
 
-module.exports = { addMetaData, getMetadata, update };
+const createIPFSMetadata = async (req, res) => {
+    const { metadata, tokenURI } = req.body 
+    try {
+        const response = await storeNFTMetadata(metadata, tokenURI)
+        console.log(response)
+        return res.status(200).json(response.url)
+    }
+    catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { addMetaData, getMetadata, update, createIPFSMetadata };

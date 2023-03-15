@@ -3,6 +3,7 @@ const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model');
 const Member = require('@server/modules/member/member.model');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
+const { getSignature } = require('@server/services/smartContract');
 
 const getContractTokenMetadata = async (req, res) => {
     const { contractAddress, token } = req.params;
@@ -98,5 +99,17 @@ const getContract = async (req, res) => {
     }
 }
 
+const getWhitelistSignature = async (req, res) => {
+    const { chainId, contract, tokenId } = req.body;
+    try {
+        const signature = await getSignature({ chainId, contract, tokenId })
+        return res.status(200).json({ signature });
+    }
+    catch (e) {
+        console.error("contract.controller::get::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
 
-module.exports = { create, update, getContract, getContractTokenMetadata };
+
+module.exports = { create, update, getContract, getContractTokenMetadata, getWhitelistSignature };
