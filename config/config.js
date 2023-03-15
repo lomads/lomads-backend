@@ -70,7 +70,9 @@ const config = {
   walletPrivateKey: envVars.WALLET_PRIVATE_KEY,
   walletPublicKey: envVars.WALLET_PUBLIC_KEY,
   infuraKey: envVars.INFURA_KEY,
-  nftStorage: envVars.NFT_STORAGE
+  nftStorage: envVars.NFT_STORAGE,
+  trelloApiKey: envVars.REACT_APP_TRELLO_API_KEY,
+  trelloSecret: envVars.REACT_APP_TRELLO_SECRET,
 };
 
 module.exports = config;
