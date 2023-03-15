@@ -736,7 +736,13 @@ const editTask = async (req, res) => {
         deadline,
         submissionLink,
         compensation,
+        contributionType,
+        isSingleContributor,
+        isFilterRoles,
+        validRoles,
     } = req.body;
+
+    console.log("req body : ", req.body)
     try {
         let task = await Task.findOne({ _id: taskId });
         if (!task) {
@@ -761,6 +767,7 @@ const editTask = async (req, res) => {
                 projectOld = await projectOld.save();
             }
         }
+
         await Task.findOneAndUpdate(
             { _id: taskId },
             {
@@ -771,6 +778,11 @@ const editTask = async (req, res) => {
                 deadline,
                 submissionLink,
                 compensation,
+                contributionType,
+                isSingleContributor,
+                isFilterRoles,
+                validRoles,
+                members: [],
                 updatedAt: Date.now(),
             }
         )
