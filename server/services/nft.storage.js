@@ -22,7 +22,7 @@ const storeNFTMetadata = async (metadata, externalTokenURI) => {
         const image_blob = await getImage(metadata?.image)
         const cid = await client.storeBlob(image_blob);
         const nft = {
-            image: "https://ipfs.io/ipfs/" + cid,
+            image: `https://ipfs.io/ipfs/${cid}`,
             name: metadata?.name,
             description : metadata?.description,
             token_id: metadata?.id,
@@ -39,7 +39,7 @@ const storeNFTMetadata = async (metadata, externalTokenURI) => {
         }
         const m = new Blob(JSON.stringify(nft), { type: 'application/json' });
         const metadataCid = await client.storeBlob(m);
-        const metadataUrl = "https://ipfs.io/ipfs/" + metadataCid;
+        const metadataUrl = `https://ipfs.io/ipfs/${metadataCid}`;
         return metadataUrl;
     } catch (e) {
         console.log(e)
