@@ -37,7 +37,7 @@ const storeNFTMetadata = async (metadata, externalTokenURI) => {
                 } 
             ]
         }
-        const m = new Blob(JSON.stringify(nft), { type: 'application/json' });
+        const m = new Blob([JSON.stringify(nft)], { type: 'application/json' });
         const metadataCid = await client.storeBlob(m);
         const metadataUrl = `https://ipfs.io/ipfs/${metadataCid}`;
         return metadataUrl;
