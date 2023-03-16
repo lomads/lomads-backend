@@ -740,7 +740,8 @@ const editTask = async (req, res) => {
         isSingleContributor,
         isFilterRoles,
         validRoles,
-        members
+        members,
+        reviewer
     } = req.body;
 
     let taskStatus = contributionType === 'open' ? 'open' : 'assigned';
@@ -786,6 +787,7 @@ const editTask = async (req, res) => {
                 isFilterRoles,
                 validRoles,
                 members,
+                reviewer,
                 taskStatus,
                 updatedAt: Date.now(),
             }
