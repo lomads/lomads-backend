@@ -89,7 +89,7 @@ const createIPFSMetadata = async (req, res) => {
     try {
         const response = await storeNFTMetadata(metadata, tokenURI)
         console.log(response)
-        return res.status(200).json(response.url)
+        return res.status(200).json(response)
     }
     catch (e) {
         console.log(e)
