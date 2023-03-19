@@ -4,7 +4,7 @@ const moment = require('moment')
 const mime = require('mime')
 const fetch = require("node-fetch");
 const _ = require('lodash')
-const { NFTStorage, File } = require("nft.storage")
+const { NFTStorage, File, Blob } = require("nft.storage")
 
 const client = new NFTStorage({ token: config.nftStorage })
 
@@ -14,20 +14,15 @@ const getImage = async (imageOriginUrl) => {
     if (!r.ok) {
       throw new Error(`error fetching image: [${r.statusCode}]: ${r.status}`)
     }
-    return new File([r.blob()], "fileNameGoesHere.png", { type: "image/png" })
+    return await r.blob()
   }
 
 const storeNFTMetadata = async (metadata, externalTokenURI) => {
     try {
-        const contentType = mime.getType(metadata.image);
-        const ext = mime.getExtension(contentType)
-        console.log(metadata?.image, contentType)
-        // const image_blob = await axios.get(metadata?.image, { responseType: 'blob' }).then(response => {
-        //    return new File([response.data], `${moment().unix()}.${ext}`, { type: contentType} );       
-        // });
         const image_blob = await getImage(metadata?.image)
+        const cid = await client.storeBlob(image_blob);
         const nft = {
-            image: image_blob,
+            image: `https://ipfs.io/ipfs/${cid}`,
             name: metadata?.name,
             description : metadata?.description,
             token_id: metadata?.id,
@@ -42,8 +37,10 @@ const storeNFTMetadata = async (metadata, externalTokenURI) => {
                 } 
             ]
         }
-        const response = client.store(nft)
-        return response;
+        const m = new Blob([JSON.stringify(nft)], { type: 'application/json' });
+        const metadataCid = await client.storeBlob(m);
+        const metadataUrl = `https://ipfs.io/ipfs/${metadataCid}`;
+        return metadataUrl;
     } catch (e) {
         console.log(e)
         throw e
