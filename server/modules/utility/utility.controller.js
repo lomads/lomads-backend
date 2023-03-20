@@ -617,7 +617,6 @@ const getTrelloBoards = async (req, res) => {
         axios.get(`https://api.trello.com/1/organizations/${orgId}/boards?key=${config.trelloApiKey}&token=${accessToken}`)
             .then(async (response) => {
                 if (response.data && response.data.length > 0) {
-                    console.log("response : ", response.data);
                     return res.json({ type: 'success', message: 'Boards found', data: response.data });
                 }
                 else {
@@ -640,16 +639,94 @@ const trelloListener = async (req, res) => {
 }
 
 const syncTrelloData = async (req, res) => {
-    // params --- array of boards,accessToken,idModel 
     const { boardsArray, daoId, accessToken, idModel } = req.body;
     const result = await createTrelloWebhook(accessToken, idModel);
-    // 1.create webhook on the worskpace
-    // 2.get all the cards in the boards
+    if(result){
+        console.log("webhook created...getting all cards : ",result.id);
+        let cardsArray = [];
+        for (let i = 0; i < boardsArray.length; i++){
+            let boardId = boardsArray[i].id;
+            // fetching board cards one by one
+            const cards = await axios.get(`https://api.trello.com/1/boards/${boardId}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
+            if(cards){
+                cardsArray = [...cardsArray,...cards.data]
+            } 
+        }
+
+        var tasksArray = cardsArray.map((i) => (
+            {
+                daoId: daoId,
+                provider: 'Trello',
+                metaData: {
+                    externalId: i.id.toString(),
+                    cardUrl: i.url
+                },
+                name: i.name,
+                description: i.desc,
+                creator: null,
+                members: [],
+                project: null,
+                discussionChannel: i.url,
+                deadline: null,
+                submissionLink: i.url,
+                compensation: null,
+                reviewer: null,
+                contributionType: 'open',
+                createdAt: Date.now(),
+                draftedAt: Date.now(),
+            }
+        ))
+
+        // store draft task and update dao
+        let arr = [];
+            try {
+                let insertMany = await Task.insertMany(tasksArray, async function (error, docs) {
+                    for (let i = 0; i < docs.length; i++) {
+                        arr.push(docs[i]._id);
+                    }
+                    if (arr.length > 0) {
+                        const dao = await DAO.findOne({ _id: daoId });
+                        if (dao) {
+                            await DAO.findOneAndUpdate(
+                                { _id: daoId },
+                                {
+                                    [`trello.${idModel}`]: { 'webhookId': result.id.toString() },
+                                    $addToSet: {
+                                        tasks: { $each: arr },
+                                    },
+                                }
+                            )
+                        }
+
+                        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+                        return res.status(200).json({ dao: d });
+                    }
+                })
+            }
+            catch (e) {
+                console.log("error 710: ", e);
+            }
+
+    }
 }
 
 const createTrelloWebhook = async (accessToken, idModel) => {
-    console.log("accessToken : ", accessToken);
-    console.log("idModel : ", idModel);
+    let callbackURL = `${config.baseUrlWithExt}/v1/utility/trello/trello-listener`;
+    try{
+        return axios.post(`https://api.trello.com/1/webhooks/?callbackURL=${callbackURL}&idModel=${idModel}&key=${config.trelloApiKey}&token=${accessToken}`)
+        .then((response) => {
+            console.log("667 response : ",response);
+            return response.data;
+        })
+        .catch(async (e) => {
+            console.log("673 error response : ", e);
+            return null;
+        })
+    }
+    catch (error) {
+        console.log("try catch error 678 : ", e)
+    }
 }
 
 module.exports = {
