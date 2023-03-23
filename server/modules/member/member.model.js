@@ -7,6 +7,11 @@ const APIError = require('@server/helpers/APIError');
  * User Schema
  */
 const MemberSchema = new mongoose.Schema({
+  platformRole: {
+    type: String,
+    required: false,
+    default: 'member'
+  },
   name: {
     type: String,
     required: false,

@@ -99,6 +99,19 @@ const getContract = async (req, res) => {
     }
 }
 
+const signature = async (req, res) => {
+    const { chainId, contract, tokenId } = req.query;
+    try {
+        const signature = await getSignature({ chainId, contract, tokenId })
+        return res.status(200).json({ signature });
+    }
+    catch (e) {
+        console.error("contract.controller::get::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+
 const getWhitelistSignature = async (req, res) => {
     const { chainId, contract, tokenId } = req.body;
     try {
@@ -112,4 +125,4 @@ const getWhitelistSignature = async (req, res) => {
 }
 
 
-module.exports = { create, update, getContract, getContractTokenMetadata, getWhitelistSignature };
+module.exports = { create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature };

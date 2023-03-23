@@ -10,10 +10,22 @@ const { daoMemberAdded } = require('@server/events');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 
+const loadAll = async (req, res) => {
+    const { skip = 0, limit = 50 } = req.query;
+    const dao = await DAO.find({ deletedAt: null })
+    .lean()
+    .populate({ path: 'safe' })
+    .sort({ createdAt: -1 })
+    .skip(+skip)
+    .limit(+limit)
+    .exec()
+    const total = await DAO.countDocuments({ deletedAt: null });
+    const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total/limit) : 1 };
+    return res.status(200).json(data)
+}
+
 const load = async (req, res) => {
     const { _id } = req.user;
-    console.log(req.user);
-    console.log("query : ", req.query);
     const { chainId = 5 } = req.query;
     try {
         const dao = await DAO.find({ chainId, deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
@@ -485,4 +497,4 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
-module.exports = { updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink };
+module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink };
