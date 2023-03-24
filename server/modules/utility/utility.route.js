@@ -20,7 +20,7 @@ router.post('/github/issues-listener', utilityCtrl.issuesListener);
 //  trello
 router.get('/get-trello-organizations', utilityCtrl.getTrelloOrganization);
 router.get('/get-trello-boards', utilityCtrl.getTrelloBoards);
-router.post('/sync-trello-data', utilityCtrl.syncTrelloData);
+router.post('/sync-trello-data',web3Auth, utilityCtrl.syncTrelloData);
 
 router.get('/trello/trello-listener', utilityCtrl.trelloListener);
 router.post('/trello/trello-listener', utilityCtrl.trelloListener);
