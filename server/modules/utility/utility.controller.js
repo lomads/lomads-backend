@@ -650,7 +650,7 @@ const syncTrelloData = async (req, res) => {
         const result = await createTrelloWebhook(accessToken, idModel);
         if(result){
             wId=result.id;
-            // console.log("webhook created...getting all cards : ",result.id);
+            console.log("workspace webhook created...");
             await DAO.findOneAndUpdate(
                 { _id: daoId },
                 {
@@ -704,7 +704,7 @@ const syncTrelloData = async (req, res) => {
                     let cardsArray = [];
                     const cards = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
                     if(cards && cards.data && cards.data.length > 0){
-                        console.log("Cards found...")
+                        console.log("Total Cards found...",cards.data.length);
                         cardsArray = [...cardsArray,...cards.data];
     
                         var tasksArray = cardsArray.map((i) => (
@@ -740,6 +740,7 @@ const syncTrelloData = async (req, res) => {
                                     taskIds.push(docs[i]._id);   
                                 }
                                 if (arr.length > 0) {
+                                    console.log("Total Tasks created...",arr.length);
                                     const dao = await DAO.findOne({ _id: daoId });
                                     if (dao) {
                                         await DAO.findOneAndUpdate(
@@ -761,6 +762,7 @@ const syncTrelloData = async (req, res) => {
                                             },
                                         }
                                     )
+                                    console.log("DAO and project updated...")
     
                                     const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
                                     //update metadata
@@ -824,6 +826,8 @@ const syncTrelloData = async (req, res) => {
                                     },
                                 }
                             )
+
+                            console.log("DAO updated...")
                         }
     
                         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
