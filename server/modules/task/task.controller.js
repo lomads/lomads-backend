@@ -775,19 +775,7 @@ const editTask = async (req, res) => {
         await Task.findOneAndUpdate(
             { _id: taskId },
             {
-                name,
-                description,
-                project: projectId,
-                discussionChannel,
-                deadline,
-                submissionLink,
-                compensation,
-                contributionType,
-                isSingleContributor,
-                isFilterRoles,
-                validRoles,
-                members,
-                reviewer,
+                ...req.body,
                 taskStatus,
                 updatedAt: Date.now(),
             }
