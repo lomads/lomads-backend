@@ -643,6 +643,7 @@ const trelloListener = async (req, res) => {
 
 const syncTrelloData = async (req, res) => {
     try{
+        const { _id, wallet } = req.user;
         const { boardsArray, daoId,user, accessToken, idModel } = req.body;
 
         const result = await createTrelloWebhook(accessToken, idModel);
@@ -678,13 +679,13 @@ const syncTrelloData = async (req, res) => {
                     daoId, 
                     name : board.name, 
                     description : board.desc, 
-                    members: [user.id], 
+                    members: [_id], 
                     tasks:[],
                     links:[], 
                     milestones:[], 
                     compensation:null, 
                     kra: kraOb, 
-                    creator: user.address, 
+                    creator: wallet, 
                     inviteType:'Open', 
                     validRoles:[]
                 })
@@ -759,7 +760,7 @@ const syncTrelloData = async (req, res) => {
                                     const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
                                     //update metadata
     
-                                    let members = [user];
+                                    let members = [{id:req.user._id,address:req.user.wallet}];
     
                                     if (d.sbt) {
                                         for (let index = 0; index < members.length; index++) {
