@@ -642,12 +642,14 @@ const trelloListener = async (req, res) => {
 }
 
 const syncTrelloData = async (req, res) => {
+    const { _id, wallet } = req.user;
+    const { boardsArray, daoId,user, accessToken, idModel } = req.body;
+    let wId = null, pId =[],bId=[],taskIds=[];
     try{
-        const { _id, wallet } = req.user;
-        const { boardsArray, daoId,user, accessToken, idModel } = req.body;
 
         const result = await createTrelloWebhook(accessToken, idModel);
         if(result){
+            wId=result.id;
             // console.log("webhook created...getting all cards : ",result.id);
             await DAO.findOneAndUpdate(
                 { _id: daoId },
@@ -691,10 +693,12 @@ const syncTrelloData = async (req, res) => {
                 })
         
                 project = await project.save();
-                console.log("Project created...")
+                pId.push(project._id);
+                console.log("Project created...");
                 
                 const boardWebhook = await createTrelloWebhook(accessToken, board.id);
                 if(boardWebhook){
+                    bId.push(boardWebhook.id);
                     console.log("Board webhook created...");
                     console.log("Fetching board cards...");
                     let cardsArray = [];
@@ -733,6 +737,7 @@ const syncTrelloData = async (req, res) => {
                             let insertMany = await Task.insertMany(tasksArray, async function (error, docs) {
                                 for (let i = 0; i < docs.length; i++) {
                                     arr.push(docs[i]._id);
+                                    taskIds.push(docs[i]._id);   
                                 }
                                 if (arr.length > 0) {
                                     const dao = await DAO.findOne({ _id: daoId });
@@ -872,7 +877,55 @@ const syncTrelloData = async (req, res) => {
     }
     catch(e){
         console.log("873 ",e);
-        return res.status(500).json({ error:"Seomthing went wrong" });
+        if(wId){
+            // delete workspace webhook
+            await axios.delete(`https://api.trello.com/1/webhooks/${wId}?key=${config.trelloApiKey}&token=${accessToken}`);
+        }
+        if(pId.length > 0){
+            // delete all projects
+            const deleteProjects = await Project.deleteMany({_id:{$in:pId}},function(err, result) {
+                if (err) {
+                  console.log("887 error in delete many projects : ",err)
+                } else {
+                  console.log("deleted all projects");
+                }
+              })
+        }
+        if(bId.length > 0){
+            // delete all board webhooks
+            for(let i=0;i<bId.length;i++){
+                await axios.delete(`https://api.trello.com/1/webhooks/${bId[i]}?key=${config.trelloApiKey}&token=${accessToken}`);
+            }
+        }
+        if(taskIds.length > 0){
+            // delete all tasks
+            const deleteTasks = await Task.deleteMany({_id:{$in:taskIds}},function(err, result) {
+                if (err) {
+                  console.log("904 error in delete many tasks : ",err)
+                } else {
+                  console.log("deleted all tasks");
+                }
+              })
+        }
+
+        await DAO.findOneAndUpdate(
+            { _id: daoId },
+            {
+                trello:null,
+                $pull: {
+                    projects: {
+                        $in: pId
+                    },
+                    tasks: {
+                        $in: taskIds
+                    },
+                },
+            }
+        )
+
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+        return res.status(200).json({ dao: d });
     }
 }
 
