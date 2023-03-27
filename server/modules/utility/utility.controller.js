@@ -586,6 +586,7 @@ const getTrelloOrganization = async (req, res) => {
         // getting member information for all the organizations
         axios.get(`https://api.trello.com/1/members/me/?key=${config.trelloApiKey}&token=${accessToken}`)
             .then(async (response) => {
+                console.log("auth data : ",response.data);
                 if (response.data && response.data.idOrganizations.length > 0) {
                     let organizationArray = [];
                     let organizationIds = response.data.idOrganizations;
@@ -646,8 +647,7 @@ const syncTrelloData = async (req, res) => {
     const { boardsArray, daoId,user, accessToken, idModel } = req.body;
     let wId = null, pId =[],bId=[],taskIds=[];
     try{
-
-        const result = await createTrelloWebhook(accessToken, idModel);
+        const result = await createTrelloWebhook(accessToken, idModel,'workspace');
         if(result){
             wId=result.id;
             console.log("workspace webhook created...");
@@ -696,7 +696,7 @@ const syncTrelloData = async (req, res) => {
                 pId.push(project._id);
                 console.log("Project created...");
                 
-                const boardWebhook = await createTrelloWebhook(accessToken, board.id);
+                const boardWebhook = await createTrelloWebhook(accessToken, board.id,'board');
                 if(boardWebhook){
                     bId.push(boardWebhook.id);
                     console.log("Board webhook created...");
@@ -734,26 +734,25 @@ const syncTrelloData = async (req, res) => {
                         // store draft task and update dao
                         let arr = [];
                         try {
-                            let insertMany = await Task.insertMany(tasksArray, async function (error, docs) {
-                                for (let i = 0; i < docs.length; i++) {
-                                    arr.push(docs[i]._id);
-                                    taskIds.push(docs[i]._id);   
+                            let insertMany = await Task.create(tasksArray)
+                            if(insertMany){
+                                console.log("insert many : ",insertMany)
+                                for (let i = 0; i < insertMany.length; i++) {
+                                    arr.push(insertMany[i]._id);
+                                    taskIds.push(insertMany[i]._id);   
                                 }
                                 if (arr.length > 0) {
                                     console.log("Total Tasks created...",arr.length);
-                                    const dao = await DAO.findOne({ _id: daoId });
-                                    if (dao) {
-                                        await DAO.findOneAndUpdate(
-                                            { _id: daoId },
-                                            {
-                                                [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                                                $addToSet: {
-                                                    tasks: { $each: arr },
-                                                    projects: project._id
-                                                },
-                                            }
-                                        )
-                                    }
+                                    await DAO.findOneAndUpdate(
+                                        { _id: daoId },
+                                        {
+                                            [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                            $addToSet: {
+                                                tasks: { $each: arr },
+                                                projects: project._id
+                                            },
+                                        }
+                                    )
                                     await Project.findOneAndUpdate(
                                         { _id: project._id },
                                         {
@@ -764,7 +763,7 @@ const syncTrelloData = async (req, res) => {
                                     )
                                     console.log("DAO and project updated...")
     
-                                    const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+                                    const d = await DAO.findOne({ _id: daoId });
                                     //update metadata
     
                                     let members = [{id:req.user._id,address:req.user.wallet}];
@@ -805,7 +804,7 @@ const syncTrelloData = async (req, res) => {
                                     projectCreated.emit(project)
                                     
                                 }
-                            })
+                            }
                         }
                         catch (e) {
                             console.log("error 710: ", e);
@@ -815,22 +814,19 @@ const syncTrelloData = async (req, res) => {
                     
                     else{
                         console.log("No cards found in the board...simply update dao")
-                        const dao = await DAO.findOne({ _id: daoId });
-                        if (dao) {
-                            await DAO.findOneAndUpdate(
-                                { _id: daoId },
-                                {
-                                    [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                                    $addToSet: {
-                                        projects: project._id
-                                    },
-                                }
-                            )
+                        await DAO.findOneAndUpdate(
+                            { _id: daoId },
+                            {
+                                [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                $addToSet: {
+                                    projects: project._id
+                                },
+                            }
+                        )
 
-                            console.log("DAO updated...")
-                        }
+                        console.log("DAO updated...")
     
-                        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+                        const d = await DAO.findOne({ _id: daoId });
                         //update metadata
     
                         let members = [user];
@@ -876,11 +872,16 @@ const syncTrelloData = async (req, res) => {
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
     
             return res.status(200).json({ dao: d });
+        }
+        else{
+            // webhook at workspace could not be created...simple return dao
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
     
+            return res.status(200).json({ dao: d });
         }
     }
     catch(e){
-        console.log("873 ",e);
+        console.log("889 enter parent catch ",e);
         if(wId){
             // delete workspace webhook
             await axios.delete(`https://api.trello.com/1/webhooks/${wId}?key=${config.trelloApiKey}&token=${accessToken}`);
@@ -933,17 +934,34 @@ const syncTrelloData = async (req, res) => {
     }
 }
 
-const createTrelloWebhook = async (accessToken, idModel) => {
+const createTrelloWebhook = async (accessToken, idModel,modelType) => {
     let callbackURL = `${config.baseUrlWithExt}/v1/utility/trello/trello-listener`;
     try{
         return axios.post(`https://api.trello.com/1/webhooks/?callbackURL=${callbackURL}&idModel=${idModel}&key=${config.trelloApiKey}&token=${accessToken}`)
         .then((response) => {
-            console.log("667 response : ",response);
+            console.log("667 response : ",response.status,response.data);
             return response.data;
         })
         .catch(async (e) => {
-            console.log("673 error response : ", e);
-            return null;
+            console.log("673 error response : ", e.response.status,e.response.data);
+            return axios.get(`https://api.trello.com/1/members/me/tokens?webhooks=true&key=${config.trelloApiKey}&token=${accessToken}`)
+                .then((result) => {
+                    if(result){
+                        for(let i = 0; i<result.data[0].webhooks.length;i++){
+                            if(result.data[0].webhooks[i].idModel === idModel){
+                                console.log("Found...",result.data[0].webhooks[i]);
+                                return { id: result.data[0].webhooks[i].id }
+                            }
+                        }
+                    }
+                    else{
+                        return null;
+                    }
+                })
+                .catch((e) => {
+                    console.log("964 error : ",e);
+                    return null;
+                })
         })
     }
     catch (error) {
