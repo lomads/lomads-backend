@@ -586,6 +586,7 @@ const getTrelloOrganization = async (req, res) => {
         // getting member information for all the organizations
         axios.get(`https://api.trello.com/1/members/me/?key=${config.trelloApiKey}&token=${accessToken}`)
             .then(async (response) => {
+                console.log("auth data : ",response.data);
                 if (response.data && response.data.idOrganizations.length > 0) {
                     let organizationArray = [];
                     let organizationIds = response.data.idOrganizations;
@@ -733,10 +734,12 @@ const syncTrelloData = async (req, res) => {
                         // store draft task and update dao
                         let arr = [];
                         try {
-                            let insertMany = await Task.insertMany(tasksArray, async function (error, docs) {
-                                for (let i = 0; i < docs.length; i++) {
-                                    arr.push(docs[i]._id);
-                                    taskIds.push(docs[i]._id);   
+                            let insertMany = await Task.create(tasksArray)
+                            if(insertMany){
+                                console.log("insert many : ",insertMany)
+                                for (let i = 0; i < insertMany.length; i++) {
+                                    arr.push(insertMany[i]._id);
+                                    taskIds.push(insertMany[i]._id);   
                                 }
                                 if (arr.length > 0) {
                                     console.log("Total Tasks created...",arr.length);
@@ -801,7 +804,7 @@ const syncTrelloData = async (req, res) => {
                                     projectCreated.emit(project)
                                     
                                 }
-                            })
+                            }
                         }
                         catch (e) {
                             console.log("error 710: ", e);
