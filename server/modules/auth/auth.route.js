@@ -10,7 +10,7 @@ router.get('/me', web3Auth, (req, res) => {
 });
 
 router.patch('/me', web3Auth, authCtrl.update);
-router.post('/admin', web3AdminAuth, createAccount);
+router.post('/admin', [web3Auth, web3AdminAuth], createAccount);
 router.post('/create-account', createAccount);
 router.post('/create-account-aikon', authCtrl.createAccountAikon);
 
