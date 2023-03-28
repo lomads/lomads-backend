@@ -1,7 +1,7 @@
 const web3AdminAuth = async (req, res, next) => {
     try {
         if(req?.user && req?.user?.platformRole && req?.user?.platformRole === 'admin')
-            next();
+            return next();
         return res.status(401).json({ message: 'Unauthorised' })
     } catch (e) {
         console.log(e)
