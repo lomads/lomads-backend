@@ -14,7 +14,7 @@ const loadAll = async (req, res) => {
     const { skip = 0, limit = 50 } = req.query;
     const dao = await DAO.find({ deletedAt: null })
     .lean()
-    .populate({ path: 'safe' })
+    .populate({ path: 'safe projects' })
     .sort({ createdAt: -1 })
     .skip(+skip)
     .limit(+limit)
