@@ -17,11 +17,7 @@ const SafeSchema = new mongoose.Schema({
   },
   dao: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
   owners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
-  token: {
-    type: String,
-    required: false,
-    default: null
-  },
+  tokens: [{ type: mongoose.Schema.Types.Object }],
   balance: {
     type: String,
     required: false,
