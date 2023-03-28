@@ -637,8 +637,186 @@ const getTrelloBoards = async (req, res) => {
 }
 
 const trelloListener = async (req, res) => {
+    const {daoId} = req.query;
     const payload = req.body;
     console.log("trello listener: ", payload);
+
+    if(payload && payload.action){
+        if(payload.action.type === 'addToOrganizationBoard'){
+            console.log("payload action board : ",payload.action.data.board);
+            let creator=null;
+
+            const dao = await DAO.findOne({_id:daoId});
+            if (dao) {
+                const trelloOb = _.get(dao, 'trello', null);
+                if (trelloOb) {
+                    if (_.get(dao, `trello.${payload.action.data.organization.id}`, null)) {
+                        creator = _.get(dao, `trello.${payload.action.data.organization.id}.creator`, null);
+                    }
+                }
+            }
+    
+            let kraOb = {
+                frequency : '',
+                results : [],
+                tracker: [{
+                    start: moment().startOf('day').unix(),
+                    end: moment().startOf('day').add(1,'month').endOf('day').unix(),
+                    results: []
+                }]
+            }
+    
+            let project = new Project({
+                daoId, 
+                provider: 'Trello',
+                metaData: {
+                    externalId: payload.action.data.board.id.toString(),
+                    boardUrl: 'N/A'
+                },
+                name : payload.action.data.board.name, 
+                description : payload.action.data.board.desc ? payload.action.data.board.desc:'', 
+                members: [creator.id], 
+                tasks:[],
+                links:[], 
+                milestones:[], 
+                compensation:null, 
+                kra: kraOb, 
+                creator: creator.wallet, 
+                inviteType:'Open', 
+                validRoles:[]
+            })
+    
+            project = await project.save();
+            console.log("Project created...");
+
+            let members = [{id:creator.id,address:creator.wallet}];
+
+            if (dao.sbt) {
+                for (let index = 0; index < members.length; index++) {
+                    const member = members[index];
+                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                    const metadata = await Metadata.findOne(filter)
+                    if (metadata) {
+                        let attrs = [...metadata._doc.attributes];
+                        if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                            attrs.push({ trait_type: 'projects', value: project._id.toString() })
+                        } else {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'projects') {
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                }
+                                return attr
+                            })
+                        }
+                        if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                            attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                        } else {
+                            attrs = attrs.map(attr => {
+                                if (attr.trait_type === 'project_names') {
+                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                }
+                                return attr
+                            })
+                        }
+                        console.log("attrs", attrs);
+                        metadata._doc.attributes = attrs;
+                        await metadata.save();
+                    }
+                }
+            }
+
+            const boardWebhook = await createTrelloWebhook(creator.accessToken, payload.action.data.board.id, daoId, 'board');
+            if(boardWebhook){
+                console.log("new Board webhook created...")
+                await DAO.findOneAndUpdate(
+                    { _id: daoId },
+                    {
+                        [`trello.${payload.action.data.organization.id}.boards.${payload.action.data.board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                        $addToSet: {
+                            projects: project._id
+                        },
+                    }
+                )
+            }
+        }
+
+        else if(payload.action.type === 'updateBoard' && payload.action.display.translationKey==='action_closed_board'){
+            console.log("board closed");
+            try {
+                await Project.findOneAndUpdate(
+                    { 
+                        daoId : daoId,
+                        "metaData.externalId": payload.action.data.board.id.toString() 
+                    },
+                    {
+                        $set: {
+                            archivedAt: Date.now(),
+                        }
+                    }
+                );
+                const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                console.log(p);
+            } catch (error) {
+                console.log("error 476 : ", error)
+            }
+        }
+    
+        else if(payload.action.type === 'removeFromOrganizationBoard'){
+
+            const dao = await DAO.findOne({_id:daoId});
+            if (dao) {
+                let creator = null;
+                const trello = _.get(dao, 'trello', null);
+                if (trello) {
+                    if (_.get(dao, `trello.${payload.action.data.organization.id}`, null)) {
+                        creator = _.get(dao, `trello.${payload.action.data.organization.id}.creator`, null);
+                    }
+                }
+
+                let webhookId = _.get(dao, `trello.${payload.action.data.organization.id}.boards.${payload.action.data.board.id}.webhookId`, null);
+
+                let trelloOb = { ...dao.trello };
+                delete trelloOb[`${payload.action.data.organization.id}`]['boards'][`${payload.action.data.board.id}`];
+
+                try{
+                    let deleteWebhook = await axios.delete(`https://api.trello.com/1/webhooks/${webhookId}?key=${config.trelloApiKey}&token=${creator.accessToken}`);
+                    if(deleteWebhook){
+                        await DAO.findOneAndUpdate(
+                            {_id:daoId},
+                            {
+                                trello: trelloOb
+                            }
+                        )
+
+                        // let project = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() });
+
+                        // await Task.updateMany(
+                        //     { _id: { $in: project.tasks } },
+                        //     { $set: { deletedAt: Date.now() } },
+                        // )
+
+                        // await Project.findOneAndUpdate(
+                        //     { 
+                        //         daoId : daoId,
+                        //         "metaData.externalId": payload.action.data.board.id.toString() 
+                        //     },
+                        //     {
+                        //         $set: {
+                        //             deletedAt: Date.now(),
+                        //         }
+                        //     }
+                        // );
+                        // const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                        // console.log(p);
+                    }
+                }
+                catch(e){
+                    console.log("error : ",e);
+                }
+            }
+        }
+    }
+
     return res.status(200).json({ success: true });
 }
 
@@ -647,7 +825,7 @@ const syncTrelloData = async (req, res) => {
     const { boardsArray, daoId,user, accessToken, idModel } = req.body;
     let wId = null, pId =[],bId=[],taskIds=[];
     try{
-        const result = await createTrelloWebhook(accessToken, idModel,'workspace');
+        const result = await createTrelloWebhook(accessToken, idModel,daoId,'workspace');
         if(result){
             wId=result.id;
             console.log("workspace webhook created...");
@@ -656,215 +834,227 @@ const syncTrelloData = async (req, res) => {
                 {
                     [`trello.${idModel}`]: { 
                         'webhookId': result.id.toString(),
+                        'creator' : {
+                            'id' : _id,
+                            'wallet' : wallet,
+                            'accessToken':accessToken
+                        }, 
                         'boards':{}
                     },
                 }
             )
     
-            for (let i = 0; i < boardsArray.length; i++){
+            if(boardsArray.length > 0){
+                for (let i = 0; i < boardsArray.length; i++){
             
-                let board = boardsArray[i];
-                console.log("Board",i+1);
-                console.log("Board name & Id : ",board.name,board.id);
-    
-                let kraOb = {
-                    frequency : '',
-                    results : [],
-                    tracker: [{
-                        start: moment().startOf('day').unix(),
-                        end: moment().startOf('day').add(1,'month').endOf('day').unix(),
-                        results: []
-                    }]
-                }
-    
-                let project = new Project({
-                    daoId, 
-                    name : board.name, 
-                    description : board.desc, 
-                    members: [_id], 
-                    tasks:[],
-                    links:[], 
-                    milestones:[], 
-                    compensation:null, 
-                    kra: kraOb, 
-                    creator: wallet, 
-                    inviteType:'Open', 
-                    validRoles:[]
-                })
+                    let board = boardsArray[i];
+                    console.log("Board",i+1);
+                    console.log("Board name & Id : ",board.name,board.id);
         
-                project = await project.save();
-                pId.push(project._id);
-                console.log("Project created...");
-                
-                const boardWebhook = await createTrelloWebhook(accessToken, board.id,'board');
-                if(boardWebhook){
-                    bId.push(boardWebhook.id);
-                    console.log("Board webhook created...");
-                    console.log("Fetching board cards...");
-                    let cardsArray = [];
-                    const cards = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
-                    if(cards && cards.data && cards.data.length > 0){
-                        console.log("Total Cards found...",cards.data.length);
-                        cardsArray = [...cardsArray,...cards.data];
-    
-                        var tasksArray = cardsArray.map((i) => (
-                            {
-                                daoId: daoId,
-                                provider: 'Trello',
-                                metaData: {
-                                    externalId: i.id.toString(),
-                                    cardUrl: i.url
-                                },
-                                name: i.name,
-                                description: i.desc,
-                                creator: null,
-                                members: [],
-                                project: project._id,
-                                discussionChannel: i.url,
-                                deadline: null,
-                                submissionLink: i.url,
-                                compensation: null,
-                                reviewer: null,
-                                contributionType: 'open',
-                                createdAt: Date.now(),
-                                draftedAt: Date.now(),
-                            }
-                        ))
-    
-                        // store draft task and update dao
-                        let arr = [];
-                        try {
-                            let insertMany = await Task.create(tasksArray)
-                            if(insertMany){
-                                console.log("insert many : ",insertMany)
-                                for (let i = 0; i < insertMany.length; i++) {
-                                    arr.push(insertMany[i]._id);
-                                    taskIds.push(insertMany[i]._id);   
-                                }
-                                if (arr.length > 0) {
-                                    console.log("Total Tasks created...",arr.length);
-                                    await DAO.findOneAndUpdate(
-                                        { _id: daoId },
-                                        {
-                                            [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                                            $addToSet: {
-                                                tasks: { $each: arr },
-                                                projects: project._id
-                                            },
-                                        }
-                                    )
-                                    await Project.findOneAndUpdate(
-                                        { _id: project._id },
-                                        {
-                                            $addToSet: {
-                                                tasks: { $each: arr },
-                                            },
-                                        }
-                                    )
-                                    console.log("DAO and project updated...")
-    
-                                    const d = await DAO.findOne({ _id: daoId });
-                                    //update metadata
-    
-                                    let members = [{id:req.user._id,address:req.user.wallet}];
-    
-                                    if (d.sbt) {
-                                        for (let index = 0; index < members.length; index++) {
-                                            const member = members[index];
-                                            const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
-                                            const metadata = await Metadata.findOne(filter)
-                                            if (metadata) {
-                                                let attrs = [...metadata._doc.attributes];
-                                                if (!find(attrs, attr => attr.trait_type === 'projects')) {
-                                                    attrs.push({ trait_type: 'projects', value: project._id.toString() })
-                                                } else {
-                                                    attrs = attrs.map(attr => {
-                                                        if (attr.trait_type === 'projects') {
-                                                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
-                                                        }
-                                                        return attr
-                                                    })
-                                                }
-                                                if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                                                    attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
-                                                } else {
-                                                    attrs = attrs.map(attr => {
-                                                        if (attr.trait_type === 'project_names') {
-                                                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
-                                                        }
-                                                        return attr
-                                                    })
-                                                }
-                                                console.log("attrs", attrs);
-                                                metadata._doc.attributes = attrs;
-                                                await metadata.save();
-                                            }
-                                        }
-                                    }
-                                    projectCreated.emit(project)
-                                    
-                                }
-                            }
-                        }
-                        catch (e) {
-                            console.log("error 710: ", e);
-    
-                        }
-                    } 
+                    let kraOb = {
+                        frequency : '',
+                        results : [],
+                        tracker: [{
+                            start: moment().startOf('day').unix(),
+                            end: moment().startOf('day').add(1,'month').endOf('day').unix(),
+                            results: []
+                        }]
+                    }
+        
+                    let project = new Project({
+                        daoId, 
+                        provider: 'Trello',
+                        metaData: {
+                            externalId: board.id.toString(),
+                            boardUrl: board.url
+                        },
+                        name : board.name, 
+                        description : board.desc, 
+                        members: [_id], 
+                        tasks:[],
+                        links:[], 
+                        milestones:[], 
+                        compensation:null, 
+                        kra: kraOb, 
+                        creator: wallet, 
+                        inviteType:'Open', 
+                        validRoles:[]
+                    })
+            
+                    project = await project.save();
+                    pId.push(project._id);
+                    console.log("Project created...");
                     
-                    else{
-                        console.log("No cards found in the board...simply update dao")
-                        await DAO.findOneAndUpdate(
-                            { _id: daoId },
-                            {
-                                [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                                $addToSet: {
-                                    projects: project._id
-                                },
-                            }
-                        )
-
-                        console.log("DAO updated...")
-    
-                        const d = await DAO.findOne({ _id: daoId });
-                        //update metadata
-    
-                        let members = [user];
-    
-                        if (d.sbt) {
-                            for (let index = 0; index < members.length; index++) {
-                                const member = members[index];
-                                const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
-                                const metadata = await Metadata.findOne(filter)
-                                if (metadata) {
-                                    let attrs = [...metadata._doc.attributes];
-                                    if (!find(attrs, attr => attr.trait_type === 'projects')) {
-                                        attrs.push({ trait_type: 'projects', value: project._id.toString() })
-                                    } else {
-                                        attrs = attrs.map(attr => {
-                                            if (attr.trait_type === 'projects') {
-                                                return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
-                                            }
-                                            return attr
-                                        })
+                    const boardWebhook = await createTrelloWebhook(accessToken, board.id,daoId,'board');
+                    if(boardWebhook){
+                        bId.push(boardWebhook.id);
+                        console.log("Board webhook created...");
+                        console.log("Fetching board cards...");
+                        let cardsArray = [];
+                        const cards = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
+                        if(cards && cards.data && cards.data.length > 0){
+                            console.log("Total Cards found...",cards.data.length);
+                            cardsArray = [...cardsArray,...cards.data];
+        
+                            var tasksArray = cardsArray.map((i) => (
+                                {
+                                    daoId: daoId,
+                                    provider: 'Trello',
+                                    metaData: {
+                                        externalId: i.id.toString(),
+                                        cardUrl: i.url
+                                    },
+                                    name: i.name,
+                                    description: i.desc,
+                                    creator: null,
+                                    members: [],
+                                    project: project._id,
+                                    discussionChannel: i.url,
+                                    deadline: null,
+                                    submissionLink: i.url,
+                                    compensation: null,
+                                    reviewer: null,
+                                    contributionType: 'open',
+                                    createdAt: Date.now(),
+                                    draftedAt: Date.now(),
+                                }
+                            ))
+        
+                            // store draft task and update dao
+                            let arr = [];
+                            try {
+                                let insertMany = await Task.create(tasksArray)
+                                if(insertMany){
+                                    console.log("insert many : ",insertMany)
+                                    for (let i = 0; i < insertMany.length; i++) {
+                                        arr.push(insertMany[i]._id);
+                                        taskIds.push(insertMany[i]._id);   
                                     }
-                                    if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                                        attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
-                                    } else {
-                                        attrs = attrs.map(attr => {
-                                            if (attr.trait_type === 'project_names') {
-                                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                    if (arr.length > 0) {
+                                        console.log("Total Tasks created...",arr.length);
+                                        await DAO.findOneAndUpdate(
+                                            { _id: daoId },
+                                            {
+                                                [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                                $addToSet: {
+                                                    tasks: { $each: arr },
+                                                    projects: project._id
+                                                },
                                             }
-                                            return attr
-                                        })
+                                        )
+                                        await Project.findOneAndUpdate(
+                                            { _id: project._id },
+                                            {
+                                                $addToSet: {
+                                                    tasks: { $each: arr },
+                                                },
+                                            }
+                                        )
+                                        console.log("DAO and project updated...")
+        
+                                        const d = await DAO.findOne({ _id: daoId });
+                                        //update metadata
+        
+                                        let members = [{id:req.user._id,address:req.user.wallet}];
+        
+                                        if (d.sbt) {
+                                            for (let index = 0; index < members.length; index++) {
+                                                const member = members[index];
+                                                const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                                                const metadata = await Metadata.findOne(filter)
+                                                if (metadata) {
+                                                    let attrs = [...metadata._doc.attributes];
+                                                    if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                                        attrs.push({ trait_type: 'projects', value: project._id.toString() })
+                                                    } else {
+                                                        attrs = attrs.map(attr => {
+                                                            if (attr.trait_type === 'projects') {
+                                                                return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                                            }
+                                                            return attr
+                                                        })
+                                                    }
+                                                    if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                                        attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                                                    } else {
+                                                        attrs = attrs.map(attr => {
+                                                            if (attr.trait_type === 'project_names') {
+                                                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                                            }
+                                                            return attr
+                                                        })
+                                                    }
+                                                    console.log("attrs", attrs);
+                                                    metadata._doc.attributes = attrs;
+                                                    await metadata.save();
+                                                }
+                                            }
+                                        }
+                                        projectCreated.emit(project)
+                                        
                                     }
-                                    console.log("attrs", attrs);
-                                    metadata._doc.attributes = attrs;
-                                    await metadata.save();
                                 }
                             }
+                            catch (e) {
+                                console.log("error 710: ", e);
+        
+                            }
+                        } 
+                        
+                        else{
+                            console.log("No cards found in the board...simply update dao")
+                            await DAO.findOneAndUpdate(
+                                { _id: daoId },
+                                {
+                                    [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                    $addToSet: {
+                                        projects: project._id
+                                    },
+                                }
+                            )
+    
+                            console.log("DAO updated...")
+        
+                            const d = await DAO.findOne({ _id: daoId });
+                            //update metadata
+        
+                            let members = [user];
+        
+                            if (d.sbt) {
+                                for (let index = 0; index < members.length; index++) {
+                                    const member = members[index];
+                                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                                    const metadata = await Metadata.findOne(filter)
+                                    if (metadata) {
+                                        let attrs = [...metadata._doc.attributes];
+                                        if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                            attrs.push({ trait_type: 'projects', value: project._id.toString() })
+                                        } else {
+                                            attrs = attrs.map(attr => {
+                                                if (attr.trait_type === 'projects') {
+                                                    return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                                }
+                                                return attr
+                                            })
+                                        }
+                                        if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                            attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                                        } else {
+                                            attrs = attrs.map(attr => {
+                                                if (attr.trait_type === 'project_names') {
+                                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                                }
+                                                return attr
+                                            })
+                                        }
+                                        console.log("attrs", attrs);
+                                        metadata._doc.attributes = attrs;
+                                        await metadata.save();
+                                    }
+                                }
+                            }
+                            projectCreated.emit(project)
                         }
-                        projectCreated.emit(project)
                     }
                 }
             }
@@ -934,8 +1124,8 @@ const syncTrelloData = async (req, res) => {
     }
 }
 
-const createTrelloWebhook = async (accessToken, idModel,modelType) => {
-    let callbackURL = `${config.baseUrlWithExt}/v1/utility/trello/trello-listener`;
+const createTrelloWebhook = async (accessToken, idModel,daoId,modelType) => {
+    let callbackURL = `${config.baseUrlWithExt}/v1/utility/trello/trello-listener/?daoId=${daoId}`;
     try{
         return axios.post(`https://api.trello.com/1/webhooks/?callbackURL=${callbackURL}&idModel=${idModel}&key=${config.trelloApiKey}&token=${accessToken}`)
         .then((response) => {
