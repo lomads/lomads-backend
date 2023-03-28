@@ -46,8 +46,10 @@ const createAccountAikon = async (req, res, next) => {
 const update = async (req, res) => {
 	const { _id } = req.user;
 	console.log("_id : ", _id);
+	let body = { ...req.body }
+	delete body.platformRole
 	try {
-		let member = await Member.findOneAndUpdate({ _id }, { ...req.body })
+		let member = await Member.findOneAndUpdate({ _id }, { ...body })
 		member = await Member.findOne({ _id })
 		return res.status(200).json(member)
 	} catch (e) {
