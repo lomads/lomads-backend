@@ -6,6 +6,7 @@ const contractRoutes = require('@server/modules/contract/contract.route');
 const metadataRoutes = require('@server/modules/metadata/metadata.route');
 const transactionRoutes = require('@server/modules/transaction/transaction.route');
 const projectRoutes = require('@server/modules/project/project.route');
+const safeRoutes = require('@server/modules/safe/safe.route');
 const taskRoutes = require('@server/modules/task/task.route');
 const utilityRoutes = require('@server/modules/utility/utility.route');
 const notificationRoutes = require('@server/modules/notification/notification.route');
@@ -25,6 +26,7 @@ router.get('/health-check', (req, res) =>
 router.use('/dao', daoRoutes);
 router.use('/member', memberRoutes);
 router.use('/contract', contractRoutes);
+router.use('/safe', safeRoutes);
 router.use('/transaction', transactionRoutes);
 router.use('/auth', authRoutes);
 router.use('/metadata', metadataRoutes);
