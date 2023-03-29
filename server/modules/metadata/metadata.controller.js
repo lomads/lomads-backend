@@ -48,7 +48,7 @@ const getMetadata = async (req, res) => {
         const { contractAddress } = req.params;
         const { wallet } = req.user;
         console.log(wallet)
-        let c = await Contract.findOne({ "$or": [ { address: contractAddress }, { _id: contractAddress } ] });
+        let c = await Contract.findOne({ address: contractAddress });
         console.log(c)
         const metadata = await Metadata.findOne({
             contract: c._id,
