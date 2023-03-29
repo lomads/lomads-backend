@@ -16,7 +16,7 @@ const ContractSchema = new mongoose.Schema({
   treasury: { type: String },
   mintPrice: { type: String },
   mintPriceToken: { type: String, default: "0x0000000000000000000000000000000000000000" },
-  version: { type: String },
+  version: { type: String, default: "0" },
   membersList: [{ type: mongoose.Schema.Types.Object }],
   admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
   metadata: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Metadata' }],
