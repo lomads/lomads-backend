@@ -528,6 +528,33 @@ const archiveProject = async (req, res) => {
     }
 }
 
+const updateViewProject = async (req, res) => {
+    const { _id } = req.user;
+    const { daoUrl } = req.query;
+    const { projectId } = req.params;
+    try {
+        let project = await Project.findOne({ _id: projectId });
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found' })
+        }
+        await Project.findOneAndUpdate(
+            { _id: projectId },
+            {
+                $addToSet: {
+                    viewers: { $each: [_id] },
+                },
+            }
+        )
+        const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
+        return res.status(200).json({ project: p, dao: d });
+    }
+    catch (e) {
+        console.error("project.archiveProject::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const deleteProject = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
@@ -850,5 +877,5 @@ const editProjectMilestone = async (req, res) => {
 
 module.exports = {
     checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, editProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
-    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, editProjectKRA, updateProjectMilestones, joinDiscordQueue, editProjectLinks, editProjectMilestone
+    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, editProjectKRA, updateProjectMilestones, joinDiscordQueue, editProjectLinks, editProjectMilestone,updateViewProject
 };

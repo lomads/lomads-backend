@@ -12,6 +12,10 @@ const ProjectSchema = new mongoose.Schema({
     daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
     provider: { type: String, default: 'Lomads' },
     metaData: { type: mongoose.Schema.Types.Mixed, default: null },
+    viewers : {
+        type: Array,
+        default: []
+    },
     name: { type: String },
     description: { type: String },
     creator: { type: String },

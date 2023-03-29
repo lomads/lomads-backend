@@ -12,6 +12,7 @@ router.post('/notion/add-role', web3Auth, projectCtrl.addNotionUserRole);
 router.get('/:projectId', projectCtrl.getById);
 router.patch('/:projectId/update-project', web3Auth, projectCtrl.updateProjectDetails);
 router.patch('/:projectId/archive', web3Auth, projectCtrl.archiveProject);
+router.patch('/:projectId/updateView', web3Auth, projectCtrl.updateViewProject);
 router.patch('/:projectId/delete', web3Auth, projectCtrl.deleteProject);
 router.patch('/:projectId/add-member', web3Auth, projectCtrl.addProjectMember);
 router.patch('/:projectId/update-member', web3Auth, projectCtrl.updateProjectMember);

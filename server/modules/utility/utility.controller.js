@@ -642,6 +642,7 @@ const trelloListener = async (req, res) => {
     console.log("trello listener: ", payload);
 
     if(payload && payload.action){
+        // add new board
         if(payload.action.type === 'addToOrganizationBoard'){
             console.log("payload action board : ",payload.action.data.board);
             let creator=null;
@@ -740,6 +741,29 @@ const trelloListener = async (req, res) => {
             }
         }
 
+        // update board name
+        else if(payload.action.type === 'updateBoard' && payload.action.display.translationKey==='action_update_board_name'){
+            console.log("board closed");
+            try {
+                await Project.findOneAndUpdate(
+                    { 
+                        daoId : daoId,
+                        "metaData.externalId": payload.action.data.board.id.toString() 
+                    },
+                    {
+                        $set: {
+                            name: payload.action.data.board.name,
+                        }
+                    }
+                );
+                const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                console.log(p);
+            } catch (error) {
+                console.log("error 476 : ", error)
+            }
+        }
+
+        // close board
         else if(payload.action.type === 'updateBoard' && payload.action.display.translationKey==='action_closed_board'){
             console.log("board closed");
             try {
@@ -760,7 +784,8 @@ const trelloListener = async (req, res) => {
                 console.log("error 476 : ", error)
             }
         }
-    
+        
+        // delete board
         else if(payload.action.type === 'removeFromOrganizationBoard'){
 
             const dao = await DAO.findOne({_id:daoId});
@@ -813,6 +838,123 @@ const trelloListener = async (req, res) => {
                 catch(e){
                     console.log("error : ",e);
                 }
+            }
+        }
+
+        // create a card
+        else if (payload.action.type === 'createCard' && payload.action.display.translationKey==='action_create_card'){
+            console.log("payload action : ",payload.action.data);
+
+            let project = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() });
+
+            if(project){
+                let task = new Task({
+                    daoId: daoId,
+                    provider: 'Trello',
+                    metaData: {
+                        externalId: payload.action.data.card.id.toString(),
+                        cardUrl: 'N/A'
+                    },
+                    name: payload.action.data.card.name,
+                    description: '',
+                    creator: null,
+                    members: [],
+                    project: project._id,
+                    discussionChannel: '',
+                    deadline: null,
+                    submissionLink: '',
+                    compensation: null,
+                    reviewer: null,
+                    contributionType: 'open',
+                    createdAt: Date.now(),
+                    draftedAt: Date.now(),
+                })
+        
+                task = await task.save();
+
+                await DAO.findOneAndUpdate(
+                    { _id: daoId },
+                    {
+                        $addToSet: {
+                            tasks: { $each: [task._id] },
+                        },
+                    }
+                )
+                await Project.findOneAndUpdate(
+                    { _id: project._id },
+                    {
+                        $addToSet: {
+                            tasks: { $each: [task._id] },
+                        },
+                    }
+                )
+            }
+            
+        }
+
+        // rename a card
+        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey==='action_renamed_card'){
+            console.log("payload action : ",payload.action.data);
+            try {
+                await Task.findOneAndUpdate(
+                    { 
+                        daoId : daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    },
+                    {
+                        $set: {
+                            name: payload.action.data.card.name,
+                        }
+                    }
+                );
+                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                console.log(t);
+            } catch (error) {
+                console.log("error 476 : ", error)
+            }
+        }
+
+        // close a card
+        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey==='action_archived_card'){
+            console.log("payload action : ",payload.action.data);
+            try {
+                await Task.findOneAndUpdate(
+                    { 
+                        daoId : daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    },
+                    {
+                        $set: {
+                            archivedAt: Date.now(),
+                        }
+                    }
+                );
+                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                console.log(t);
+            } catch (error) {
+                console.log("error 476 : ", error)
+            }
+        }
+
+        // delete a card
+        else if (payload.action.type === 'deleteCard' && payload.action.display.translationKey==='action_delete_card'){
+            console.log("payload action : ",payload.action.data);
+            try {
+                await Task.findOneAndUpdate(
+                    { 
+                        daoId : daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    },
+                    {
+                        $set: {
+                            deletedAt: Date.now(),
+                        }
+                    }
+                );
+                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                console.log(t);
+            } catch (error) {
+                console.log("error 476 : ", error)
             }
         }
     }
