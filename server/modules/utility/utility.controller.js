@@ -694,7 +694,7 @@ const trelloListener = async (req, res) => {
             if (dao.sbt) {
                 for (let index = 0; index < members.length; index++) {
                     const member = members[index];
-                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: dao.sbt._id }
                     const metadata = await Metadata.findOne(filter)
                     if (metadata) {
                         let attrs = [...metadata._doc.attributes];
@@ -788,26 +788,26 @@ const trelloListener = async (req, res) => {
                             }
                         )
 
-                        // let project = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() });
+                        let project = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() });
 
-                        // await Task.updateMany(
-                        //     { _id: { $in: project.tasks } },
-                        //     { $set: { deletedAt: Date.now() } },
-                        // )
+                        await Task.updateMany(
+                            { _id: { $in: project.tasks } },
+                            { $set: { deletedAt: Date.now() } },
+                        )
 
-                        // await Project.findOneAndUpdate(
-                        //     { 
-                        //         daoId : daoId,
-                        //         "metaData.externalId": payload.action.data.board.id.toString() 
-                        //     },
-                        //     {
-                        //         $set: {
-                        //             deletedAt: Date.now(),
-                        //         }
-                        //     }
-                        // );
-                        // const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
-                        // console.log(p);
+                        await Project.findOneAndUpdate(
+                            { 
+                                daoId : daoId,
+                                "metaData.externalId": payload.action.data.board.id.toString() 
+                            },
+                            {
+                                $set: {
+                                    deletedAt: Date.now(),
+                                }
+                            }
+                        );
+                        const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                        console.log(p);
                     }
                 }
                 catch(e){
