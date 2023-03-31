@@ -729,15 +729,75 @@ const trelloListener = async (req, res) => {
             const boardWebhook = await createTrelloWebhook(creator.accessToken, payload.action.data.board.id, daoId, 'board');
             if(boardWebhook){
                 console.log("new Board webhook created...")
-                await DAO.findOneAndUpdate(
-                    { _id: daoId },
-                    {
-                        [`trello.${payload.action.data.organization.id}.boards.${payload.action.data.board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                        $addToSet: {
-                            projects: project._id
-                        },
+                const cards = await axios.get(`https://api.trello.com/1/boards/${payload.action.data.board.id}/cards?key=${config.trelloApiKey}&token=${creator.accessToken}`);
+                if(cards && cards.data && cards.data.length > 0){
+                    console.log("cards found.... : ",cards.data.length);
+                    var tasksArray = cards.data.map((i) => (
+                        {
+                            daoId: daoId,
+                            provider: 'Trello',
+                            metaData: {
+                                externalId: i.id.toString(),
+                                cardUrl: i.url
+                            },
+                            name: i.name,
+                            description: i.desc,
+                            creator: null,
+                            members: [],
+                            project: project._id,
+                            discussionChannel: i.url,
+                            deadline: null,
+                            submissionLink: i.url,
+                            compensation: null,
+                            reviewer: null,
+                            contributionType: 'open',
+                            createdAt: Date.now(),
+                            draftedAt: Date.now(),
+                        }
+                    ))
+
+                    // store draft task and update dao
+                    let arr = [];
+                    let insertMany = await Task.create(tasksArray)
+                    if(insertMany){
+                        for (let i = 0; i < insertMany.length; i++) {
+                            arr.push(insertMany[i]._id);
+                        }
+                        if (arr.length > 0) {
+                            console.log("Total Tasks created...",arr.length);
+                            await DAO.findOneAndUpdate(
+                                { _id: daoId },
+                                {
+                                    [`trello.${payload.action.data.organization.id}.boards.${payload.action.data.board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                    $addToSet: {
+                                        tasks: { $each: arr },
+                                        projects: project._id
+                                    },
+                                }
+                            )
+                            await Project.findOneAndUpdate(
+                                { _id: project._id },
+                                {
+                                    $addToSet: {
+                                        tasks: { $each: arr },
+                                    },
+                                }
+                            )
+                        }
                     }
-                )
+                }
+                else{
+                    console.log("No cards found...just update dao")
+                    await DAO.findOneAndUpdate(
+                        { _id: daoId },
+                        {
+                            [`trello.${payload.action.data.organization.id}.boards.${payload.action.data.board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                            $addToSet: {
+                                projects: project._id
+                            },
+                        }
+                    )
+                }
             }
         }
 
@@ -753,6 +813,27 @@ const trelloListener = async (req, res) => {
                     {
                         $set: {
                             name: payload.action.data.board.name,
+                        }
+                    }
+                );
+                const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                console.log(p);
+            } catch (error) {
+                console.log("error 476 : ", error)
+            }
+        }
+
+        // update board description
+        else if(payload.action.type === 'updateBoard' && payload.action.display.translationKey==='action_update_board_desc'){
+            try {
+                await Project.findOneAndUpdate(
+                    { 
+                        daoId : daoId,
+                        "metaData.externalId": payload.action.data.board.id.toString() 
+                    },
+                    {
+                        $set: {
+                            description: payload.action.data.board.desc,
                         }
                     }
                 );
@@ -904,6 +985,28 @@ const trelloListener = async (req, res) => {
                     {
                         $set: {
                             name: payload.action.data.card.name,
+                        }
+                    }
+                );
+                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                console.log(t);
+            } catch (error) {
+                console.log("error 476 : ", error)
+            }
+        }
+
+        // update card description
+        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey==='action_changed_description_of_card'){
+            console.log("payload action : ",payload.action.data);
+            try {
+                await Task.findOneAndUpdate(
+                    { 
+                        daoId : daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    },
+                    {
+                        $set: {
+                            description: payload.action.data.card.desc,
                         }
                     }
                 );
