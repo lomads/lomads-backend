@@ -73,6 +73,11 @@ const config = {
   nftStorage: envVars.NFT_STORAGE,
   trelloApiKey: envVars.TRELLO_API_KEY,
   trelloSecret: envVars.TRELLO_SECRET,
+  etherScanKey: envVars.ETHERSCAN_KEY,
+  polyScanKey: envVars.POLYSCAN_KEY,
+  transakApiKey: envVars.TRANSAK_API_KEY,
+  transakApiSecret: envVars.TRANSAK_API_SECRET,
+  transakBaseUrl: envVars.TRANSAK_BASE_URL
 };
 
 module.exports = config;

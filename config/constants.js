@@ -1,3 +1,5 @@
+const config = require('@config/config')
+
 const SupportedChainId = {
     MAINNET: 1,
     ROPSTEN: 3,
@@ -33,8 +35,20 @@ const SupportedChainId = {
     }
   }
 
+  const NETWORK_SCAN_LINKS = {
+    [SupportedChainId.GOERLI]: { 
+      baseUrl: `https://api-goerli.etherscan.io/`,
+      apiKey: config.etherScanKey
+    },
+    [SupportedChainId.POLYGON]: { 
+      baseUrl: `https://api.polygonscan.com/`,
+      apiKey: config.polyScanKey
+    },
+  }
+
   module.exports = {
     SupportedChainId,
     SBT_DEPLOYER_ADDRESSES,
-    INFURA_NETWORK_URLS
+    INFURA_NETWORK_URLS,
+    NETWORK_SCAN_LINKS
   }

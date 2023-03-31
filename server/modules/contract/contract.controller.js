@@ -5,6 +5,7 @@ const Member = require('@server/modules/member/member.model');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getSignature } = require('@server/services/smartContract');
 
+
 const getContractTokenMetadata = async (req, res) => {
     const { contractAddress, token } = req.params;
     console.log(contractAddress, token)
@@ -100,9 +101,9 @@ const getContract = async (req, res) => {
 }
 
 const signature = async (req, res) => {
-    const { chainId, contract, tokenId } = req.query;
+    const { chainId, contract, tokenId, payment = "" } = req.query;
     try {
-        const signature = await getSignature({ chainId, contract, tokenId })
+        const signature = await getSignature({ chainId, contract, tokenId, payment })
         return res.status(200).json({ signature });
     }
     catch (e) {
@@ -113,9 +114,9 @@ const signature = async (req, res) => {
 
 
 const getWhitelistSignature = async (req, res) => {
-    const { chainId, contract, tokenId } = req.body;
+    const { chainId, contract, tokenId, payment } = req.body;
     try {
-        const signature = await getSignature({ chainId, contract, tokenId })
+        const signature = await getSignature({ chainId, contract, tokenId, payment })
         return res.status(200).json({ signature });
     }
     catch (e) {
