@@ -11,6 +11,7 @@ router.get('/all', [web3Auth, web3AdminAuth], daoCtrl.loadAll)
 router.get('/:url', daoCtrl.getByUrl)
 router.patch('/:url/sweat-points', web3Auth, daoCtrl.updateSweatPoints)
 router.patch('/:url/add-member', web3Auth, daoCtrl.addDaoMember)
+router.patch('/:url/create-option', web3Auth, daoCtrl.createOption)
 router.patch('/:url/add-member-list', web3Auth, daoCtrl.addDaoMemberList)
 router.patch('/:url/manage-member', web3Auth, daoCtrl.manageDaoMember)
 router.patch('/:url/add-links', web3Auth, daoCtrl.addDaoLinks);

@@ -97,6 +97,36 @@ const DAOSchema = new mongoose.Schema({
     type: Array,
     default: [],
   },
+  options: {
+    type: Array,
+    default: [
+      {
+        "label" : "IT Services",
+        "value" : "IT Services",
+        "color" : "#B12F15"
+      },
+      {
+        "label" : "Marketing",
+        "value" : "Marketing",
+        "color" : "#5D00FF"
+      },
+      {
+        "label" : "UI Design",
+        "value" : "UI Design",
+        "color" : "#1A15B1"
+      },
+      {
+        "label" : "Management",
+        "value" : "Management",
+        "color" : "#13C299"
+      },
+      {
+        "label" : "Android Dev",
+        "value" : "Android Dev",
+        "color" : "#F73109"
+      },
+    ],
+  },
   discord: {
     type: Object
   },

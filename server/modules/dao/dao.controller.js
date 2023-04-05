@@ -162,6 +162,25 @@ const addDaoMember = async (req, res) => {
     }
 }
 
+const createOption = async (req, res) => {
+
+    const { url } = req.params;
+    const { newOption } = req.body;
+
+    try {
+        await DAO.findOneAndUpdate(
+            { url },
+            { $addToSet: { options: newOption } }
+        )
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json(d)
+    }
+    catch (e) {
+        console.error("dao.addDaoMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 
 
 const addDaoMemberList = async (req, res) => {
@@ -497,4 +516,4 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
-module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink };
+module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink,createOption };
