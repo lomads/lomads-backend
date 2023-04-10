@@ -7,6 +7,7 @@ const Member = require('@server/modules/member/member.model')
 const Safe = require('@server/modules/safe/safe.model')
 const ObjectId = require('mongodb').ObjectID;
 const { daoMemberAdded } = require('@server/events');
+const moment = require('moment')
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 
@@ -39,6 +40,7 @@ const load = async (req, res) => {
 }
 
 const create = async (req, res, next) => {
+    const { _id, wallet } = req.user;
     const { contractAddress = "", url = null, name, description = null, image, members = [], safe = null, chainId = 5 } = req.body;
     if (!name)
         return res.status(400).json({ message: 'Organisation name is required' })
@@ -70,6 +72,8 @@ const create = async (req, res, next) => {
             return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
         })
 
+        
+
         let daoURL = url;
 
         let dao = new DAO({
@@ -77,6 +81,89 @@ const create = async (req, res, next) => {
         })
 
         dao = await dao.save();
+
+        let kraOb = {
+            frequency : '',
+            results : [],
+            tracker: [{
+                start: moment().startOf('day').unix(),
+                end: moment().startOf('day').add(1,'month').endOf('day').unix(),
+                results: []
+            }]
+        }
+
+        let project = new Project({
+            daoId:dao._id, 
+            provider: 'Lomads',
+            name : 'Dummy Workspace', 
+            description : "To discover Lomad's system", 
+            members: [_id], 
+            tasks:[],
+            links:[], 
+            milestones:[], 
+            compensation:null, 
+            kra: kraOb, 
+            creator: wallet, 
+            inviteType:'Open', 
+            validRoles:[]
+        })
+
+        project = await project.save();
+
+        let task1 = new Task({
+            daoId: dao._id,
+            name: 'Dummy Task 1',
+            description: '',
+            creator: null,
+            members: [],
+            project: project._id,
+            discussionChannel: '',
+            deadline: null,
+            submissionLink: '',
+            compensation: null,
+            reviewer: null,
+            contributionType: 'open',
+            createdAt: Date.now(),
+        })
+
+        task1 = await task1.save();
+
+        let task2 = new Task({
+            daoId: dao._id,
+            name: 'Dummy Task 1',
+            description: '',
+            creator: null,
+            members: [],
+            project: project._id,
+            discussionChannel: '',
+            deadline: null,
+            submissionLink: '',
+            compensation: null,
+            reviewer: null,
+            contributionType: 'open',
+            createdAt: Date.now(),
+        })
+
+        task2 = await task2.save();
+
+        await DAO.findOneAndUpdate(
+            { _id: dao._id },
+            {
+                $addToSet: {
+                    tasks: { $each: [task1._id,task2._id] },
+                    projects: project._id
+                },
+            }
+        )
+        await Project.findOneAndUpdate(
+            { _id: project._id },
+            {
+                $addToSet: {
+                    tasks: { $each: [task1._id,task2._id] },
+                },
+            }
+        )
+        console.log("DAO and project updated...");
 
         await Safe.findByIdAndUpdate(newSafe._id, { dao: dao._id }, { new: true })
 
