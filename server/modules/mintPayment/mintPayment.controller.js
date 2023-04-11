@@ -1,4 +1,4 @@
-const MintPayment = require('@server/modules/MintPayment/mintPayment.model');
+const MintPayment = require('@server/modules/mintPayment/mintPayment.model');
 const Contract = require('@server/modules/contract/contract.model');
 const { NETWORK_SCAN_LINKS, SupportedChainId } = require('@config/constants')
 const { ethers } = require('ethers')
