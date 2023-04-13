@@ -11,6 +11,7 @@ const ObjectId = require('mongodb').ObjectID;
 const { taskPaid } = require('@server/events');
 const RecurringPayment = require('../RecurringPayment/recurringPayment.model');
 const RecurringPaymentQueue = require('../RecurringPayment/recurringPaymentQueue.model');
+const { GOERLI_API_ENDPOINT } = require('../../../config/constants')
 
 const load = async (req, res) => {
     const { _id } = req.user;
@@ -370,9 +371,7 @@ const update = async (req, res) => {
                 return res.status(200).json(txn)
             }
 
-            let url = `https://safe-transaction-goerli.safe.global/api/v1/multisig-transactions/${safeTxHash}/`;
-            if(+chainId === 137)
-                url = `https://safe-transaction-polygon.safe.global/api/v1/multisig-transactions/${safeTxHash}/`
+            let url = `${GOERLI_API_ENDPOINT[+chainId]}/api/v1/multisig-transactions/${safeTxHash}/`;
 
             const safeTxn = await axios.get(url)
             if (safeTxn && safeTxn.data) {
