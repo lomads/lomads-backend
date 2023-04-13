@@ -19,6 +19,12 @@ const SupportedChainId = {
     [SupportedChainId.POLYGON]: '0x022e58834d2c91Ed9C06E977B6e8aaDf019b514D',
   } 
 
+  const GOERLI_API_ENDPOINT  = {
+    [SupportedChainId.GOERLI]: "https://safe-transaction-goerli.safe.global",
+    [SupportedChainId.POLYGON]: 'https://safe-transaction-polygon.safe.global',
+    [SupportedChainId.MAINNET]: 'https://safe-transaction-mainnet.safe.global'
+  } 
+
   const INFURA_NETWORK_URLS = (INFURA_KEY) => {
     return {
       [SupportedChainId.MAINNET]: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
