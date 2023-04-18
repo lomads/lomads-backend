@@ -5,6 +5,17 @@ const Member = require('@server/modules/member/member.model');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getSignature } = require('@server/services/smartContract');
 
+const load = async (req, res) => {
+    const { user } = req;
+    try {
+        const contracts = await Contract.find({ admin: user._id }).populate('metadata')
+        return res.status(200).json(contracts)
+    }
+    catch(e) {
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 
 const getContractTokenMetadata = async (req, res) => {
     const { contractAddress, token } = req.params;
@@ -126,4 +137,4 @@ const getWhitelistSignature = async (req, res) => {
 }
 
 
-module.exports = { create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature };
+module.exports = { load, create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature };
