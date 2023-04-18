@@ -455,4 +455,20 @@ const updateTxnLabel = async (req, res) => {
     }
 }
 
-module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction, deleteOffChainTransaction, executeOffChainTransaction, moveTxToOnChain, executedOnChain, addTxnLabel, loadTxnLabel, updateTxnLabel };
+const updateTxnTag = async (req, res) => {
+    const { safeAddress, safeTxHash, tag, recipient } = req.body;
+    try {
+        await txLabel.findOneAndUpdate(
+            { safeTxHash, safeAddress, recipient: { $regex: new RegExp(`^${recipient}$`, "i") } }, 
+            { tag, recipient }, 
+            { new: true, upsert: true });
+        const labels = await txLabel.find({ safeAddress })
+        return res.status(200).json(labels)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { load, create, update, loadOffChain, createOffChainTransaction, rejectOffChainTransaction, approveOffChainTransaction, deleteOffChainTransaction, executeOffChainTransaction, moveTxToOnChain, executedOnChain, addTxnLabel, loadTxnLabel, updateTxnLabel,updateTxnTag };
