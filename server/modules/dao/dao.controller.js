@@ -72,12 +72,19 @@ const create = async (req, res, next) => {
             return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
         })
 
-        
-
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress, url: daoURL, name, description, image, members: mem, safe: newSafe._id, chainId
+            contractAddress, 
+            url: daoURL, 
+            name, 
+            description, 
+            image, 
+            members: mem, 
+            safe: newSafe._id, 
+            chainId,
+            dummyProjectFlag : true,
+            dummyTaskFlag : true,
         })
 
         dao = await dao.save();
@@ -94,6 +101,7 @@ const create = async (req, res, next) => {
 
         let project = new Project({
             daoId:dao._id, 
+            isDummy : true,
             provider: 'Lomads',
             name : 'Dummy Workspace', 
             description : "To discover Lomad's system", 
@@ -112,6 +120,7 @@ const create = async (req, res, next) => {
 
         let task1 = new Task({
             daoId: dao._id,
+            isDummy : true,
             name: 'Dummy Task 1',
             description: '',
             creator: _id,
@@ -130,6 +139,7 @@ const create = async (req, res, next) => {
 
         let task2 = new Task({
             daoId: dao._id,
+            isDummy : true,
             name: 'Dummy Task 2',
             description: '',
             creator: _id,
@@ -268,8 +278,6 @@ const createOption = async (req, res) => {
     }
 }
 
-
-
 const addDaoMemberList = async (req, res) => {
     const { url } = req.params;
     const { list } = req.body;
@@ -389,7 +397,6 @@ const addDaoLinks = async (req, res) => {
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
-
 
 const updateDaoLinks = async (req, res) => {
     const { url } = req.params;

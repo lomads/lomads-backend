@@ -10,6 +10,7 @@ const { number } = require('joi');
  */
 const ProjectSchema = new mongoose.Schema({
     daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
+    isDummy: { type: Boolean, default: false },
     provider: { type: String, default: 'Lomads' },
     metaData: { type: mongoose.Schema.Types.Mixed, default: null },
     viewers : {
