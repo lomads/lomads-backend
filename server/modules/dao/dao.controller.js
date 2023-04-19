@@ -64,7 +64,7 @@ const create = async (req, res, next) => {
         if (safe) {
             let { name, address, owners } = safe;
             O = owners.map(o => o.toLowerCase())
-            newSafe = new Safe({ name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
+            newSafe = new Safe({ chainId,  name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
             newSafe = await newSafe.save();
         }
 

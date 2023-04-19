@@ -7,6 +7,10 @@ const APIError = require('@server/helpers/APIError');
  * Safe Schema
  */
 const SafeSchema = new mongoose.Schema({
+  chainId: {
+    type: Number,
+    required: false
+  },
   name: {
     type: String,
     required: false

@@ -25,5 +25,7 @@ router.post('/sync-trello-data',web3Auth, utilityCtrl.syncTrelloData);
 router.get('/trello/trello-listener', utilityCtrl.trelloListener);
 router.post('/trello/trello-listener', utilityCtrl.trelloListener);
 
+router.get('/update-safe', utilityCtrl.updateSafe)
+
 
 module.exports = router;
