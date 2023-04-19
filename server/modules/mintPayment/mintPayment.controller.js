@@ -8,15 +8,47 @@ const { getSignature } = require('@server/services/smartContract');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const sdk = require('api')('@transak/v1.0#v9aumgla1g38vc');
 
+
+const waitFor = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+const retry = (promise, onRetry, maxRetries) => {
+    const retryWithBackoff = async (retries) => {
+        try {
+            if (retries > 0) {
+                const timeToWait = 2 ** retries * 1000;
+                console.log(`waiting for ${timeToWait}ms...`);
+                await waitFor(timeToWait);
+            }
+            return await promise();
+        } catch (e) {
+            if (retries < maxRetries) {
+                onRetry();
+                return retryWithBackoff(retries + 1);
+            } else {
+                console.warn("Max retries reached. Bubbling the error up");
+                throw e;
+            }
+        }
+    }
+    return retryWithBackoff(0);
+}
+
 const verify = async (req, res, next) => {
     const { wallet } = req.user;
     const { chainId, txnReference, contract, tokenId, paymentType } = req.body;
     let isVerified = false;
     try {
         const sbt = await Contract.findOne({ address: contract })
+        let apiKey = config.etherScanKey;
+        if(+chainId === 137)
+            apiKey = config.polyScanKey;
         if(paymentType === 'crypto') {
             const scanBaseUrl = NETWORK_SCAN_LINKS[+chainId].baseUrl
-            let txnResponse = await axios.get(`${scanBaseUrl}api?module=proxy&action=eth_getTransactionByHash&txhash=${txnReference}&apikey=${NETWORK_SCAN_LINKS[+chainId].apiKey}`)
+            let txnResponse = await retry(
+                () => axios.get(`${scanBaseUrl}api?module=proxy&action=eth_getTransactionByHash&txhash=${txnReference}&apikey=${NETWORK_SCAN_LINKS[+chainId].apiKey}`),
+                () => { console.log('retry called...') },
+                10
+            )
             txnResponse = txnResponse?.data?.result;
             console.log("txnResponse", txnResponse)
             if(

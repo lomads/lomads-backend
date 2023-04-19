@@ -7,6 +7,7 @@ const APIError = require('@server/helpers/APIError');
  * Safe Schema
  */
 const ContractSchema = new mongoose.Schema({
+  chainId: { type: Number },
   name: { type: String },
   token: { type: String },
   image: { type: String },
