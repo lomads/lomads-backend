@@ -314,6 +314,7 @@ const storeIssues = async (req, res) => {
                                 { _id: daoId },
                                 {
                                     [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
+                                    dummyTaskFlag : false,
                                     $addToSet: {
                                         tasks: { $each: arr },
                                         links: { title: linkOb.title, link: tempLink }
@@ -368,6 +369,7 @@ const storeIssues = async (req, res) => {
                             { _id: daoId },
                             {
                                 [`github.${repoInfo}`]: { 'webhookId': '' },
+                                dummyTaskFlag : false,
                                 $addToSet: {
                                     tasks: { $each: arr },
                                     links: { title: linkOb.title, link: tempLink }
@@ -431,6 +433,7 @@ const issuesListener = async (req, res) => {
                 let dao = await DAO.findOne({ _id: daoIds[i] });
                 if (dao) {
                     dao.tasks.push(task._id);
+                    dao.dummyTaskFlag = false;
                     dao = await dao.save();
                 }
             }
@@ -770,6 +773,8 @@ const trelloListener = async (req, res) => {
                                 { _id: daoId },
                                 {
                                     [`trello.${payload.action.data.organization.id}.boards.${payload.action.data.board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                    dummyTaskFlag : false,
+                                    dummyProjectFlag : false,
                                     $addToSet: {
                                         tasks: { $each: arr },
                                         projects: project._id
@@ -1182,6 +1187,8 @@ const syncTrelloData = async (req, res) => {
                                             { _id: daoId },
                                             {
                                                 [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                                dummyProjectFlag:false,
+                                                dummyTaskFlag:false,
                                                 $addToSet: {
                                                     tasks: { $each: arr },
                                                     projects: project._id

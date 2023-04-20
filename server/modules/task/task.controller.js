@@ -80,6 +80,7 @@ const create = async (req, res) => {
         let dao = await DAO.findOne({ _id: daoId });
         if (dao) {
             dao.tasks.push(task._id);
+            dao.dummyTaskFlag = false;
             dao = await dao.save();
         }
 
@@ -187,6 +188,7 @@ const draftTask = async (req, res) => {
         let dao = await DAO.findOne({ _id: daoId });
         if (dao) {
             dao.tasks.push(task._id);
+            dao.dummyTaskFlag = false;
             dao = await dao.save();
         }
 
@@ -247,6 +249,7 @@ const storeGithubIssues = async (req, res) => {
             await DAO.findOneAndUpdate(
                 { _id: daoId },
                 {
+                    dummyTaskFlag : false,
                     $addToSet: { tasks: { $each: arr } },
                 }
             )

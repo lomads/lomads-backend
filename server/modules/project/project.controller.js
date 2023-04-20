@@ -67,6 +67,7 @@ const create = async (req, res) => {
         let dao = await DAO.findOne({ _id: daoId });
         if (dao) {
             dao.projects.push(project._id);
+            dao.dummyProjectFlag = false;
             dao = await dao.save();
         }
 

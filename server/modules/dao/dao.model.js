@@ -12,6 +12,14 @@ const DAOSchema = new mongoose.Schema({
     default: 5,
     required: true
   },
+  dummyTaskFlag : {
+    type:Boolean,
+    default:false
+  },
+  dummyProjectFlag : {
+    type:Boolean,
+    default:false
+  },
   contractAddress: {
     type: String,
     default: null,
