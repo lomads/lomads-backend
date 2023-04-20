@@ -7,6 +7,7 @@ const util = require('@metamask/eth-sig-util')
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
 const Safe = require('@server/modules/safe/safe.model');
+const Contract = require('@server/modules/contract/contract.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const ObjectId = require('mongodb').ObjectID;
@@ -1405,18 +1406,22 @@ const createTrelloWebhook = async (accessToken, idModel,daoId,modelType) => {
 }
 
 const updateSafe = async (req, res) => {
-    // try {
-    //     const daos = await DAO.find()
-    //     for (let index = 0; index < daos.length; index++) {
-    //         const dao = daos[index];
-    //         const safe = await Safe.findOneAndUpdate({ _id: dao.safe }, { chainId: +dao.chainId })
-    //         console.log(safe)
-    //     }
-    //     return res.status(200).json({});
-    // } catch (e) {
-    //     console.log(e)
-    //     return res.status(500).json(e);
-    // }
+    try {
+        // const daos = await DAO.find()
+        // for (let index = 0; index < daos.length; index++) {
+        //     const dao = daos[index];
+        //     const con = await Contract.findOne({ _id: dao.sbt })
+        //     if(con && !con?.chainId) {
+        //         await Contract.findOneAndUpdate({ _id: dao.sbt }, { chainId: +dao.chainId })
+        //     }
+        //     //const safe = await Safe.findOneAndUpdate({ _id: dao.safe }, { chainId: +dao.chainId })
+        //     //console.log(safe)
+        // }
+        // return res.status(200).json({});
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e);
+    }
 }
 
 module.exports = {
