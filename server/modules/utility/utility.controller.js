@@ -1417,14 +1417,14 @@ const updateSafe = async (req, res) => {
         // const daos = await DAO.find()
         // for (let index = 0; index < daos.length; index++) {
         //     const dao = daos[index];
-        //     const con = await Contract.findOne({ _id: dao.sbt })
-        //     if(con && !con?.chainId) {
-        //         await Contract.findOneAndUpdate({ _id: dao.sbt }, { chainId: +dao.chainId })
-        //     }
-        //     //const safe = await Safe.findOneAndUpdate({ _id: dao.safe }, { chainId: +dao.chainId })
-        //     //console.log(safe)
+        //     //const con = await Contract.findOne({ _id: dao.sbt })
+        //     // if(con && !con?.chainId) {
+        //     //     await Contract.findOneAndUpdate({ _id: dao.sbt }, { chainId: +dao.chainId })
+        //     // }
+        //     const safe = await Safe.findOneAndUpdate({ _id: dao.safe }, { chainId: +dao.chainId })
+        //     console.log(safe)
         // }
-        // return res.status(200).json({});
+        return res.status(200).json({});
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);
