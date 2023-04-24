@@ -659,11 +659,14 @@ const generateInvoice = async (req, res) => {
 
 const editInvoice = async (req, res) => {
     const { url } = req.params;
-    const { reasonText, safeTxHash } = req.body
-    console.log(reasonText, '...reasonText...')
+    const { reasonText, safeTxHash, label } = req.body
     try {
+
+        const filterObj = label ? 
+            {'invoice.$.paymentInfo.labels': label }
+            : {'invoice.$.paymentInfo.title': reasonText}
         await DAO.findOneAndUpdate({ url, 'invoice.generalInfo.transactionId': safeTxHash }, {
-            $set : { 'invoice.paymentInfo.title': reasonText }
+            $set: filterObj
         })
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
