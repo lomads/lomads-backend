@@ -616,7 +616,6 @@ const updateUserDiscord = async (req, res) => {
 const generateInvoice = async (req, res) => {
     const { url } = req.params;
     const daoObj = await DAO.findOne({ url })
-    console.log(daoObj, '...daoObj....')
     const newInvoiceArray = req.body.map((item) => {
         let invoiceNumber = ''
         let lastInvoiceKey = daoObj?.invoice?.findLast(invoice => invoice.flag === item.flag)?.generalInfo?.invoiceNumber
