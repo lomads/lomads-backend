@@ -20,5 +20,7 @@ router.patch('/:url/delete-link', web3Auth, daoCtrl.deleteDaoLink);
 router.patch('/:url/update-details', web3Auth, daoCtrl.updateDetails);
 router.patch('/:url/sync-safe-owners', web3Auth, daoCtrl.syncSafeOwners);
 router.patch('/:url/update-user-discord', web3Auth, daoCtrl.updateUserDiscord);
+router.post('/:url/add-invoice', web3Auth, daoCtrl.generateInvoice)
+router.post('/:url/edit-invoice', web3Auth, daoCtrl.editInvoice)
 
 module.exports = router;

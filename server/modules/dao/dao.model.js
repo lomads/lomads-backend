@@ -155,6 +155,10 @@ const DAOSchema = new mongoose.Schema({
   deletedAt: {
     type: Date,
     default: null
+  },
+  invoice: {
+    type: Array,
+    default: []
   }
 });
 

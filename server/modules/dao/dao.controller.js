@@ -10,18 +10,19 @@ const { daoMemberAdded } = require('@server/events');
 const moment = require('moment')
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
+const { date } = require('joi');
 
 const loadAll = async (req, res) => {
     const { skip = 0, limit = 50 } = req.query;
     const dao = await DAO.find({ deletedAt: null })
-    .lean()
-    .populate({ path: 'safe projects' })
-    .sort({ createdAt: -1 })
-    .skip(+skip)
-    .limit(+limit)
-    .exec()
+        .lean()
+        .populate({ path: 'safe projects' })
+        .sort({ createdAt: -1 })
+        .skip(+skip)
+        .limit(+limit)
+        .exec()
     const total = await DAO.countDocuments({ deletedAt: null });
-    const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total/limit) : 1 };
+    const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total / limit) : 1 };
     return res.status(200).json(data)
 }
 
@@ -64,7 +65,7 @@ const create = async (req, res, next) => {
         if (safe) {
             let { name, address, owners } = safe;
             O = owners.map(o => o.toLowerCase())
-            newSafe = new Safe({ chainId: safe?.chainId,  name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
+            newSafe = new Safe({ chainId: safe?.chainId, name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
             newSafe = await newSafe.save();
         }
 
@@ -75,52 +76,52 @@ const create = async (req, res, next) => {
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress, 
-            url: daoURL, 
-            name, 
-            description, 
-            image, 
-            members: mem, 
-            safe: newSafe._id, 
+            contractAddress,
+            url: daoURL,
+            name,
+            description,
+            image,
+            members: mem,
+            safe: newSafe._id,
             chainId,
-            dummyProjectFlag : true,
-            dummyTaskFlag : true,
+            dummyProjectFlag: true,
+            dummyTaskFlag: true,
         })
 
         dao = await dao.save();
 
         let kraOb = {
-            frequency : '',
-            results : [],
+            frequency: '',
+            results: [],
             tracker: [{
                 start: moment().startOf('day').unix(),
-                end: moment().startOf('day').add(1,'month').endOf('day').unix(),
+                end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
                 results: []
             }]
         }
 
         let project = new Project({
-            daoId:dao._id, 
-            isDummy : true,
+            daoId: dao._id,
+            isDummy: true,
             provider: 'Lomads',
-            name : 'Dummy Workspace', 
-            description : "To discover Lomad's system", 
-            members: [_id], 
-            tasks:[],
-            links:[], 
-            milestones:[], 
-            compensation:null, 
-            kra: kraOb, 
-            creator: wallet, 
-            inviteType:'Open', 
-            validRoles:[]
+            name: 'Dummy Workspace',
+            description: "To discover Lomad's system",
+            members: [_id],
+            tasks: [],
+            links: [],
+            milestones: [],
+            compensation: null,
+            kra: kraOb,
+            creator: wallet,
+            inviteType: 'Open',
+            validRoles: []
         })
 
         project = await project.save();
 
         let task1 = new Task({
             daoId: dao._id,
-            isDummy : true,
+            isDummy: true,
             name: 'Dummy Task 1',
             description: '',
             creator: _id,
@@ -139,7 +140,7 @@ const create = async (req, res, next) => {
 
         let task2 = new Task({
             daoId: dao._id,
-            isDummy : true,
+            isDummy: true,
             name: 'Dummy Task 2',
             description: '',
             creator: _id,
@@ -160,7 +161,7 @@ const create = async (req, res, next) => {
             { _id: dao._id },
             {
                 $addToSet: {
-                    tasks: { $each: [task1._id,task2._id] },
+                    tasks: { $each: [task1._id, task2._id] },
                     projects: project._id
                 },
             }
@@ -169,7 +170,7 @@ const create = async (req, res, next) => {
             { _id: project._id },
             {
                 $addToSet: {
-                    tasks: { $each: [task1._id,task2._id] },
+                    tasks: { $each: [task1._id, task2._id] },
                 },
             }
         )
@@ -610,4 +611,74 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
-module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink,createOption };
+
+
+const generateInvoice = async (req, res) => {
+    const { url } = req.params;
+    const daoObj = await DAO.findOne({ url })
+    console.log(daoObj, '...daoObj....')
+    const newInvoiceArray = req.body.map((item) => {
+        let invoiceNumber = ''
+        let lastInvoiceKey = daoObj?.invoice?.findLast(invoice => invoice.flag === item.flag)?.generalInfo?.invoiceNumber
+        if (lastInvoiceKey) {
+            const splittedInvoice = lastInvoiceKey.split(`/${item.flag}/`)
+            const newVal = parseInt(splittedInvoice[splittedInvoice.length - 1]) + 1
+            invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/' + newVal
+        } else {
+            invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/1'
+        }
+
+        return {
+            ...item,
+            generalInfo: {
+                ...item.generalInfo,
+                _id: new ObjectId(),
+                invoiceNumber
+            },
+            paymentInfo: {
+                ...item.paymentInfo,
+                createdAt: new Date(),
+                executedAt: new Date()
+            }
+        }
+    })
+    console.log(newInvoiceArray, '....newInvoiceArray....')
+    try {
+        await DAO.findOneAndUpdate({ url }, {
+            $addToSet: {
+                invoice: {
+                    $each: newInvoiceArray
+                }
+            }
+        })
+        const updated_d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json(updated_d);
+    }
+    catch (e) {
+        console.error("dao.addDaoLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const editInvoice = async (req, res) => {
+    const { url } = req.params;
+    const { title, link } = req.body;
+    console.log("link details : ", title, link);
+    try {
+        // let dao = await DAO.findOne({ deletedAt: null, url });
+        // if (!dao)
+        //     return res.status(404).json({ message: 'DAO not found' })
+
+        // dao.links.push({ title, link });
+        // dao = await dao.save();
+
+        const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json(d);
+    }
+    catch (e) {
+        console.error("dao.addDaoLinks::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption, generateInvoice, editInvoice };
