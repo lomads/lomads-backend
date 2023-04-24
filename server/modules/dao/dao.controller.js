@@ -611,8 +611,6 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
-
-
 const generateInvoice = async (req, res) => {
     const { url } = req.params;
     const daoObj = await DAO.findOne({ url })
@@ -641,7 +639,7 @@ const generateInvoice = async (req, res) => {
             }
         }
     })
-    console.log(newInvoiceArray, '....newInvoiceArray....')
+
     try {
         await DAO.findOneAndUpdate({ url }, {
             $addToSet: {
@@ -661,16 +659,12 @@ const generateInvoice = async (req, res) => {
 
 const editInvoice = async (req, res) => {
     const { url } = req.params;
-    const { title, link } = req.body;
-    console.log("link details : ", title, link);
+    const { reasonText, safeTxHash } = req.body
+    console.log(reasonText, '...reasonText...')
     try {
-        // let dao = await DAO.findOne({ deletedAt: null, url });
-        // if (!dao)
-        //     return res.status(404).json({ message: 'DAO not found' })
-
-        // dao.links.push({ title, link });
-        // dao = await dao.save();
-
+        await DAO.findOneAndUpdate({ url, 'invoice.generalInfo.transactionId': safeTxHash }, {
+            $set : { 'invoice.paymentInfo.title': reasonText }
+        })
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
