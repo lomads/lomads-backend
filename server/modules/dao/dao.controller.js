@@ -614,12 +614,12 @@ const updateUserDiscord = async (req, res) => {
 const generateInvoice = async (req, res) => {
     const { url } = req.params;
     const daoObj = await DAO.findOne({ url })
-    const newInvoiceArray = req.body.map((item) => {
+    const newInvoiceArray = req.body.map((item, index) => {
         let invoiceNumber = ''
         let lastInvoiceKey = daoObj?.invoice?.findLast(invoice => invoice.flag === item.flag)?.generalInfo?.invoiceNumber
         if (lastInvoiceKey) {
             const splittedInvoice = lastInvoiceKey.split(`/${item.flag}/`)
-            const newVal = parseInt(splittedInvoice[splittedInvoice.length - 1]) + 1
+            const newVal = parseInt(splittedInvoice[splittedInvoice.length - 1]) + 1 + index
             invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/' + newVal
         } else {
             invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/1'
