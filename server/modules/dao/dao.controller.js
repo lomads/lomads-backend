@@ -622,7 +622,7 @@ const generateInvoice = async (req, res) => {
             const newVal = parseInt(splittedInvoice[splittedInvoice.length - 1]) + 1 + index
             invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/' + newVal
         } else {
-            invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/1'
+            invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/' + parseInt(1 + index)
         }
 
         return {
@@ -659,13 +659,14 @@ const generateInvoice = async (req, res) => {
 
 const editInvoice = async (req, res) => {
     const { url } = req.params;
-    const { reasonText, safeTxHash, label } = req.body
+    const { reasonText, safeTxHash, label, recipient } = req.body
+    console.log(recipient, '...recipient...')
     try {
 
         const filterObj = label ? 
             {'invoice.$.paymentInfo.labels': label }
             : {'invoice.$.paymentInfo.title': reasonText}
-        await DAO.findOneAndUpdate({ url, 'invoice.generalInfo.transactionId': safeTxHash }, {
+        await DAO.findOneAndUpdate({ url, 'invoice.generalInfo.transactionId': safeTxHash, 'invoice.paymentInfo.recipientWalletAddress': recipient }, {
             $set: filterObj
         })
         const d = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
