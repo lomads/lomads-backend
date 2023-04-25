@@ -613,18 +613,16 @@ const updateUserDiscord = async (req, res) => {
 
 const generateInvoice = async (req, res) => {
     const { url } = req.params;
+    let newVal = 1
     const daoObj = await DAO.findOne({ url })
-    const newInvoiceArray = req.body.map((item, index) => {
-        let invoiceNumber = ''
-        let lastInvoiceKey = daoObj?.invoice?.findLast(invoice => invoice.flag === item.flag)?.generalInfo?.invoiceNumber
-        if (lastInvoiceKey) {
-            const splittedInvoice = lastInvoiceKey.split(`/${item.flag}/`)
-            const newVal = parseInt(splittedInvoice[splittedInvoice.length - 1]) + 1 + index
-            invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/' + newVal
-        } else {
-            invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/' + parseInt(1 + index)
-        }
+    if(daoObj.invoice && daoObj.invoice.length){
+        const lastInvoiceKey = daoObj.invoice.findLast(invoice => invoice.flag === req.body[0].flag)?.generalInfo?.invoiceNumber
+        const splittedInvoice = lastInvoiceKey ? lastInvoiceKey.split(`/${item.flag}/`) : []
+        newVal+= splittedInvoice.length ? parseInt(splittedInvoice[splittedInvoice.length - 1]) : 0   
+    }
 
+    const newInvoiceArray = req.body.map((item, index) => {
+        const invoiceNumber = moment().format('YYYYMMDD') + '/' + item.flag + '/' + parseInt(newVal + index)
         return {
             ...item,
             generalInfo: {
