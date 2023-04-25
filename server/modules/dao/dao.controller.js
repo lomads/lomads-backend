@@ -660,7 +660,6 @@ const generateInvoice = async (req, res) => {
 const editInvoice = async (req, res) => {
     const { url } = req.params;
     const { reasonText, safeTxHash, label, recipient } = req.body
-    console.log(recipient, '...recipient...')
     try {
 
         const filterObj = label ? 
