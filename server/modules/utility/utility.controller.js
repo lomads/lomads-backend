@@ -19,7 +19,8 @@ const CLIENT_SECRET = "03aea473a13431fdfea15a2dfe105d47701f30cb";
 
 const Task = require('@server/modules/task/task.model');
 const Project = require('@server/modules/project/project.model');
-const DAO = require('@server/modules/dao/dao.model')
+const DAO = require('@server/modules/dao/dao.model');
+const { estimateGas } = require('@server/services/estimate');
 
 function beautifyHexToken(token) {
     return (token.slice(0, 6) + "..." + token.slice(-4))
@@ -1431,6 +1432,17 @@ const updateSafe = async (req, res) => {
     }
 }
 
+const getEstimateGas = async (req, res) => {
+    const { chainId, value, to } = req.body;
+    try {
+        const gas = await estimateGas({ chainId, value, to })
+        return res.status(200).json(gas);
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e);
+    }
+}
+
 module.exports = {
     getUploadURL,
     checkLomadsBot,
@@ -1446,5 +1458,6 @@ module.exports = {
     getTrelloBoards,
     trelloListener,
     syncTrelloData,
-    updateSafe
+    updateSafe,
+    getEstimateGas
 };

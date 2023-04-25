@@ -27,5 +27,7 @@ router.post('/trello/trello-listener', utilityCtrl.trelloListener);
 
 router.get('/update-safe', utilityCtrl.updateSafe)
 
+router.post('/estimate-gas', utilityCtrl.getEstimateGas)
+
 
 module.exports = router;

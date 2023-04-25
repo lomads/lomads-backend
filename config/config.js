@@ -77,7 +77,9 @@ const config = {
   polyScanKey: envVars.POLYSCAN_KEY,
   transakApiKey: envVars.TRANSAK_API_KEY,
   transakApiSecret: envVars.TRANSAK_API_SECRET,
-  transakBaseUrl: envVars.TRANSAK_BASE_URL
+  transakBaseUrl: envVars.TRANSAK_BASE_URL,
+  bankPrivateKey: envVars.BANK_PRIVATE_KEY,
+  bankPublicKey: envVars.BANK_PUBLIC_KEY,
 };
 
 module.exports = config;
