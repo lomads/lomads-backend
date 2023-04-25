@@ -618,7 +618,7 @@ const generateInvoice = async (req, res) => {
     if(daoObj.invoice && daoObj.invoice.length){
         const lastInvoiceKey = daoObj.invoice.findLast(invoice => invoice.flag === req.body[0].flag)?.generalInfo?.invoiceNumber
         const splittedInvoice = lastInvoiceKey ? lastInvoiceKey.split(`/${item.flag}/`) : []
-        newVal+= splittedInvoice.length ? parseInt(splittedInvoice[splittedInvoice.length - 1]) : 0   
+        newVal+= splittedInvoice.length ? parseInt(splittedInvoice.pop()) : 0   
     }
 
     const newInvoiceArray = req.body.map((item, index) => {
