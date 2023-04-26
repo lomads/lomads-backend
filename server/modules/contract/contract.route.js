@@ -7,7 +7,8 @@ router.get('/', web3Auth, contractCtrl.load);
 router.post('/', web3Auth, contractCtrl.create);
 router.get('/signature', contractCtrl.signature);
 router.post('/whitelist-signature', web3Auth, contractCtrl.getWhitelistSignature);
-router.get('/:contractAddress', web3Auth, contractCtrl.getContract);
+router.get('/:contractAddress', contractCtrl.getContract);
+router.get('/getContractDao/:sbtId', contractCtrl.getContractDAO);
 router.patch('/:contractAddress', web3Auth, contractCtrl.update);
 
 

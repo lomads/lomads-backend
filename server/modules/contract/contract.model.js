@@ -22,6 +22,7 @@ const ContractSchema = new mongoose.Schema({
   admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
   metadata: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Metadata' }],
   contactDetail: { type: Array },
+  redirectUrl: { type: String },
   createdAt: {
     type: Date,
     default: Date.now

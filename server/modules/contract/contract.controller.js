@@ -11,7 +11,7 @@ const load = async (req, res) => {
         const contracts = await Contract.find({ admin: user._id }).populate('metadata')
         return res.status(200).json(contracts)
     }
-    catch(e) {
+    catch (e) {
         return res.status(500).json({ message: 'Something went wrong' })
     }
 }
@@ -111,6 +111,18 @@ const getContract = async (req, res) => {
     }
 }
 
+const getContractDAO = async (req, res) => {
+    const { contractAddress } = req.params;
+    try {
+        const contract = await Contract.findOne({ address: contractAddress });
+        return res.status(200).json(contract);
+    }
+    catch (e) {
+        console.error("contract.controller::get::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const signature = async (req, res) => {
     const { chainId, contract, tokenId, payment = "" } = req.query;
     try {
@@ -137,4 +149,4 @@ const getWhitelistSignature = async (req, res) => {
 }
 
 
-module.exports = { load, create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature };
+module.exports = { load, create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature, getContractDAO };
