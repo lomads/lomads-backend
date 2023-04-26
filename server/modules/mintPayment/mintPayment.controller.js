@@ -72,7 +72,9 @@ const verify = async (req, res, next) => {
             }
         }
         if(isVerified) {
-            //await MintPayment.create({ ...req.body, account: wallet, verified: isVerified })
+            if (paymentType !== 'card') {
+                await MintPayment.create({ ...req.body, account: wallet, verified: isVerified })
+            }
             const signature = await getSignature({ chainId, contract, tokenId, payment: txnReference  })
             return res.status(200).json({ signature }) 
         } else {
