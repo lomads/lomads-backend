@@ -7,8 +7,9 @@ const { getSignature } = require('@server/services/smartContract');
 
 const load = async (req, res) => {
     const { user } = req;
+    const { chainId = 5 } = req.query
     try {
-        const contracts = await Contract.find({ admin: user._id }).populate('metadata')
+        const contracts = await Contract.find({ admin: user._id, chainId }).populate('metadata')
         return res.status(200).json(contracts)
     }
     catch (e) {

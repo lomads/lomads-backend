@@ -67,12 +67,14 @@ const verify = async (req, res, next) => {
             const accessToken = data?.data?.accessToken
             const txnData = await sdk.getOrderByOrderId({orderId: txnReference, 'access-token': accessToken})
             const txn = txnData?.data?.data
-            if(toChecksumAddress(sbt?.treasury) === toChecksumAddress(txn?.walletAddress)) {
+            if(toChecksumAddress(wallet) === toChecksumAddress(txn?.walletAddress)) {
                 isVerified = true;
             }
         }
         if(isVerified) {
-            await MintPayment.create({ ...req.body, account: wallet, verified: isVerified })
+            if (paymentType !== 'card') {
+                await MintPayment.create({ ...req.body, account: wallet, verified: isVerified })
+            }
             const signature = await getSignature({ chainId, contract, tokenId, payment: txnReference  })
             return res.status(200).json({ signature }) 
         } else {

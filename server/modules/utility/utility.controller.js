@@ -7,6 +7,7 @@ const util = require('@metamask/eth-sig-util')
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
 const Safe = require('@server/modules/safe/safe.model');
+const Contract = require('@server/modules/contract/contract.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const ObjectId = require('mongodb').ObjectID;
@@ -18,7 +19,8 @@ const CLIENT_SECRET = "03aea473a13431fdfea15a2dfe105d47701f30cb";
 
 const Task = require('@server/modules/task/task.model');
 const Project = require('@server/modules/project/project.model');
-const DAO = require('@server/modules/dao/dao.model')
+const DAO = require('@server/modules/dao/dao.model');
+const { estimateGas } = require('@server/services/estimate');
 
 function beautifyHexToken(token) {
     return (token.slice(0, 6) + "..." + token.slice(-4))
@@ -1412,18 +1414,33 @@ const createTrelloWebhook = async (accessToken, idModel,daoId,modelType) => {
 }
 
 const updateSafe = async (req, res) => {
-    // try {
-    //     const daos = await DAO.find()
-    //     for (let index = 0; index < daos.length; index++) {
-    //         const dao = daos[index];
-    //         const safe = await Safe.findOneAndUpdate({ _id: dao.safe }, { chainId: +dao.chainId })
-    //         console.log(safe)
-    //     }
-    //     return res.status(200).json({});
-    // } catch (e) {
-    //     console.log(e)
-    //     return res.status(500).json(e);
-    // }
+    try {
+        // const daos = await DAO.find()
+        // for (let index = 0; index < daos.length; index++) {
+        //     const dao = daos[index];
+        //     //const con = await Contract.findOne({ _id: dao.sbt })
+        //     // if(con && !con?.chainId) {
+        //     //     await Contract.findOneAndUpdate({ _id: dao.sbt }, { chainId: +dao.chainId })
+        //     // }
+        //     const safe = await Safe.findOneAndUpdate({ _id: dao.safe }, { chainId: +dao.chainId })
+        //     console.log(safe)
+        // }
+        return res.status(200).json({});
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e);
+    }
+}
+
+const getEstimateGas = async (req, res) => {
+    const { chainId, value, to } = req.body;
+    try {
+        const gas = await estimateGas({ chainId, value, to })
+        return res.status(200).json(gas);
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e);
+    }
 }
 
 module.exports = {
@@ -1441,5 +1458,6 @@ module.exports = {
     getTrelloBoards,
     trelloListener,
     syncTrelloData,
-    updateSafe
+    updateSafe,
+    getEstimateGas
 };
