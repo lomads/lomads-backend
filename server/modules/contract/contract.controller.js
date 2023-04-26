@@ -113,10 +113,11 @@ const getContract = async (req, res) => {
 }
 
 const getContractDAO = async (req, res) => {
-    const { contractAddress } = req.params;
+    const { sbtId } = req.params;
     try {
-        const contract = await Contract.findOne({ address: contractAddress });
-        return res.status(200).json(contract);
+        const dao = await DAO.findOne({ sbt: sbtId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
+        console.log("DAO : ", dao);
+        return res.status(200).json(dao)
     }
     catch (e) {
         console.error("contract.controller::get::", e)
