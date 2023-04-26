@@ -14,14 +14,14 @@ const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, creat
 const loadAll = async (req, res) => {
     const { skip = 0, limit = 50 } = req.query;
     const dao = await DAO.find({ deletedAt: null })
-    .lean()
-    .populate({ path: 'safe projects' })
-    .sort({ createdAt: -1 })
-    .skip(+skip)
-    .limit(+limit)
-    .exec()
+        .lean()
+        .populate({ path: 'safe projects' })
+        .sort({ createdAt: -1 })
+        .skip(+skip)
+        .limit(+limit)
+        .exec()
     const total = await DAO.countDocuments({ deletedAt: null });
-    const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total/limit) : 1 };
+    const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total / limit) : 1 };
     return res.status(200).json(data)
 }
 
@@ -41,7 +41,8 @@ const load = async (req, res) => {
 
 const create = async (req, res, next) => {
     const { _id, wallet } = req.user;
-    const { contractAddress = "", url = null, name, description = null, image, members = [], safe = null, chainId = 5 } = req.body;
+    const { contractAddress = "", url = null, name, description = null, image, members = [], safe = null, chainId = 5, sbt = null } = req.body;
+
     if (!name)
         return res.status(400).json({ message: 'Organisation name is required' })
     let mMembers = []
@@ -64,7 +65,7 @@ const create = async (req, res, next) => {
         if (safe) {
             let { name, address, owners } = safe;
             O = owners.map(o => o.toLowerCase())
-            newSafe = new Safe({ chainId: safe?.chainId,  name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
+            newSafe = new Safe({ chainId: safe?.chainId, name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
             newSafe = await newSafe.save();
         }
 
@@ -75,52 +76,53 @@ const create = async (req, res, next) => {
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress, 
-            url: daoURL, 
-            name, 
-            description, 
-            image, 
-            members: mem, 
-            safe: newSafe._id, 
+            contractAddress,
+            url: daoURL,
+            name,
+            description,
+            image,
+            members: mem,
+            safe: newSafe?._id,
+            sbt: sbt,
             chainId,
-            dummyProjectFlag : true,
-            dummyTaskFlag : true,
+            dummyProjectFlag: true,
+            dummyTaskFlag: true,
         })
 
         dao = await dao.save();
 
         let kraOb = {
-            frequency : '',
-            results : [],
+            frequency: '',
+            results: [],
             tracker: [{
                 start: moment().startOf('day').unix(),
-                end: moment().startOf('day').add(1,'month').endOf('day').unix(),
+                end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
                 results: []
             }]
         }
 
         let project = new Project({
-            daoId:dao._id, 
-            isDummy : true,
+            daoId: dao._id,
+            isDummy: true,
             provider: 'Lomads',
-            name : 'Dummy Workspace', 
-            description : "To discover Lomad's system", 
-            members: [_id], 
-            tasks:[],
-            links:[], 
-            milestones:[], 
-            compensation:null, 
-            kra: kraOb, 
-            creator: wallet, 
-            inviteType:'Open', 
-            validRoles:[]
+            name: 'Dummy Workspace',
+            description: "To discover Lomad's system",
+            members: [_id],
+            tasks: [],
+            links: [],
+            milestones: [],
+            compensation: null,
+            kra: kraOb,
+            creator: wallet,
+            inviteType: 'Open',
+            validRoles: []
         })
 
         project = await project.save();
 
         let task1 = new Task({
             daoId: dao._id,
-            isDummy : true,
+            isDummy: true,
             name: 'Dummy Task 1',
             description: '',
             creator: _id,
@@ -139,7 +141,7 @@ const create = async (req, res, next) => {
 
         let task2 = new Task({
             daoId: dao._id,
-            isDummy : true,
+            isDummy: true,
             name: 'Dummy Task 2',
             description: '',
             creator: _id,
@@ -160,7 +162,7 @@ const create = async (req, res, next) => {
             { _id: dao._id },
             {
                 $addToSet: {
-                    tasks: { $each: [task1._id,task2._id] },
+                    tasks: { $each: [task1._id, task2._id] },
                     projects: project._id
                 },
             }
@@ -169,13 +171,15 @@ const create = async (req, res, next) => {
             { _id: project._id },
             {
                 $addToSet: {
-                    tasks: { $each: [task1._id,task2._id] },
+                    tasks: { $each: [task1._id, task2._id] },
                 },
             }
         )
         console.log("DAO and project updated...");
 
-        await Safe.findByIdAndUpdate(newSafe._id, { dao: dao._id }, { new: true })
+        if (newSafe) {
+            await Safe.findByIdAndUpdate(newSafe._id, { dao: dao._id }, { new: true })
+        }
 
         return res.status(200).json({ message: 'DAO created successfully' })
     }
@@ -610,4 +614,4 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
-module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink,createOption };
+module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
