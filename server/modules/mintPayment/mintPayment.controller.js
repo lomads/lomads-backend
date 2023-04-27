@@ -35,6 +35,7 @@ const retry = (promise, onRetry, maxRetries) => {
 
 const verify = async (req, res, next) => {
     const { wallet } = req.user;
+    console.log(wallet)
     const { chainId, txnReference, contract, tokenId, paymentType } = req.body;
     let isVerified = false;
     try {
@@ -45,7 +46,7 @@ const verify = async (req, res, next) => {
         if(paymentType === 'crypto') {
             const scanBaseUrl = NETWORK_SCAN_LINKS[+chainId].baseUrl
             let txnResponse = await retry(
-                () => axios.get(`${scanBaseUrl}api?module=proxy&action=eth_getTransactionByHash&txhash=${txnReference}&apikey=${NETWORK_SCAN_LINKS[+chainId].apiKey}`),
+                () => axios.get(`${scanBaseUrl}api?module=proxy&action=eth_getTransactionByHash&txhash=${txnReference}&apikey=${apiKey}`),
                 () => { console.log('retry called...') },
                 10
             )
