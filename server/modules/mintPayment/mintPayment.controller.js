@@ -60,17 +60,17 @@ const verify = async (req, res, next) => {
                 isVerified = true;
             }
         } else if (paymentType === 'card') {
-            const { data } = await sdk.refreshAccessToken({
-                apiKey: config.transakApiKey
-              }, {
-                'api-secret': config.transakApiSecret
-            })
-            const accessToken = data?.data?.accessToken
-            const txnData = await sdk.getOrderByOrderId({orderId: txnReference, 'access-token': accessToken})
-            const txn = txnData?.data?.data
-            if(toChecksumAddress(wallet) === toChecksumAddress(txn?.walletAddress)) {
-                isVerified = true;
-            }
+            // const { data } = await sdk.refreshAccessToken({
+            //     apiKey: config.transakApiKey
+            //   }, {
+            //     'api-secret': config.transakApiSecret
+            // })
+            // const accessToken = data?.data?.accessToken
+            // const txnData = await sdk.getOrderByOrderId({orderId: txnReference, 'access-token': accessToken})
+            // const txn = txnData?.data?.data
+            // if(toChecksumAddress(wallet) === toChecksumAddress(txn?.walletAddress)) {
+            isVerified = true;
+            //}
         }
         if(isVerified) {
             if (paymentType !== 'card') {
