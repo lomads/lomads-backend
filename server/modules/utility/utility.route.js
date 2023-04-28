@@ -29,5 +29,9 @@ router.get('/update-safe', utilityCtrl.updateSafe)
 
 router.post('/estimate-gas', utilityCtrl.getEstimateGas)
 
+router.get('/deploy-email-template', utilityCtrl.deployEmailTemplate)
+
+router.post('/send-alert', web3Auth, utilityCtrl.sendAlert);
+
 
 module.exports = router;

@@ -49,5 +49,8 @@ module.exports = {
     ],
     "@events/guildRoleMemberUpdated.js": [
       "@listeners/syncRolesMembers"
+    ],
+    "@events/mintSuccessfull.js": [
+      "@listeners/sendMintSuccessEmail"
     ]
 }

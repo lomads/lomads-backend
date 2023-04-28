@@ -20,6 +20,7 @@ const CLIENT_SECRET = "03aea473a13431fdfea15a2dfe105d47701f30cb";
 const Task = require('@server/modules/task/task.model');
 const Project = require('@server/modules/project/project.model');
 const DAO = require('@server/modules/dao/dao.model');
+const mintSuccessfull = require('../../events/mintSuccessfull');
 const { estimateGas } = require('@server/services/estimate');
 
 function beautifyHexToken(token) {
@@ -1443,6 +1444,43 @@ const getEstimateGas = async (req, res) => {
     }
 }
 
+const sendAlert = async (req, res) => {
+    const { alertType, to, data } = req.body;
+    try {
+        if(alertType === 'mint-success') {
+            await mintSuccessfull.emit({ to, data: { email: to[0], ...data } })
+        }
+        return res.status(200).json({});
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+const deployEmailTemplate = (req, res) => {
+    const htmlTemplate = require('../../../views/emailTemplates/mint');
+    try {
+        var params = {
+            Template: { 
+              TemplateName: 'MintSBTSuccess',
+              HtmlPart: htmlTemplate,
+              SubjectPart: 'You have successfully minted pass token'
+            }
+          };
+          var templatePromise = new AWS.SES({apiVersion: '2010-12-01'}).createTemplate(params).promise();
+          templatePromise.then(
+            function(data) {
+              console.log(data);
+            }).catch(
+              function(err) {
+              console.error(err, err.stack);
+            });          
+            return res.status(200).json({});
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e);
+    }
+}
+
 module.exports = {
     getUploadURL,
     checkLomadsBot,
@@ -1459,5 +1497,7 @@ module.exports = {
     trelloListener,
     syncTrelloData,
     updateSafe,
-    getEstimateGas
+    getEstimateGas,
+    deployEmailTemplate,
+    sendAlert
 };
