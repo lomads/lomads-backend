@@ -614,4 +614,50 @@ const updateUserDiscord = async (req, res) => {
     }
 }
 
-module.exports = { loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
+const attachSafe = async (req, res) => {
+    const { url } = req.params;
+    const { safe, members } = req.body;
+
+    try {
+
+        let mMembers = []
+        for (let index = 0; index < members.length; index++) {
+            const member = members[index];
+            const filter = { wallet: { $regex: new RegExp(`^${member.address}$`, "i") } }
+            let m = await Member.findOne(filter);
+            if (!m) {
+                m = new Member({ wallet: toChecksumAddress(member.address), name: member.name })
+                m = await m.save();
+            }
+            console.log(m)
+            //const m = await Member.findOneAndUpdate(filter, { wallet: member.address }, { new: true, upsert: true })
+            mMembers.push({ ...m, _doc: { ...m._doc, role: member.role } })
+        }
+        mMembers = mMembers.map(m => m._doc)
+
+        let newSafe = null;
+        let O = [];
+        if (safe) {
+            let { name, address, owners } = safe;
+            O = owners.map(o => o.toLowerCase())
+            newSafe = new Safe({ chainId: safe?.chainId, name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
+            newSafe = await newSafe.save();
+        }
+
+        let mem = mMembers.map(m => {
+            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
+        })
+
+        await DAO.findOneAndUpdate(
+            { url }, 
+            { safe: newSafe?._id, members: mem })
+
+        return res.status(200).json({ message: 'Success' });
+
+    } catch(e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' });
+    }
+}
+
+module.exports = { attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
