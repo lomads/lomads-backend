@@ -12,7 +12,7 @@ router.post('/create-notification', web3Auth, utilityCtrl.createNotification)
 // github 
 
 router.get('/getGithubAccessToken', utilityCtrl.getGithubAccessToken);
-router.get('/get-issues', utilityCtrl.getIssues);
+router.get('/get-issues', web3Auth, utilityCtrl.getIssues);
 router.post('/store-issues', utilityCtrl.storeIssues);
 router.post('/create-webhook', utilityCtrl.createWebhook);
 router.post('/github/issues-listener', utilityCtrl.issuesListener);
@@ -20,7 +20,7 @@ router.post('/github/issues-listener', utilityCtrl.issuesListener);
 //  trello
 router.get('/get-trello-organizations', utilityCtrl.getTrelloOrganization);
 router.get('/get-trello-boards', utilityCtrl.getTrelloBoards);
-router.post('/sync-trello-data',web3Auth, utilityCtrl.syncTrelloData);
+router.post('/sync-trello-data', web3Auth, utilityCtrl.syncTrelloData);
 
 router.get('/trello/trello-listener', utilityCtrl.trelloListener);
 router.post('/trello/trello-listener', utilityCtrl.trelloListener);
