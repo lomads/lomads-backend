@@ -44,8 +44,8 @@ const getInviteCode = async (req, res) => {
     const { guildId, channelId } = req.params
     try {
         await hasNecessaryPermissions(guildId);
-       const code = await createChannelInvite(guildId, channelId)
-       return res.status(200).json({ code })
+        const code = await createChannelInvite(guildId, channelId)
+        return res.status(200).json({ code })
     } catch (e) {
         console.log(e)
         return res.status(500).json({ message: e })
@@ -56,8 +56,8 @@ const checkMemberHasRole = async (req, res) => {
     const { guildId, memberId, roleId } = req.params;
     try {
         await hasNecessaryPermissions(guildId);
-       const role = await memberHasRole(guildId, memberId, roleId)
-       return res.status(200).json({ role })
+        const role = await memberHasRole(guildId, memberId, roleId)
+        return res.status(200).json({ role })
     } catch (e) {
         console.log(e)
         return res.status(500).json({ message: e })
@@ -70,10 +70,10 @@ const addGuildMemberRole = async (req, res) => {
         await hasNecessaryPermissions(guildId);
         const hasRole = await memberHasRole(guildId, memberId, roleId);
         console.log("hasRole", hasRole)
-        if(!hasRole) {
+        if (!hasRole) {
             await attachGuildMemberRole(guildId, memberId, roleId)
         }
-       return res.status(200).json({ success: true })
+        return res.status(200).json({ success: true })
     } catch (e) {
         console.log(e)
         return res.status(500).json({ message: e })
@@ -89,7 +89,7 @@ const syncRoles = async (req, res) => {
         let guildMembers = await getGuildMembers(guildId);
         guildMembers = JSON.parse(JSON.stringify(guildMembers))
         await DAO.findOneAndUpdate({ _id: daoId }, {
-            $set: { 
+            $set: {
                 [`discord.${guildId}.roles`]: guildRoles.filter(gr => gr.name !== '@everyone' && !_.get(gr, 'tags.botId', null)).map(gr => { return { id: gr.id, name: gr.name, roleColor: gr.color ? `#${gr.color.toString(16)}` : `#99aab5` } }),
                 [`discord.${guildId}.members`]: guildMembers.map(gm => { return { userId: gm.userId, roles: gm.roles, displayName: gm.displayName } }),
             }
@@ -104,13 +104,13 @@ const syncRoles = async (req, res) => {
             const guildMember = guildMembers[index];
             console.log(guildId, guildMember.roles)
             const up = await DAO.updateMany(
-              {
-                _id: { $in: daoIds },
-                members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }]} }
-              }
-              ,
-              { $set: { [`members.$.discordRoles.${guildId}`] : guildMember.roles } }
-           )
+                {
+                    _id: { $in: daoIds },
+                    members: { $elemMatch: { $or: [{ "discordId": guildMember.userId }, { "discordId": guildMember.displayName }] } }
+                }
+                ,
+                { $set: { [`members.$.discordRoles.${guildId}`]: guildMember.roles } }
+            )
         }
         const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         return res.status(200).json(d)

@@ -238,7 +238,9 @@ const getGithubAccessToken = async (req, res) => {
 
 
 const getIssues = async (req, res) => {
+    const { _id, wallet } = req.user;
     const { token, repoInfo, daoId } = req.query;
+    let repoName = repoInfo.split('/')
     try {
         fetch(`https://api.github.com/repos/${repoInfo}/issues`,
             {
@@ -257,6 +259,86 @@ const getIssues = async (req, res) => {
                 }
             })
             .then(async issues => {
+                // create project
+                let kraOb = {
+                    frequency: '',
+                    results: [],
+                    tracker: [{
+                        start: moment().startOf('day').unix(),
+                        end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
+                        results: []
+                    }]
+                }
+
+                let project = new Project({
+                    daoId,
+                    provider: 'Github',
+                    name: repoName[1],
+                    description: '',
+                    members: [_id],
+                    tasks: [],
+                    links: [],
+                    milestones: [],
+                    compensation: null,
+                    kra: kraOb,
+                    creator: wallet,
+                    inviteType: 'Open',
+                    validRoles: []
+                })
+
+                project = await project.save();
+                console.log("Project created...");
+
+                await DAO.findOneAndUpdate(
+                    { _id: daoId },
+                    {
+                        dummyProjectFlag: false,
+                        $addToSet: {
+                            projects: project._id
+                        },
+                    }
+                )
+
+                const d = await DAO.findOne({ _id: daoId });
+                //update metadata
+
+                let members = [{ id: req.user._id, address: req.user.wallet }];
+
+                if (d.sbt) {
+                    for (let index = 0; index < members.length; index++) {
+                        const member = members[index];
+                        const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                        const metadata = await Metadata.findOne(filter)
+                        if (metadata) {
+                            let attrs = [...metadata._doc.attributes];
+                            if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                attrs.push({ trait_type: 'projects', value: project._id.toString() })
+                            } else {
+                                attrs = attrs.map(attr => {
+                                    if (attr.trait_type === 'projects') {
+                                        return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                    }
+                                    return attr
+                                })
+                            }
+                            if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                            } else {
+                                attrs = attrs.map(attr => {
+                                    if (attr.trait_type === 'project_names') {
+                                        return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                    }
+                                    return attr
+                                })
+                            }
+                            console.log("attrs", attrs);
+                            metadata._doc.attributes = attrs;
+                            await metadata.save();
+                        }
+                    }
+                }
+                projectCreated.emit(project);
+
                 var newArray = issues.map((i) => (
                     {
                         daoId: daoId,
@@ -269,7 +351,7 @@ const getIssues = async (req, res) => {
                         description: i.body,
                         creator: null,
                         members: [],
-                        project: null,
+                        project: project._id,
                         discussionChannel: i.html_url,
                         deadline: null,
                         submissionLink: i.html_url,
@@ -316,10 +398,18 @@ const storeIssues = async (req, res) => {
                                 { _id: daoId },
                                 {
                                     [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
-                                    dummyTaskFlag : false,
+                                    dummyTaskFlag: false,
                                     $addToSet: {
                                         tasks: { $each: arr },
                                         links: { title: linkOb.title, link: tempLink }
+                                    },
+                                }
+                            )
+                            await Project.findOneAndUpdate(
+                                { _id: issueList[0].project },
+                                {
+                                    $addToSet: {
+                                        tasks: { $each: arr },
                                     },
                                 }
                             )
@@ -371,10 +461,18 @@ const storeIssues = async (req, res) => {
                             { _id: daoId },
                             {
                                 [`github.${repoInfo}`]: { 'webhookId': '' },
-                                dummyTaskFlag : false,
+                                dummyTaskFlag: false,
                                 $addToSet: {
                                     tasks: { $each: arr },
                                     links: { title: linkOb.title, link: tempLink }
+                                },
+                            }
+                        )
+                        await Project.findOneAndUpdate(
+                            { _id: issueList[0].project },
+                            {
+                                $addToSet: {
+                                    tasks: { $each: arr },
                                 },
                             }
                         )
@@ -592,7 +690,7 @@ const getTrelloOrganization = async (req, res) => {
         // getting member information for all the organizations
         axios.get(`https://api.trello.com/1/members/me/?key=${config.trelloApiKey}&token=${accessToken}`)
             .then(async (response) => {
-                console.log("auth data : ",response.data);
+                console.log("auth data : ", response.data);
                 if (response.data && response.data.idOrganizations.length > 0) {
                     let organizationArray = [];
                     let organizationIds = response.data.idOrganizations;
@@ -643,17 +741,17 @@ const getTrelloBoards = async (req, res) => {
 }
 
 const trelloListener = async (req, res) => {
-    const {daoId} = req.query;
+    const { daoId } = req.query;
     const payload = req.body;
     console.log("trello listener: ", payload);
 
-    if(payload && payload.action){
+    if (payload && payload.action) {
         // add new board
-        if(payload.action.type === 'addToOrganizationBoard'){
-            console.log("payload action board : ",payload.action.data.board);
-            let creator=null;
+        if (payload.action.type === 'addToOrganizationBoard') {
+            console.log("payload action board : ", payload.action.data.board);
+            let creator = null;
 
-            const dao = await DAO.findOne({_id:daoId});
+            const dao = await DAO.findOne({ _id: daoId });
             if (dao) {
                 const trelloOb = _.get(dao, 'trello', null);
                 if (trelloOb) {
@@ -662,41 +760,41 @@ const trelloListener = async (req, res) => {
                     }
                 }
             }
-    
+
             let kraOb = {
-                frequency : '',
-                results : [],
+                frequency: '',
+                results: [],
                 tracker: [{
                     start: moment().startOf('day').unix(),
-                    end: moment().startOf('day').add(1,'month').endOf('day').unix(),
+                    end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
                     results: []
                 }]
             }
-    
+
             let project = new Project({
-                daoId, 
+                daoId,
                 provider: 'Trello',
                 metaData: {
                     externalId: payload.action.data.board.id.toString(),
                     boardUrl: 'N/A'
                 },
-                name : payload.action.data.board.name, 
-                description : payload.action.data.board.desc ? payload.action.data.board.desc:'', 
-                members: [creator.id], 
-                tasks:[],
-                links:[], 
-                milestones:[], 
-                compensation:null, 
-                kra: kraOb, 
-                creator: creator.wallet, 
-                inviteType:'Open', 
-                validRoles:[]
+                name: payload.action.data.board.name,
+                description: payload.action.data.board.desc ? payload.action.data.board.desc : '',
+                members: [creator.id],
+                tasks: [],
+                links: [],
+                milestones: [],
+                compensation: null,
+                kra: kraOb,
+                creator: creator.wallet,
+                inviteType: 'Open',
+                validRoles: []
             })
-    
+
             project = await project.save();
             console.log("Project created...");
 
-            let members = [{id:creator.id,address:creator.wallet}];
+            let members = [{ id: creator.id, address: creator.wallet }];
 
             if (dao.sbt) {
                 for (let index = 0; index < members.length; index++) {
@@ -733,11 +831,11 @@ const trelloListener = async (req, res) => {
             }
 
             const boardWebhook = await createTrelloWebhook(creator.accessToken, payload.action.data.board.id, daoId, 'board');
-            if(boardWebhook){
+            if (boardWebhook) {
                 console.log("new Board webhook created...")
                 const cards = await axios.get(`https://api.trello.com/1/boards/${payload.action.data.board.id}/cards?key=${config.trelloApiKey}&token=${creator.accessToken}`);
-                if(cards && cards.data && cards.data.length > 0){
-                    console.log("cards found.... : ",cards.data.length);
+                if (cards && cards.data && cards.data.length > 0) {
+                    console.log("cards found.... : ", cards.data.length);
                     var tasksArray = cards.data.map((i) => (
                         {
                             daoId: daoId,
@@ -765,18 +863,18 @@ const trelloListener = async (req, res) => {
                     // store draft task and update dao
                     let arr = [];
                     let insertMany = await Task.create(tasksArray)
-                    if(insertMany){
+                    if (insertMany) {
                         for (let i = 0; i < insertMany.length; i++) {
                             arr.push(insertMany[i]._id);
                         }
                         if (arr.length > 0) {
-                            console.log("Total Tasks created...",arr.length);
+                            console.log("Total Tasks created...", arr.length);
                             await DAO.findOneAndUpdate(
                                 { _id: daoId },
                                 {
                                     [`trello.${payload.action.data.organization.id}.boards.${payload.action.data.board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                                    dummyTaskFlag : false,
-                                    dummyProjectFlag : false,
+                                    dummyTaskFlag: false,
+                                    dummyProjectFlag: false,
                                     $addToSet: {
                                         tasks: { $each: arr },
                                         projects: project._id
@@ -794,7 +892,7 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 }
-                else{
+                else {
                     console.log("No cards found...just update dao")
                     await DAO.findOneAndUpdate(
                         { _id: daoId },
@@ -810,13 +908,13 @@ const trelloListener = async (req, res) => {
         }
 
         // update board name
-        else if(payload.action.type === 'updateBoard' && payload.action.display.translationKey==='action_update_board_name'){
+        else if (payload.action.type === 'updateBoard' && payload.action.display.translationKey === 'action_update_board_name') {
             console.log("board closed");
             try {
                 await Project.findOneAndUpdate(
-                    { 
-                        daoId : daoId,
-                        "metaData.externalId": payload.action.data.board.id.toString() 
+                    {
+                        daoId: daoId,
+                        "metaData.externalId": payload.action.data.board.id.toString()
                     },
                     {
                         $set: {
@@ -824,7 +922,7 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 );
-                const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                const p = await Project.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.board.id.toString() })
                 console.log(p);
             } catch (error) {
                 console.log("error 476 : ", error)
@@ -832,12 +930,12 @@ const trelloListener = async (req, res) => {
         }
 
         // update board description
-        else if(payload.action.type === 'updateBoard' && payload.action.display.translationKey==='action_update_board_desc'){
+        else if (payload.action.type === 'updateBoard' && payload.action.display.translationKey === 'action_update_board_desc') {
             try {
                 await Project.findOneAndUpdate(
-                    { 
-                        daoId : daoId,
-                        "metaData.externalId": payload.action.data.board.id.toString() 
+                    {
+                        daoId: daoId,
+                        "metaData.externalId": payload.action.data.board.id.toString()
                     },
                     {
                         $set: {
@@ -845,7 +943,7 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 );
-                const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                const p = await Project.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.board.id.toString() })
                 console.log(p);
             } catch (error) {
                 console.log("error 476 : ", error)
@@ -853,13 +951,13 @@ const trelloListener = async (req, res) => {
         }
 
         // close board
-        else if(payload.action.type === 'updateBoard' && payload.action.display.translationKey==='action_closed_board'){
+        else if (payload.action.type === 'updateBoard' && payload.action.display.translationKey === 'action_closed_board') {
             console.log("board closed");
             try {
                 await Project.findOneAndUpdate(
-                    { 
-                        daoId : daoId,
-                        "metaData.externalId": payload.action.data.board.id.toString() 
+                    {
+                        daoId: daoId,
+                        "metaData.externalId": payload.action.data.board.id.toString()
                     },
                     {
                         $set: {
@@ -867,17 +965,17 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 );
-                const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                const p = await Project.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.board.id.toString() })
                 console.log(p);
             } catch (error) {
                 console.log("error 476 : ", error)
             }
         }
-        
-        // delete board
-        else if(payload.action.type === 'removeFromOrganizationBoard'){
 
-            const dao = await DAO.findOne({_id:daoId});
+        // delete board
+        else if (payload.action.type === 'removeFromOrganizationBoard') {
+
+            const dao = await DAO.findOne({ _id: daoId });
             if (dao) {
                 let creator = null;
                 const trello = _.get(dao, 'trello', null);
@@ -892,17 +990,17 @@ const trelloListener = async (req, res) => {
                 let trelloOb = { ...dao.trello };
                 delete trelloOb[`${payload.action.data.organization.id}`]['boards'][`${payload.action.data.board.id}`];
 
-                try{
+                try {
                     let deleteWebhook = await axios.delete(`https://api.trello.com/1/webhooks/${webhookId}?key=${config.trelloApiKey}&token=${creator.accessToken}`);
-                    if(deleteWebhook){
+                    if (deleteWebhook) {
                         await DAO.findOneAndUpdate(
-                            {_id:daoId},
+                            { _id: daoId },
                             {
                                 trello: trelloOb
                             }
                         )
 
-                        let project = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() });
+                        let project = await Project.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.board.id.toString() });
 
                         await Task.updateMany(
                             { _id: { $in: project.tasks } },
@@ -910,9 +1008,9 @@ const trelloListener = async (req, res) => {
                         )
 
                         await Project.findOneAndUpdate(
-                            { 
-                                daoId : daoId,
-                                "metaData.externalId": payload.action.data.board.id.toString() 
+                            {
+                                daoId: daoId,
+                                "metaData.externalId": payload.action.data.board.id.toString()
                             },
                             {
                                 $set: {
@@ -920,23 +1018,23 @@ const trelloListener = async (req, res) => {
                                 }
                             }
                         );
-                        const p = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() })
+                        const p = await Project.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.board.id.toString() })
                         console.log(p);
                     }
                 }
-                catch(e){
-                    console.log("error : ",e);
+                catch (e) {
+                    console.log("error : ", e);
                 }
             }
         }
 
         // create a card
-        else if (payload.action.type === 'createCard' && payload.action.display.translationKey==='action_create_card'){
-            console.log("payload action : ",payload.action.data);
+        else if (payload.action.type === 'createCard' && payload.action.display.translationKey === 'action_create_card') {
+            console.log("payload action : ", payload.action.data);
 
-            let project = await Project.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.board.id.toString() });
+            let project = await Project.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.board.id.toString() });
 
-            if(project){
+            if (project) {
                 let task = new Task({
                     daoId: daoId,
                     provider: 'Trello',
@@ -958,7 +1056,7 @@ const trelloListener = async (req, res) => {
                     createdAt: Date.now(),
                     draftedAt: Date.now(),
                 })
-        
+
                 task = await task.save();
 
                 await DAO.findOneAndUpdate(
@@ -978,17 +1076,17 @@ const trelloListener = async (req, res) => {
                     }
                 )
             }
-            
+
         }
 
         // rename a card
-        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey==='action_renamed_card'){
-            console.log("payload action : ",payload.action.data);
+        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey === 'action_renamed_card') {
+            console.log("payload action : ", payload.action.data);
             try {
                 await Task.findOneAndUpdate(
-                    { 
-                        daoId : daoId,
-                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    {
+                        daoId: daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString()
                     },
                     {
                         $set: {
@@ -996,7 +1094,7 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 );
-                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                const t = await Task.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.card.id.toString() })
                 console.log(t);
             } catch (error) {
                 console.log("error 476 : ", error)
@@ -1004,13 +1102,13 @@ const trelloListener = async (req, res) => {
         }
 
         // update card description
-        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey==='action_changed_description_of_card'){
-            console.log("payload action : ",payload.action.data);
+        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey === 'action_changed_description_of_card') {
+            console.log("payload action : ", payload.action.data);
             try {
                 await Task.findOneAndUpdate(
-                    { 
-                        daoId : daoId,
-                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    {
+                        daoId: daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString()
                     },
                     {
                         $set: {
@@ -1018,7 +1116,7 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 );
-                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                const t = await Task.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.card.id.toString() })
                 console.log(t);
             } catch (error) {
                 console.log("error 476 : ", error)
@@ -1026,13 +1124,13 @@ const trelloListener = async (req, res) => {
         }
 
         // close a card
-        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey==='action_archived_card'){
-            console.log("payload action : ",payload.action.data);
+        else if (payload.action.type === 'updateCard' && payload.action.display.translationKey === 'action_archived_card') {
+            console.log("payload action : ", payload.action.data);
             try {
                 await Task.findOneAndUpdate(
-                    { 
-                        daoId : daoId,
-                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    {
+                        daoId: daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString()
                     },
                     {
                         $set: {
@@ -1040,7 +1138,7 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 );
-                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                const t = await Task.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.card.id.toString() })
                 console.log(t);
             } catch (error) {
                 console.log("error 476 : ", error)
@@ -1048,13 +1146,13 @@ const trelloListener = async (req, res) => {
         }
 
         // delete a card
-        else if (payload.action.type === 'deleteCard' && payload.action.display.translationKey==='action_delete_card'){
-            console.log("payload action : ",payload.action.data);
+        else if (payload.action.type === 'deleteCard' && payload.action.display.translationKey === 'action_delete_card') {
+            console.log("payload action : ", payload.action.data);
             try {
                 await Task.findOneAndUpdate(
-                    { 
-                        daoId : daoId,
-                        "metaData.externalId": payload.action.data.card.id.toString() 
+                    {
+                        daoId: daoId,
+                        "metaData.externalId": payload.action.data.card.id.toString()
                     },
                     {
                         $set: {
@@ -1062,7 +1160,7 @@ const trelloListener = async (req, res) => {
                         }
                     }
                 );
-                const t = await Task.findOne({ daoId : daoId, "metaData.externalId": payload.action.data.card.id.toString() })
+                const t = await Task.findOne({ daoId: daoId, "metaData.externalId": payload.action.data.card.id.toString() })
                 console.log(t);
             } catch (error) {
                 console.log("error 476 : ", error)
@@ -1075,80 +1173,80 @@ const trelloListener = async (req, res) => {
 
 const syncTrelloData = async (req, res) => {
     const { _id, wallet } = req.user;
-    const { boardsArray, daoId,user, accessToken, idModel } = req.body;
-    let wId = null, pId =[],bId=[],taskIds=[];
-    try{
-        const result = await createTrelloWebhook(accessToken, idModel,daoId,'workspace');
-        if(result){
-            wId=result.id;
+    const { boardsArray, daoId, user, accessToken, idModel } = req.body;
+    let wId = null, pId = [], bId = [], taskIds = [];
+    try {
+        const result = await createTrelloWebhook(accessToken, idModel, daoId, 'workspace');
+        if (result) {
+            wId = result.id;
             console.log("workspace webhook created...");
             await DAO.findOneAndUpdate(
                 { _id: daoId },
                 {
-                    [`trello.${idModel}`]: { 
+                    [`trello.${idModel}`]: {
                         'webhookId': result.id.toString(),
-                        'creator' : {
-                            'id' : _id,
-                            'wallet' : wallet,
-                            'accessToken':accessToken
-                        }, 
-                        'boards':{}
+                        'creator': {
+                            'id': _id,
+                            'wallet': wallet,
+                            'accessToken': accessToken
+                        },
+                        'boards': {}
                     },
                 }
             )
-    
-            if(boardsArray.length > 0){
-                for (let i = 0; i < boardsArray.length; i++){
-            
+
+            if (boardsArray.length > 0) {
+                for (let i = 0; i < boardsArray.length; i++) {
+
                     let board = boardsArray[i];
-                    console.log("Board",i+1);
-                    console.log("Board name & Id : ",board.name,board.id);
-        
+                    console.log("Board", i + 1);
+                    console.log("Board name & Id : ", board.name, board.id);
+
                     let kraOb = {
-                        frequency : '',
-                        results : [],
+                        frequency: '',
+                        results: [],
                         tracker: [{
                             start: moment().startOf('day').unix(),
-                            end: moment().startOf('day').add(1,'month').endOf('day').unix(),
+                            end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
                             results: []
                         }]
                     }
-        
+
                     let project = new Project({
-                        daoId, 
+                        daoId,
                         provider: 'Trello',
                         metaData: {
                             externalId: board.id.toString(),
                             boardUrl: board.url
                         },
-                        name : board.name, 
-                        description : board.desc, 
-                        members: [_id], 
-                        tasks:[],
-                        links:[], 
-                        milestones:[], 
-                        compensation:null, 
-                        kra: kraOb, 
-                        creator: wallet, 
-                        inviteType:'Open', 
-                        validRoles:[]
+                        name: board.name,
+                        description: board.desc,
+                        members: [_id],
+                        tasks: [],
+                        links: [],
+                        milestones: [],
+                        compensation: null,
+                        kra: kraOb,
+                        creator: wallet,
+                        inviteType: 'Open',
+                        validRoles: []
                     })
-            
+
                     project = await project.save();
                     pId.push(project._id);
                     console.log("Project created...");
-                    
-                    const boardWebhook = await createTrelloWebhook(accessToken, board.id,daoId,'board');
-                    if(boardWebhook){
+
+                    const boardWebhook = await createTrelloWebhook(accessToken, board.id, daoId, 'board');
+                    if (boardWebhook) {
                         bId.push(boardWebhook.id);
                         console.log("Board webhook created...");
                         console.log("Fetching board cards...");
                         let cardsArray = [];
                         const cards = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
-                        if(cards && cards.data && cards.data.length > 0){
-                            console.log("Total Cards found...",cards.data.length);
-                            cardsArray = [...cardsArray,...cards.data];
-        
+                        if (cards && cards.data && cards.data.length > 0) {
+                            console.log("Total Cards found...", cards.data.length);
+                            cardsArray = [...cardsArray, ...cards.data];
+
                             var tasksArray = cardsArray.map((i) => (
                                 {
                                     daoId: daoId,
@@ -1172,25 +1270,25 @@ const syncTrelloData = async (req, res) => {
                                     draftedAt: Date.now(),
                                 }
                             ))
-        
+
                             // store draft task and update dao
                             let arr = [];
                             try {
                                 let insertMany = await Task.create(tasksArray)
-                                if(insertMany){
-                                    console.log("insert many : ",insertMany)
+                                if (insertMany) {
+                                    console.log("insert many : ", insertMany)
                                     for (let i = 0; i < insertMany.length; i++) {
                                         arr.push(insertMany[i]._id);
-                                        taskIds.push(insertMany[i]._id);   
+                                        taskIds.push(insertMany[i]._id);
                                     }
                                     if (arr.length > 0) {
-                                        console.log("Total Tasks created...",arr.length);
+                                        console.log("Total Tasks created...", arr.length);
                                         await DAO.findOneAndUpdate(
                                             { _id: daoId },
                                             {
                                                 [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                                                dummyProjectFlag:false,
-                                                dummyTaskFlag:false,
+                                                dummyProjectFlag: false,
+                                                dummyTaskFlag: false,
                                                 $addToSet: {
                                                     tasks: { $each: arr },
                                                     projects: project._id
@@ -1206,12 +1304,12 @@ const syncTrelloData = async (req, res) => {
                                             }
                                         )
                                         console.log("DAO and project updated...")
-        
+
                                         const d = await DAO.findOne({ _id: daoId });
                                         //update metadata
-        
-                                        let members = [{id:req.user._id,address:req.user.wallet}];
-        
+
+                                        let members = [{ id: req.user._id, address: req.user.wallet }];
+
                                         if (d.sbt) {
                                             for (let index = 0; index < members.length; index++) {
                                                 const member = members[index];
@@ -1246,17 +1344,17 @@ const syncTrelloData = async (req, res) => {
                                             }
                                         }
                                         projectCreated.emit(project)
-                                        
+
                                     }
                                 }
                             }
                             catch (e) {
                                 console.log("error 710: ", e);
-        
+
                             }
-                        } 
-                        
-                        else{
+                        }
+
+                        else {
                             console.log("No cards found in the board...simply update dao")
                             await DAO.findOneAndUpdate(
                                 { _id: daoId },
@@ -1267,14 +1365,14 @@ const syncTrelloData = async (req, res) => {
                                     },
                                 }
                             )
-    
+
                             console.log("DAO updated...")
-        
+
                             const d = await DAO.findOne({ _id: daoId });
                             //update metadata
-        
+
                             let members = [user];
-        
+
                             if (d.sbt) {
                                 for (let index = 0; index < members.length; index++) {
                                     const member = members[index];
@@ -1313,55 +1411,55 @@ const syncTrelloData = async (req, res) => {
                     }
                 }
             }
-    
+
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
-    
+
             return res.status(200).json({ dao: d });
         }
-        else{
+        else {
             // webhook at workspace could not be created...simple return dao
             const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
-    
+
             return res.status(200).json({ dao: d });
         }
     }
-    catch(e){
-        console.log("889 enter parent catch ",e);
-        if(wId){
+    catch (e) {
+        console.log("889 enter parent catch ", e);
+        if (wId) {
             // delete workspace webhook
             await axios.delete(`https://api.trello.com/1/webhooks/${wId}?key=${config.trelloApiKey}&token=${accessToken}`);
         }
-        if(pId.length > 0){
+        if (pId.length > 0) {
             // delete all projects
-            const deleteProjects = await Project.deleteMany({_id:{$in:pId}},function(err, result) {
+            const deleteProjects = await Project.deleteMany({ _id: { $in: pId } }, function (err, result) {
                 if (err) {
-                  console.log("887 error in delete many projects : ",err)
+                    console.log("887 error in delete many projects : ", err)
                 } else {
-                  console.log("deleted all projects");
+                    console.log("deleted all projects");
                 }
-              })
+            })
         }
-        if(bId.length > 0){
+        if (bId.length > 0) {
             // delete all board webhooks
-            for(let i=0;i<bId.length;i++){
+            for (let i = 0; i < bId.length; i++) {
                 await axios.delete(`https://api.trello.com/1/webhooks/${bId[i]}?key=${config.trelloApiKey}&token=${accessToken}`);
             }
         }
-        if(taskIds.length > 0){
+        if (taskIds.length > 0) {
             // delete all tasks
-            const deleteTasks = await Task.deleteMany({_id:{$in:taskIds}},function(err, result) {
+            const deleteTasks = await Task.deleteMany({ _id: { $in: taskIds } }, function (err, result) {
                 if (err) {
-                  console.log("904 error in delete many tasks : ",err)
+                    console.log("904 error in delete many tasks : ", err)
                 } else {
-                  console.log("deleted all tasks");
+                    console.log("deleted all tasks");
                 }
-              })
+            })
         }
 
         await DAO.findOneAndUpdate(
             { _id: daoId },
             {
-                trello:null,
+                trello: null,
                 $pull: {
                     projects: {
                         $in: pId
@@ -1379,35 +1477,35 @@ const syncTrelloData = async (req, res) => {
     }
 }
 
-const createTrelloWebhook = async (accessToken, idModel,daoId,modelType) => {
+const createTrelloWebhook = async (accessToken, idModel, daoId, modelType) => {
     let callbackURL = `${config.baseUrlWithExt}/v1/utility/trello/trello-listener/?daoId=${daoId}`;
-    try{
+    try {
         return axios.post(`https://api.trello.com/1/webhooks/?callbackURL=${callbackURL}&idModel=${idModel}&key=${config.trelloApiKey}&token=${accessToken}`)
-        .then((response) => {
-            console.log("667 response : ",response.status,response.data);
-            return response.data;
-        })
-        .catch(async (e) => {
-            console.log("673 error response : ", e.response.status,e.response.data);
-            return axios.get(`https://api.trello.com/1/members/me/tokens?webhooks=true&key=${config.trelloApiKey}&token=${accessToken}`)
-                .then((result) => {
-                    if(result){
-                        for(let i = 0; i<result.data[0].webhooks.length;i++){
-                            if(result.data[0].webhooks[i].idModel === idModel){
-                                console.log("Found...",result.data[0].webhooks[i]);
-                                return { id: result.data[0].webhooks[i].id }
+            .then((response) => {
+                console.log("667 response : ", response.status, response.data);
+                return response.data;
+            })
+            .catch(async (e) => {
+                console.log("673 error response : ", e.response.status, e.response.data);
+                return axios.get(`https://api.trello.com/1/members/me/tokens?webhooks=true&key=${config.trelloApiKey}&token=${accessToken}`)
+                    .then((result) => {
+                        if (result) {
+                            for (let i = 0; i < result.data[0].webhooks.length; i++) {
+                                if (result.data[0].webhooks[i].idModel === idModel) {
+                                    console.log("Found...", result.data[0].webhooks[i]);
+                                    return { id: result.data[0].webhooks[i].id }
+                                }
                             }
                         }
-                    }
-                    else{
+                        else {
+                            return null;
+                        }
+                    })
+                    .catch((e) => {
+                        console.log("964 error : ", e);
                         return null;
-                    }
-                })
-                .catch((e) => {
-                    console.log("964 error : ",e);
-                    return null;
-                })
-        })
+                    })
+            })
     }
     catch (error) {
         console.log("try catch error 678 : ", e)
@@ -1447,7 +1545,7 @@ const getEstimateGas = async (req, res) => {
 const sendAlert = async (req, res) => {
     const { alertType, to, data } = req.body;
     try {
-        if(alertType === 'mint-success') {
+        if (alertType === 'mint-success') {
             await mintSuccessfull.emit({ to, data: { email: to[0], ...data } })
         }
         return res.status(200).json({});
@@ -1460,21 +1558,21 @@ const deployEmailTemplate = (req, res) => {
     const htmlTemplate = require('../../../views/emailTemplates/mint');
     try {
         var params = {
-            Template: { 
-              TemplateName: 'MintSBTSuccess',
-              HtmlPart: htmlTemplate,
-              SubjectPart: 'You have successfully minted pass token'
+            Template: {
+                TemplateName: 'MintSBTSuccess',
+                HtmlPart: htmlTemplate,
+                SubjectPart: 'You have successfully minted pass token'
             }
-          };
-          var templatePromise = new AWS.SES({apiVersion: '2010-12-01'}).createTemplate(params).promise();
-          templatePromise.then(
-            function(data) {
-              console.log(data);
+        };
+        var templatePromise = new AWS.SES({ apiVersion: '2010-12-01' }).createTemplate(params).promise();
+        templatePromise.then(
+            function (data) {
+                console.log(data);
             }).catch(
-              function(err) {
-              console.error(err, err.stack);
-            });          
-            return res.status(200).json({});
+                function (err) {
+                    console.error(err, err.stack);
+                });
+        return res.status(200).json({});
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);
