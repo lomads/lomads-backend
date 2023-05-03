@@ -240,6 +240,7 @@ const getGithubAccessToken = async (req, res) => {
 const getIssues = async (req, res) => {
     const { _id, wallet } = req.user;
     const { token, repoInfo, daoId } = req.query;
+    let repoName = repoInfo.split('/')
     try {
         fetch(`https://api.github.com/repos/${repoInfo}/issues`,
             {
@@ -272,7 +273,7 @@ const getIssues = async (req, res) => {
                 let project = new Project({
                     daoId,
                     provider: 'Github',
-                    name: repoInfo,
+                    name: repoName[1],
                     description: '',
                     members: [_id],
                     tasks: [],
