@@ -36,7 +36,7 @@ const retry = (promise, onRetry, maxRetries) => {
 const verify = async (req, res, next) => {
     const { wallet } = req.user;
     console.log(wallet)
-    const { chainId, txnReference, contract, tokenId, paymentType } = req.body;
+    const { chainId, txnReference, contract, tokenId, paymentType, gasless = false } = req.body;
     let isVerified = false;
     try {
         const sbt = await Contract.findOne({ address: contract })
@@ -73,7 +73,7 @@ const verify = async (req, res, next) => {
             //}
         }
         if(isVerified) {
-            if (paymentType !== 'card') {
+            if (paymentType !== 'card' || gasless) {
                 await MintPayment.create({ ...req.body, account: wallet, verified: isVerified })
             }
             const signature = await getSignature({ chainId, contract, tokenId, payment: txnReference  })
