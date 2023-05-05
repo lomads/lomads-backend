@@ -4,7 +4,7 @@ const AWS = require('../../config/aws');
 var ses = new AWS.SES({ region: config.aws.region });
   
 
-const sendMail = async ({ to = [], template, from = 'alerts@lomads.xyz'}) => {
+const sendMail = async ({ to = [], template, from = 'hello@lomads.xyz'}) => {
     var params = {
         Destination: {
           ToAddresses: to
