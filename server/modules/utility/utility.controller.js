@@ -338,30 +338,30 @@ const getIssues = async (req, res) => {
                     }
                 }
                 projectCreated.emit(project);
-
-                var newArray = issues.map((i) => (
-                    {
-                        daoId: daoId,
-                        provider: 'Github',
-                        metaData: {
-                            externalId: i.id.toString(),
-                            repoUrl: new URL(i.html_url).origin + '/' + new URL(i.html_url).pathname.split("/")[1] + '/' + new URL(i.html_url).pathname.split("/")[2]
-                        },
-                        name: i.title,
-                        description: i.body,
-                        creator: null,
-                        members: [],
-                        project: project._id,
-                        discussionChannel: i.html_url,
-                        deadline: null,
-                        submissionLink: i.html_url,
-                        compensation: null,
-                        reviewer: null,
-                        contributionType: 'open',
-                        createdAt: i.created_at,
-                        draftedAt: Date.now(),
-                    }
-                ))
+                var newArray = issues.filter(item => item.html_url.includes('issues'))
+                    .map((i) => (
+                        {
+                            daoId: daoId,
+                            provider: 'Github',
+                            metaData: {
+                                externalId: i.id.toString(),
+                                repoUrl: new URL(i.html_url).origin + '/' + new URL(i.html_url).pathname.split("/")[1] + '/' + new URL(i.html_url).pathname.split("/")[2]
+                            },
+                            name: i.title,
+                            description: i.body,
+                            creator: null,
+                            members: [],
+                            project: project._id,
+                            discussionChannel: i.html_url,
+                            deadline: null,
+                            submissionLink: i.html_url,
+                            compensation: null,
+                            reviewer: null,
+                            contributionType: 'open',
+                            createdAt: i.created_at,
+                            draftedAt: Date.now(),
+                        }
+                    ))
                 return res.json({ data: newArray, message: 'success' });
             })
             .catch((e) => {
