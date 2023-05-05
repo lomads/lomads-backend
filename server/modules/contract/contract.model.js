@@ -13,6 +13,7 @@ const ContractSchema = new mongoose.Schema({
   image: { type: String },
   tokenSupply: { type: Number },
   whitelisted: { type: mongoose.Schema.Types.Boolean, default: false },
+  master: { type: String, default: null },
   address: { type: String },
   treasury: { type: String },
   mintPrice: { type: String },
