@@ -137,11 +137,8 @@ module.exports = (data) => `<!DOCTYPE html>
             <tr>
                 <td style="width:100%;"><td>
                 <td style="min-width:40px;padding:12px;">
-                    <img style="width:24px; height: 24px;" src="${data?.chainLogo}" />
-                <td>
-                <td style="min-width:40px;padding:12px;">
                     <a href="${data?.link}">
-                        <img style="width:24px; height: 24px;" src="https://lomads-dao-development.s3.eu-west-3.amazonaws.com/EmailAssets/Group1.png" />
+                        <img style="width:24px; height: 24px;" src="${data?.chainLogo}" />
                     </a>
                 <td>
             </tr>
@@ -256,7 +253,12 @@ module.exports = (data) => `<!DOCTYPE html>
                         <td style="width:100%;vertical-align: center;">
                             <div style="border-bottom:1px dashed #EA6447"></div>
                         </td>
-                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">${ data?.contractAddress }</td>
+                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">${ data?.contractAddress }
+                        <span>
+                            <a href="${data?.link}">
+                                <img style=" margin-left:6px; width:14px; height: 14px;" src="${data?.chainLogo}" />
+                            </a>
+                        </span></td>
                     </tr>  
                 <tbody>  
             </table>
