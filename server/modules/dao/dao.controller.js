@@ -27,10 +27,21 @@ const loadAll = async (req, res) => {
 
 const load = async (req, res) => {
     const { _id } = req.user;
-    const { chainId = 5 } = req.query;
     try {
         const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
         console.log("DAO : ", dao);
+        return res.status(200).json(dao)
+    }
+    catch (e) {
+        console.error("dao.controller::load::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const loadSBTDao = async (req, res) => {
+    const { _id } = req.user;
+    try {
+        const dao = await DAO.find({ deletedAt: null, sbt: { $ne: null }, 'members.role': 'role1',  'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'sbt members.member', populate: { path: 'owners members members.member metadata' } }).exec()
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -660,4 +671,4 @@ const attachSafe = async (req, res) => {
     }
 }
 
-module.exports = { attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
+module.exports = { loadSBTDao, attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };

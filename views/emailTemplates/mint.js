@@ -132,19 +132,46 @@ module.exports = (data) => `<!DOCTYPE html>
 <td class="pad">
 <div align="center" style="font-family:'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;text-align:center;">
 <div class="our-class" style="background-color: #FFF; margin: 4px;">
-    <table align="center" border="0" cellpadding="0" cellspacing="0" class="row-content stack" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #000000; border-radius: 0; width: 250px;" width="250">
+    <img style="width: 300px; height: 300px;" src="${data?.image}"/>
+    <table align="center" border="0" cellpadding="0" cellspacing="0" class="row-content stack" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #000000; border-radius: 0; padding-bottom: 16px; width: 300px;" width="300">
         <tbody>
             <tr>
-                <td style="width:100%;"><td>
-                <td style="min-width:40px;padding:12px;">
-                    <a href="${data?.link}">
-                        <img style="width:24px; height: 24px;" src="${data?.chainLogo}" />
-                    </a>
-                <td>
+                <table style="width:100%">
+                    <tbody>
+                        <tr>
+                            <td style="min-width:100px;color: rgba(27, 43, 65, 0.5); font-size: 14px; text-align:left; padding-left: 16px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">View on</td>
+                            <td style="width:100%;vertical-align: center;">
+                                <div style="border-bottom:1px dashed #EA6447"></div>
+                            </td>
+                            <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;"><a style="color: #EA6447; text-decoration: none; margin-right: 16px;" target="_blank" href="${data?.lomadsLink}">Lomads</a></td>
+                        </tr>  
+                    <tbody>  
+                </table>
+                <table style="width:100%">
+                    <tbody>
+                        <tr>
+                            <td style="min-width:100px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;"></td>
+                            <td style="width:100%;vertical-align: center;">
+                                <div style="border-bottom:1px dashed #EA6447"></div>
+                            </td>
+                            <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;"><a style="color: #EA6447; text-decoration: none; margin-right: 16px;" target="_blank" href="${data?.openSea}">Opensea</a></td>
+                        </tr>  
+                    <tbody>  
+                </table>
+                <table style="width:100%">
+                    <tbody>
+                        <tr>
+                            <td style="min-width:100px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;"></td>
+                            <td style="width:100%;vertical-align: center;">
+                                <div style="border-bottom:1px dashed #EA6447"></div>
+                            </td>
+                            <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;"><a style="color: #EA6447; text-decoration: none; margin-right: 16px;" target="_blank" href="${data?.link}">${ data?.chain?.toLowerCase() === 'polygon' ? 'Polygonscan' : 'Etherscan' }</a></td>
+                        </tr>  
+                    <tbody>  
+                </table>
             </tr>
-        </tbody>
+        <tbody>
     </table>
-    <img style="width: 250px; height: 250px;" src="${data?.image}"/>
 </div>
 </div>
 </td>
