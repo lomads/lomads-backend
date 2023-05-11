@@ -41,7 +41,7 @@ const load = async (req, res) => {
 const loadSBTDao = async (req, res) => {
     const { _id } = req.user;
     try {
-        const dao = await DAO.find({ deletedAt: null, sbt: { $ne: null }, 'members.role': 'role1',  'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'sbt members.member', populate: { path: 'owners members members.member metadata' } }).exec()
+        const dao = await DAO.find({ deletedAt: null, sbt: { $ne: null }, 'members': { $elemMatch: { role: "role1", member: ObjectId(_id) }}  }).populate({ path: 'sbt members.member', populate: { path: 'owners members members.member metadata' } }).exec()
         return res.status(200).json(dao)
     }
     catch (e) {
