@@ -17,6 +17,7 @@ const ContractSchema = new mongoose.Schema({
   address: { type: String },
   treasury: { type: String },
   mintPrice: { type: String },
+  nonPayingMembers: [{ type: String }],
   mintPriceToken: { type: String, default: "0x0000000000000000000000000000000000000000" },
   version: { type: String, default: "1" },
   membersList: [{ type: mongoose.Schema.Types.Object }],
