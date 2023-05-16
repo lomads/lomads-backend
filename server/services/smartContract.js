@@ -19,7 +19,7 @@ const getSignature = async ({ chainId, contract, tokenId, payment = "" }) => {
             { name: "payment", type: "string" }
         ]
     }
-    const signature = signer.signTypedData(domain, types, { id: tokenId, payment })
+    const signature = signer._signTypedData(domain, types, { id: tokenId, payment })
     return signature
 }
 

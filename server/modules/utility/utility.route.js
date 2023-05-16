@@ -28,6 +28,7 @@ router.post('/trello/trello-listener', utilityCtrl.trelloListener);
 router.get('/update-safe', utilityCtrl.updateSafe)
 
 router.post('/estimate-gas', utilityCtrl.getEstimateGas)
+router.post('/estimate-mint-gas', utilityCtrl.getEstimateMintGas)
 
 router.get('/deploy-email-template', utilityCtrl.deployEmailTemplate)
 

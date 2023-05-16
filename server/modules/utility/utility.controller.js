@@ -21,7 +21,7 @@ const Task = require('@server/modules/task/task.model');
 const Project = require('@server/modules/project/project.model');
 const DAO = require('@server/modules/dao/dao.model');
 const mintSuccessfull = require('../../events/mintSuccessfull');
-const { estimateGas } = require('@server/services/estimate');
+const { estimateGas, mintEstimateGas } = require('@server/services/estimate');
 
 function beautifyHexToken(token) {
     return (token.slice(0, 6) + "..." + token.slice(-4))
@@ -1542,6 +1542,17 @@ const getEstimateGas = async (req, res) => {
     }
 }
 
+const getEstimateMintGas = async (req, res) => {
+    const { chainId, address, abi } = req.body;
+    try {
+        const gas = await mintEstimateGas({ chainId, address, abi })
+        return res.status(200).json(gas);
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e);
+    } 
+}
+
 const sendAlert = async (req, res) => {
     const { alertType, to, data } = req.body;
     try {
@@ -1596,6 +1607,7 @@ module.exports = {
     syncTrelloData,
     updateSafe,
     getEstimateGas,
+    getEstimateMintGas,
     deployEmailTemplate,
     sendAlert
 };
