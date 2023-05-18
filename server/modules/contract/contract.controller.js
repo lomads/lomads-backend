@@ -1,3 +1,4 @@
+const _ = require('lodash')
 const Contract = require('@server/modules/contract/contract.model');
 const Metadata = require('@server/modules/metadata/metadata.model');
 const DAO = require('@server/modules/dao/dao.model');
@@ -103,7 +104,9 @@ const update = async (req, res) => {
 const getContract = async (req, res) => {
     const { contractAddress } = req.params;
     try {
-        const contract = await Contract.findOne({ address: contractAddress });
+        let contract = await Contract.findOne({ address: contractAddress });
+        console.log(contract)
+        contract = { ...contract._doc, hasDiscountCodes: contract.discountCodes && contract.discountCodes.length > 0 }
         return res.status(200).json(contract);
     }
     catch (e) {
@@ -150,5 +153,23 @@ const getWhitelistSignature = async (req, res) => {
     }
 }
 
+const validateReferalCode = async (req, res) => {
+    const { contractAddress } = req.params;
+    const { code } = req.query;
+    try {
+        let contract = await Contract.findOne({ address: contractAddress });
+        const discountCode =  _.find(contract?.discountCodes, d => d.code === code)
+        if(discountCode){
+            return res.status(200).json(discountCode);
+        } else {
+            return res.status(500).json({ message: 'Invalid discount code' })
+        }
+    }
+    catch (e) {
+        console.error("contract.controller::get::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
 
-module.exports = { load, create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature, getContractDAO };
+
+module.exports = { validateReferalCode, load, create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature, getContractDAO };
