@@ -1598,6 +1598,23 @@ const onRamperStatus = (req, res) => {
     }
 }
 
+const getTxnStatus = async (req, res) => {
+    const { txnId, chainId } = req.query;
+    try {
+        let apiKey = config.etherScanKey;
+        if(+chainId === 137)
+            apiKey = config.polyScanKey;
+        const scanBaseUrl = NETWORK_SCAN_LINKS[+chainId].baseUrl
+        const txnResponse = await axios.get(`${scanBaseUrl}api?module=proxy&action=eth_getTransactionByHash&txhash=${txnId}&apikey=${apiKey}`)
+        txnResponse = txnResponse?.data?.result;
+        console.log("txnResponse", txnResponse)
+        return res.status(200).json(txnResponse);
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: "Something went wrong" });
+    }
+}
+
 module.exports = {
     getUploadURL,
     checkLomadsBot,
@@ -1618,5 +1635,6 @@ module.exports = {
     getEstimateMintGas,
     deployEmailTemplate,
     sendAlert,
-    onRamperStatus
+    onRamperStatus,
+    getTxnStatus
 };

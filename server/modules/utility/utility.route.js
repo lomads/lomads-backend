@@ -36,5 +36,6 @@ router.post('/send-alert', web3Auth, utilityCtrl.sendAlert);
 
 router.post('/on-ramper/status', utilityCtrl.onRamperStatus)
 
+router.post('/transaction-status', utilityCtrl.getTxnStatus)
 
 module.exports = router;
