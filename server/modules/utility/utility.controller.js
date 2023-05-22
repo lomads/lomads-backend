@@ -1590,6 +1590,14 @@ const deployEmailTemplate = (req, res) => {
     }
 }
 
+const onRamperStatus = (req, res) => {
+    try {
+        console.log(req.body)
+    } catch (e) {
+        console.log(e)
+    }
+}
+
 module.exports = {
     getUploadURL,
     checkLomadsBot,
@@ -1609,5 +1617,6 @@ module.exports = {
     getEstimateGas,
     getEstimateMintGas,
     deployEmailTemplate,
-    sendAlert
+    sendAlert,
+    onRamperStatus
 };

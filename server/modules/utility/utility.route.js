@@ -34,5 +34,7 @@ router.get('/deploy-email-template', utilityCtrl.deployEmailTemplate)
 
 router.post('/send-alert', web3Auth, utilityCtrl.sendAlert);
 
+router.post('/on-ramper/status', utilityCtrl.onRamperStatus)
+
 
 module.exports = router;

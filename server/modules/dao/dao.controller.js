@@ -294,24 +294,26 @@ const createOption = async (req, res) => {
 
 const addDaoMemberList = async (req, res) => {
     const { url } = req.params;
-    const { list } = req.body;
+    let { list: memberList } = req.body;
 
     let mMembers = [];
     try {
-        const dao = await DAO.findOne({ deletedAt: null, url })
+        const dao = await DAO.findOne({ url, deletedAt: null }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
-        for (let i = 0; i < list.length; i++) {
-            let user = list[i];
-
-            const filter = { wallet: { $regex: new RegExp(`^${user.address}$`, "i") } }
-            let m = await Member.findOne(filter);
-            if (!m) {
-                m = new Member({ wallet: toChecksumAddress(user.address), name: user.name })
-                m = await m.save();
+        for (let i = 0; i < memberList.length; i++) {
+            let user = memberList[i];
+            const exists =  _.find(dao?.members, member => toChecksumAddress(member.member.wallet) === toChecksumAddress(user.address))
+            if(!exists) {
+                const filter = { wallet: { $regex: new RegExp(`^${user.address}$`, "i") } }
+                let m = await Member.findOne(filter);
+                if (!m) {
+                    m = new Member({ wallet: toChecksumAddress(user.address), name: user.name })
+                    m = await m.save();
+                }
+                mMembers.push({ ...m, _doc: { ...m._doc, role: user.role } })
             }
-            mMembers.push({ ...m, _doc: { ...m._doc, role: user.role } })
         }
 
         mMembers = mMembers.map(m => m._doc);
