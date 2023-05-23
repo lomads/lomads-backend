@@ -1592,6 +1592,7 @@ const deployEmailTemplate = (req, res) => {
 }
 
 const onRamperStatus = async (req, res) => {
+    console.log("onRamper-status", onRamperBody?.status)
     try {
         const onRamperBody = req.body;
         await OnRamperStatus.findOneAndUpdate({ _id: ObjectId(onRamperBody?.partnerContext) }, { response: onRamperBody })
