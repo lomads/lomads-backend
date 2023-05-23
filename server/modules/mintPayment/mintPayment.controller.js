@@ -1,10 +1,12 @@
 const MintPayment = require('@server/modules/mintPayment/mintPayment.model');
+const OnRamperStatus = require('@server/modules/mintPayment/onRamperStatus.model');
 const Contract = require('@server/modules/contract/contract.model');
 const { NETWORK_SCAN_LINKS, SupportedChainId } = require('@config/constants')
 const { ethers } = require('ethers')
 const axios = require('axios');
 const config = require('@config/config')
 const { getSignature } = require('@server/services/smartContract');
+const ObjectId = require('mongodb').ObjectID;
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const sdk = require('api')('@transak/v1.0#v9aumgla1g38vc');
 
@@ -60,6 +62,12 @@ const verify = async (req, res, next) => {
                 isVerified = true;
             }
         } else if (paymentType === 'card') {
+            const onRampPayment = await OnRamperStatus.findOne({ _id: ObjectId(txnReference) })
+            if(onRampPayment && onRampPayment?.status){
+                if(onRampPayment?.status === "completed") {
+                    isVerified = true;
+                }
+            }
             // const { data } = await sdk.refreshAccessToken({
             //     apiKey: config.transakApiKey
             //   }, {
@@ -69,13 +77,11 @@ const verify = async (req, res, next) => {
             // const txnData = await sdk.getOrderByOrderId({orderId: txnReference, 'access-token': accessToken})
             // const txn = txnData?.data?.data
             // if(toChecksumAddress(wallet) === toChecksumAddress(txn?.walletAddress)) {
-            isVerified = true;
+            // isVerified = true;
             //}
         }
         if(isVerified) {
-            if (paymentType !== 'card' || gasless) {
-                await MintPayment.create({ ...req.body, account: wallet, verified: isVerified })
-            }
+            await MintPayment.create({ ...req.body, account: wallet, verified: isVerified })
             const signature = await getSignature({ chainId, contract, tokenId, payment: txnReference  })
             return res.status(200).json({ signature }) 
         } else {
@@ -128,6 +134,32 @@ const generateSignature = async (req, res) => {
     }
 }
 
+const createOnRamperReference = async (req, res) => {
+    try {
+        const resp = await OnRamperStatus.create({})
+        return res.status(200).json(resp) 
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const getOnRamperPaymentStatus = async (req, res) => {
+    const { ref } = req.query;
+    try {
+        const resp = await OnRamperStatus.findOne({ _id: ObjectId(ref) })
+        console.log(resp)
+        if(resp){
+            return res.status(200).json(resp) 
+        } else {
+            return res.status(500).json({ message: 'Something went wrong' })
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 module.exports = {
-    verify, getPayment, generateSignature
+    verify, getPayment, generateSignature, createOnRamperReference, getOnRamperPaymentStatus
 };

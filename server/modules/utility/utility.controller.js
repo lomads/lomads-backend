@@ -4,6 +4,7 @@ const axios = require('axios');
 const _ = require('lodash');
 const moment = require('moment')
 const util = require('@metamask/eth-sig-util')
+const OnRamperStatus = require('@server/modules/mintPayment/onRamperStatus.model');
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
 const Safe = require('@server/modules/safe/safe.model');
@@ -1590,11 +1591,14 @@ const deployEmailTemplate = (req, res) => {
     }
 }
 
-const onRamperStatus = (req, res) => {
+const onRamperStatus = async (req, res) => {
     try {
-        console.log(req.body)
+        const onRamperBody = req.body;
+        await OnRamperStatus.findOneAndUpdate({ _id: ObjectId(onRamperBody?.partnerContext) }, { response: onRamperBody })
+        return res.status(200).json({});
     } catch (e) {
         console.log(e)
+        return res.status(200).json({});
     }
 }
 
