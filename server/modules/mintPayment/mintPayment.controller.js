@@ -63,8 +63,8 @@ const verify = async (req, res, next) => {
             }
         } else if (paymentType === 'card') {
             const onRampPayment = await OnRamperStatus.findOne({ _id: ObjectId(txnReference) })
-            if(onRampPayment && onRampPayment?.status){
-                if(onRampPayment?.status === "completed") {
+            if(onRampPayment && onRampPayment?.response && onRampPayment?.response?.status){
+                if(onRampPayment?.response?.status === "completed") {
                     isVerified = true;
                 }
             }
