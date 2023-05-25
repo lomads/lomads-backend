@@ -4,7 +4,7 @@ const axios = require('axios');
 const _ = require('lodash');
 const moment = require('moment')
 const util = require('@metamask/eth-sig-util')
-const OnRamperStatus = require('@server/modules/mintPayment/onRamperStatus.model');
+const OnRamperStatus = require('@server/modules/mintPayment/externalPaymentStatus.model');
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
 const Safe = require('@server/modules/safe/safe.model');
@@ -1603,6 +1603,18 @@ const onRamperStatus = async (req, res) => {
     }
 }
 
+const onStripeStatus = async (req, res) => {
+    console.log("stripe-status", req.body)
+    try {
+        // const onRamperBody = req.body;
+        // await OnRamperStatus.findOneAndUpdate({ _id: ObjectId(onRamperBody?.partnerContext) }, { response: onRamperBody })
+        return res.status(200).json({});
+    } catch (e) {
+        console.log(e)
+        return res.status(200).json({});
+    }
+}
+
 const getTxnStatus = async (req, res) => {
     const { txnId, chainId } = req.query;
     try {
@@ -1641,5 +1653,6 @@ module.exports = {
     deployEmailTemplate,
     sendAlert,
     onRamperStatus,
-    getTxnStatus
+    getTxnStatus,
+    onStripeStatus
 };

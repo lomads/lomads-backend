@@ -7,8 +7,10 @@ const { encrypt } = require('@server/services/aes')
 /**
  * Safe Schema
  */
-const OnRamperStatusSchema = new mongoose.Schema({
+const ExternalPaymentStatusSchema = new mongoose.Schema({
     response: { type: Object },
+    provider: { type: String },
+    member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
     createdAt: {
         type: Date,
         default: Date.now
@@ -27,4 +29,4 @@ const OnRamperStatusSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('OnRamperStatus', OnRamperStatusSchema);
+module.exports = mongoose.model('ExternalPaymentStatus', ExternalPaymentStatusSchema);

@@ -1,5 +1,5 @@
 const MintPayment = require('@server/modules/mintPayment/mintPayment.model');
-const OnRamperStatus = require('@server/modules/mintPayment/onRamperStatus.model');
+const ExternalPaymentStatus = require('@server/modules/mintPayment/externalPaymentStatus.model');
 const Contract = require('@server/modules/contract/contract.model');
 const { NETWORK_SCAN_LINKS, SupportedChainId } = require('@config/constants')
 const { ethers } = require('ethers')
@@ -62,9 +62,9 @@ const verify = async (req, res, next) => {
                 isVerified = true;
             }
         } else if (paymentType === 'card') {
-            const onRampPayment = await OnRamperStatus.findOne({ _id: ObjectId(txnReference) })
-            if(onRampPayment && onRampPayment?.response && onRampPayment?.response?.status){
-                if(onRampPayment?.response?.status === "completed") {
+            const externalPayment = await ExternalPaymentStatus.findOne({ _id: ObjectId(txnReference) })
+            if(externalPayment && externalPayment?.response && externalPayment?.response?.status){
+                if(externalPayment?.response?.status === "completed" || externalPayment?.response?.status === "complete") {
                     isVerified = true;
                 }
             }
