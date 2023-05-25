@@ -104,9 +104,9 @@ const update = async (req, res) => {
 const getContract = async (req, res) => {
     const { contractAddress } = req.params;
     try {
-        let contract = await Contract.findOne({ address: contractAddress });
+        let contract = await Contract.findOne({ address: contractAddress }, { discountCodes: 0 });
         console.log(contract)
-        contract = { ...contract._doc, hasDiscountCodes: contract.discountCodes && contract.discountCodes.length > 0 }
+        contract = { ...contract._doc, discountCodes: null, hasDiscountCodes: contract.discountCodes && contract.discountCodes.length > 0 }
         return res.status(200).json(contract);
     }
     catch (e) {
