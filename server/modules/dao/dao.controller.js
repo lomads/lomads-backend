@@ -668,7 +668,7 @@ const attachSafe = async (req, res) => {
         await DAO.findOneAndUpdate(
             { url }, 
             { 
-                //safe: newSafe?._id, 
+                safe: newSafe?._id, 
                 members: mem,
                 $addToSet: { safes: newSafe?._id }
             })
