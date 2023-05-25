@@ -6,8 +6,8 @@ const router = express.Router(); // eslint-disable-line new-cap
 
 router.post('/verify', web3Auth, recurringPaymentCtrl.verify);
 router.get('/signature', web3Auth, recurringPaymentCtrl.generateSignature);
-router.post('/on-ramper-ref', web3Auth, recurringPaymentCtrl.createOnRamperReference);
-router.get('/on-ramper-status', web3Auth, recurringPaymentCtrl.getOnRamperPaymentStatus);
+router.post('/external-payment-ref', web3Auth, recurringPaymentCtrl.createExternalPaymentReference);
+router.get('/external-payment-status', web3Auth, recurringPaymentCtrl.getExternalPaymentStatus);
 router.get('/:contract', web3Auth, recurringPaymentCtrl.getPayment);
 
 module.exports = router;

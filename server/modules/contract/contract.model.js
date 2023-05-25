@@ -28,6 +28,12 @@ const ContractSchema = new mongoose.Schema({
   redirectUrl: { type: String },
   gasless: { type: mongoose.Schema.Types.Boolean, default: false },
   gasConfig: { type: mongoose.Schema.Types.Object },
+  externalPaymentProvider: { type: mongoose.Schema.Types.Object, 
+  default: {
+    paymentLink: 'https://buy.onramper.com',
+    provider: 'on-ramper'
+  } 
+},
   createdAt: {
     type: Date,
     default: Date.now

@@ -4,7 +4,7 @@ const axios = require('axios');
 const _ = require('lodash');
 const moment = require('moment')
 const util = require('@metamask/eth-sig-util')
-const OnRamperStatus = require('@server/modules/mintPayment/externalPaymentStatus.model');
+const ExternalPaymentStatus = require('@server/modules/mintPayment/externalPaymentStatus.model');
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
 const Safe = require('@server/modules/safe/safe.model');
@@ -1595,7 +1595,7 @@ const onRamperStatus = async (req, res) => {
     console.log("onRamper-status", req.body?.status)
     try {
         const onRamperBody = req.body;
-        await OnRamperStatus.findOneAndUpdate({ _id: ObjectId(onRamperBody?.partnerContext) }, { response: onRamperBody })
+        await ExternalPaymentStatus.findOneAndUpdate({ _id: ObjectId(onRamperBody?.partnerContext) }, { response: onRamperBody })
         return res.status(200).json({});
     } catch (e) {
         console.log(e)
@@ -1604,10 +1604,12 @@ const onRamperStatus = async (req, res) => {
 }
 
 const onStripeStatus = async (req, res) => {
-    console.log("stripe-status", req.body)
+    const stripeBody = req.body;
     try {
-        // const onRamperBody = req.body;
-        // await OnRamperStatus.findOneAndUpdate({ _id: ObjectId(onRamperBody?.partnerContext) }, { response: onRamperBody })
+        if(stripeBody?.type === "checkout.session.completed") {
+            const stripeBody = req.body;
+            await ExternalPaymentStatus.findOneAndUpdate({ _id: ObjectId(stripeBody?.data?.object?.client_reference_id) }, { response: stripeBody?.data?.object })
+        }
         return res.status(200).json({});
     } catch (e) {
         console.log(e)

@@ -134,9 +134,11 @@ const generateSignature = async (req, res) => {
     }
 }
 
-const createOnRamperReference = async (req, res) => {
+const createExternalPaymentReference = async (req, res) => {
+    const { _id } = req.user;
+    const { provider = 'stripe' } = req.query;
     try {
-        const resp = await OnRamperStatus.create({})
+        const resp = await ExternalPaymentStatus.create({ member: _id, provider })
         return res.status(200).json(resp) 
     } catch (e) {
         console.log(e)
@@ -144,11 +146,10 @@ const createOnRamperReference = async (req, res) => {
     }
 }
 
-const getOnRamperPaymentStatus = async (req, res) => {
+const getExternalPaymentStatus = async (req, res) => {
     const { ref } = req.query;
     try {
-        const resp = await OnRamperStatus.findOne({ _id: ObjectId(ref) })
-        console.log(resp)
+        const resp = await ExternalPaymentStatus.findOne({ _id: ObjectId(ref) })
         if(resp){
             return res.status(200).json(resp) 
         } else {
@@ -161,5 +162,5 @@ const getOnRamperPaymentStatus = async (req, res) => {
 }
 
 module.exports = {
-    verify, getPayment, generateSignature, createOnRamperReference, getOnRamperPaymentStatus
+    verify, getPayment, generateSignature, createExternalPaymentReference, getExternalPaymentStatus
 };
