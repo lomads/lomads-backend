@@ -90,6 +90,7 @@ const DAOSchema = new mongoose.Schema({
     }
   },
   safe: { type: mongoose.Schema.Types.ObjectId, ref: 'Safe' },
+  safes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Safe' }],
   sbt: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
   members: [{
     member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },

@@ -1514,16 +1514,17 @@ const createTrelloWebhook = async (accessToken, idModel, daoId, modelType) => {
 
 const updateSafe = async (req, res) => {
     try {
-        // const daos = await DAO.find()
-        // for (let index = 0; index < daos.length; index++) {
-        //     const dao = daos[index];
-        //     //const con = await Contract.findOne({ _id: dao.sbt })
-        //     // if(con && !con?.chainId) {
-        //     //     await Contract.findOneAndUpdate({ _id: dao.sbt }, { chainId: +dao.chainId })
-        //     // }
-        //     const safe = await Safe.findOneAndUpdate({ _id: dao.safe }, { chainId: +dao.chainId })
-        //     console.log(safe)
-        // }
+        const daos = await DAO.find()
+        for (let index = 0; index < daos.length; index++) {
+            const dao = daos[index];
+            console.log(dao)
+            if(dao.safe) {
+                await DAO.findOneAndUpdate(
+                    { _id: ObjectId(dao._id) },
+                    { $addToSet: { safes: ObjectId(dao.safe._id) } }
+                )
+            }
+        }
         return res.status(200).json({});
     } catch (e) {
         console.log(e)

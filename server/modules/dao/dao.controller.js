@@ -28,7 +28,7 @@ const loadAll = async (req, res) => {
 const load = async (req, res) => {
     const { _id } = req.user;
     try {
-        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -226,7 +226,7 @@ const updateDetails = async (req, res) => {
 const getByUrl = async (req, res) => {
     const { url } = req.params;
     try {
-        const dao = await DAO.findOne({ url }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const dao = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
         return res.status(200).json(dao)
@@ -651,9 +651,14 @@ const attachSafe = async (req, res) => {
         let O = [];
         if (safe) {
             let { name, address, owners } = safe;
-            O = owners.map(o => o.toLowerCase())
-            newSafe = new Safe({ chainId: safe?.chainId, name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
-            newSafe = await newSafe.save();
+            const existingSafe = await Safe.findOne({ address })
+            if(!existingSafe) {
+                O = owners.map(o => o.toLowerCase())
+                newSafe = new Safe({ chainId: safe?.chainId, name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
+                newSafe = await newSafe.save();
+            } else {
+                newSafe = existingSafe
+            }
         }
 
         let mem = mMembers.map(m => {
@@ -662,7 +667,11 @@ const attachSafe = async (req, res) => {
 
         await DAO.findOneAndUpdate(
             { url }, 
-            { safe: newSafe?._id, members: mem })
+            { 
+                //safe: newSafe?._id, 
+                members: mem,
+                $addToSet: { safes: newSafe?._id }
+            })
 
         return res.status(200).json({ message: 'Success' });
 
