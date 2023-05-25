@@ -4,6 +4,7 @@ const axios = require('axios');
 const _ = require('lodash');
 const moment = require('moment')
 const util = require('@metamask/eth-sig-util')
+const ExternalPaymentStatus = require('@server/modules/mintPayment/externalPaymentStatus.model');
 const Notification = require('@server/modules/notification/notification.model');
 const Member = require('@server/modules/member/member.model');
 const Safe = require('@server/modules/safe/safe.model');
@@ -1591,11 +1592,29 @@ const deployEmailTemplate = (req, res) => {
     }
 }
 
-const onRamperStatus = (req, res) => {
+const onRamperStatus = async (req, res) => {
+    console.log("onRamper-status", req.body?.status)
     try {
-        console.log(req.body)
+        const onRamperBody = req.body;
+        await ExternalPaymentStatus.findOneAndUpdate({ _id: ObjectId(onRamperBody?.partnerContext) }, { response: onRamperBody })
+        return res.status(200).json({});
     } catch (e) {
         console.log(e)
+        return res.status(200).json({});
+    }
+}
+
+const onStripeStatus = async (req, res) => {
+    const stripeBody = req.body;
+    try {
+        if(stripeBody?.type === "checkout.session.completed") {
+            const stripeBody = req.body;
+            await ExternalPaymentStatus.findOneAndUpdate({ _id: ObjectId(stripeBody?.data?.object?.client_reference_id) }, { response: stripeBody?.data?.object })
+        }
+        return res.status(200).json({});
+    } catch (e) {
+        console.log(e)
+        return res.status(200).json({});
     }
 }
 
@@ -1637,5 +1656,6 @@ module.exports = {
     deployEmailTemplate,
     sendAlert,
     onRamperStatus,
-    getTxnStatus
+    getTxnStatus,
+    onStripeStatus
 };
