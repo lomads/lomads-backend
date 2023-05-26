@@ -629,23 +629,29 @@ const updateUserDiscord = async (req, res) => {
 const attachSafe = async (req, res) => {
     const { url } = req.params;
     const { safe, members } = req.body;
-
-    try {
-
-        let mMembers = []
-        for (let index = 0; index < members.length; index++) {
-            const member = members[index];
-            const filter = { wallet: { $regex: new RegExp(`^${member.address}$`, "i") } }
-            let m = await Member.findOne(filter);
-            if (!m) {
-                m = new Member({ wallet: toChecksumAddress(member.address), name: member.name })
-                m = await m.save();
+        let mMembers = [];
+        try {
+            const dao = await DAO.findOne({ url, deletedAt: null }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
+            if (!dao)
+                return res.status(404).json({ message: 'DAO not found' })
+    
+            for (let i = 0; i < members.length; i++) {
+                let user = members[i];
+                const exists =  _.find(dao?.members, member => toChecksumAddress(member.member.wallet) === toChecksumAddress(user.address))
+                if(!exists) {
+                    const filter = { wallet: { $regex: new RegExp(`^${user.address}$`, "i") } }
+                    let m = await Member.findOne(filter);
+                    if (!m) {
+                        m = new Member({ wallet: toChecksumAddress(user.address), name: user.name })
+                        m = await m.save();
+                    }
+                    mMembers.push({ ...m, _doc: { ...m._doc, role: user.role } })
+                }
             }
-            console.log(m)
-            //const m = await Member.findOneAndUpdate(filter, { wallet: member.address }, { new: true, upsert: true })
-            mMembers.push({ ...m, _doc: { ...m._doc, role: member.role } })
-        }
-        mMembers = mMembers.map(m => m._doc)
+    
+            mMembers = mMembers.map(m => m._doc);
+
+        console.log("mMembers", mMembers)
 
         let newSafe = null;
         let O = [];
@@ -660,17 +666,15 @@ const attachSafe = async (req, res) => {
                 newSafe = existingSafe
             }
         }
-
         let mem = mMembers.map(m => {
-            return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
+            return { member: m._id, creator: _find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
         })
-
+        
         await DAO.findOneAndUpdate(
             { url }, 
             { 
-                safe: newSafe?._id, 
-                members: mem,
-                $addToSet: { safes: newSafe?._id }
+                ...(dao?.safe ? {} : { safe: newSafe?._id }),
+                $addToSet: { safes: newSafe?._id, members: mem }
             })
 
         return res.status(200).json({ message: 'Success' });
