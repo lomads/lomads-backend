@@ -16,5 +16,6 @@ module.exports = {
     memberJoinedDiscordServer: require('@events/memberJoinedDiscordServer'),
     guildRoleMemberUpdated: require('@events/guildRoleMemberUpdated'),
     onOneMinuteCron: require('@server/events/onOneMinuteCron'),
+    onThirtySecondsCron: require('@server/events/onThirtySecondsCron'),
     mintSuccessfull: require('@server/events/mintSuccessfull'),
 }

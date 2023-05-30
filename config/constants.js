@@ -19,7 +19,7 @@ const SupportedChainId = {
     [SupportedChainId.POLYGON]: '0x022e58834d2c91Ed9C06E977B6e8aaDf019b514D',
   } 
 
-  const GOERLI_API_ENDPOINT  = {
+  const GNOSIS_API_ENDPOINT  = {
     [SupportedChainId.GOERLI]: "https://safe-transaction-goerli.safe.global",
     [SupportedChainId.POLYGON]: 'https://safe-transaction-polygon.safe.global',
     [SupportedChainId.MAINNET]: 'https://safe-transaction-mainnet.safe.global'
@@ -56,5 +56,6 @@ const SupportedChainId = {
     SupportedChainId,
     SBT_DEPLOYER_ADDRESSES,
     INFURA_NETWORK_URLS,
-    NETWORK_SCAN_LINKS
+    NETWORK_SCAN_LINKS,
+    GNOSIS_API_ENDPOINT
   }

@@ -23,6 +23,7 @@ const Project = require('@server/modules/project/project.model');
 const DAO = require('@server/modules/dao/dao.model');
 const mintSuccessfull = require('../../events/mintSuccessfull');
 const { estimateGas, mintEstimateGas } = require('@server/services/estimate');
+const gnosisSafeTxSyncTrackerModel = require('../gnosisSafeTx/gnosisSafeTxSyncTracker.model');
 
 function beautifyHexToken(token) {
     return (token.slice(0, 6) + "..." + token.slice(-4))
@@ -1515,17 +1516,23 @@ const createTrelloWebhook = async (accessToken, idModel, daoId, modelType) => {
 
 const updateSafe = async (req, res) => {
     try {
-        const daos = await DAO.find()
-        for (let index = 0; index < daos.length; index++) {
-            const dao = daos[index];
-            console.log(dao)
-            if(dao.safe) {
-                await DAO.findOneAndUpdate(
-                    { _id: ObjectId(dao._id) },
-                    { $addToSet: { safes: ObjectId(dao.safe._id) } }
-                )
-            }
-        }
+        // const daos = await DAO.find()
+        // for (let index = 0; index < daos.length; index++) {
+        //     const dao = daos[index];
+        //     console.log(dao)
+        //     if(dao.safe) {
+        //         await DAO.findOneAndUpdate(
+        //             { _id: ObjectId(dao._id) },
+        //             { $addToSet: { safes: ObjectId(dao.safe._id) } }
+        //         )
+        //     }
+        // }
+
+        // safe sync 
+        // let safes = await Safe.find({})
+        // safes = _.uniqBy(safes, s => s.address)
+        // console.log(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
+        // gnosisSafeTxSyncTrackerModel.create(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
         return res.status(200).json({});
     } catch (e) {
         console.log(e)

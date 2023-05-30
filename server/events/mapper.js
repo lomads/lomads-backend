@@ -52,5 +52,8 @@ module.exports = {
     ],
     "@events/mintSuccessfull.js": [
       "@listeners/sendMintSuccessEmail"
+    ],
+    "@events/onThirtySecondsCron.js": [
+      "@listeners/syncSafeTx"
     ]
 }

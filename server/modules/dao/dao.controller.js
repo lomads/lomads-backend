@@ -631,6 +631,9 @@ const attachSafe = async (req, res) => {
     const { safe, members } = req.body;
 
     try {
+        const dao = await DAO.findOne({ url })
+        if(!dao)
+            return res.status(404).json({ message: 'DAO not found' });
 
         let mMembers = []
         for (let index = 0; index < members.length; index++) {
@@ -662,7 +665,11 @@ const attachSafe = async (req, res) => {
 
         await DAO.findOneAndUpdate(
             { url }, 
-            { safe: newSafe?._id, members: mem })
+            { 
+                ...(!dao?.safe ? { safe: newSafe?._id } : {}),
+                $addToSet: { safes: newSafe?._id },
+                members: mem 
+            })
 
         return res.status(200).json({ message: 'Success' });
 
