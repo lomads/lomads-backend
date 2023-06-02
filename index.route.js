@@ -11,6 +11,7 @@ const taskRoutes = require('@server/modules/task/task.route');
 const utilityRoutes = require('@server/modules/utility/utility.route');
 const notificationRoutes = require('@server/modules/notification/notification.route');
 const discordRoutes = require('@server/modules/discord/discord.route');
+const gnosisSafeRoutes = require('@server/modules/gnosisSafeTx/gnosisSafe.route');
 const recurringPaymentRoutes = require('@server/modules/RecurringPayment/recurringPayment.route');
 const mintPaymentRoutes = require('@server/modules/mintPayment/mintPayment.route');
 
@@ -36,6 +37,7 @@ router.use('/task', taskRoutes);
 router.use('/utility', utilityRoutes);
 router.use('/notification', notificationRoutes);
 router.use('/discord', discordRoutes);
+router.use('/gnosis-safe', gnosisSafeRoutes);
 router.use('/recurring-payment', recurringPaymentRoutes)
 router.use('/mint-payment', mintPaymentRoutes)
 router.get('/:contractAddress/:token', contractCtrl.getContractTokenMetadata)

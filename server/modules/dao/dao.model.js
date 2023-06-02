@@ -172,6 +172,11 @@ const DAOSchema = new mongoose.Schema({
 DAOSchema.method({
 });
 
+DAOSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
 /**
  * Statics
  */

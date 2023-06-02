@@ -19,6 +19,10 @@ const SafeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  threshold: {
+    type: Number,
+    required: true
+  },
   dao: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
   owners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
   tokens: [{ type: mongoose.Schema.Types.Object }],

@@ -24,6 +24,9 @@ const DAO = require('@server/modules/dao/dao.model');
 const mintSuccessfull = require('../../events/mintSuccessfull');
 const { estimateGas, mintEstimateGas } = require('@server/services/estimate');
 const gnosisSafeTxSyncTrackerModel = require('../gnosisSafeTx/gnosisSafeTxSyncTracker.model');
+const TxlabelModel = require('../transaction/txlabel.model');
+const GnosisSafeTxModel = require('../gnosisSafeTx/gnosisSafeTx.model');
+const offchainModel = require('../transaction/offchain.model');
 
 function beautifyHexToken(token) {
     return (token.slice(0, 6) + "..." + token.slice(-4))
@@ -1533,7 +1536,36 @@ const updateSafe = async (req, res) => {
         // safes = _.uniqBy(safes, s => s.address)
         // console.log(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
         // gnosisSafeTxSyncTrackerModel.create(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
-        return res.status(200).json({});
+
+       // move labels
+        const txlabels = await TxlabelModel.find({})
+
+        for (let index = 0; index < txlabels.length; index++) {
+            const element = txlabels[index];
+            const gtx = await GnosisSafeTxModel.findOne({ 'safeAddress': element.safeAddress, $or: [{ 'rawTx.safeTxHash' : element.safeTxHash }, { 'rawTx.transactionHash' : element.safeTxHash }] })
+            if(gtx && element.recipient && element.recipient.indexOf('...') === -1) {
+                console.log(element)
+                const resp = await GnosisSafeTxModel.findOneAndUpdate({ _id: gtx._id }, {
+                    $set: {
+                        [`metadata.${element.recipient}`]: element
+                    }
+                })
+                console.log(resp)
+            }
+        }
+
+        // ofchain to safe tx list
+        // const offChain = await offchainModel.find({})
+        // let txns = []
+        // for (let index = 0; index < offChain.length; index++) {
+        //     const { daoId, ...rest } = offChain[index]._doc;
+        //     txns.push({ safeAddress: rest.safe, daoId: daoId, rawTx: rest })
+        // }
+        // const gtx = await GnosisSafeTxModel.create(txns)
+
+
+
+        return res.status(200).json({ message: "Success" })
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);
