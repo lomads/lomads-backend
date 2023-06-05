@@ -3,11 +3,13 @@ const GnosisSafeTxSyncTracker  = require('../modules/gnosisSafeTx/gnosisSafeTxSy
 const Safe = require('../modules/safe/safe.model');
 const { GNOSIS_API_ENDPOINT } = require('../../config/constants')
 const axios = require('axios');
+const config = require('@config/config')
 const moment = require('moment')
 
 module.exports = {
   handle: async () => {
     console.log("30s")
+    if(config.env === 'local') return;
     const safe = await GnosisSafeTxSyncTracker.findOne({ chainId: { $ne: null } }).sort({ lastSync: 1 })
     console.log(safe)
     if(safe.chainId) {

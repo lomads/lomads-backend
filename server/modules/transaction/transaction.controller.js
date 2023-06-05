@@ -418,7 +418,7 @@ const update = async (req, res) => {
 
 const addTxnLabel = async (req, res) => {
     try {
-        await txLabel.create(req.body)
+       // await txLabel.create(req.body)
         return res.status(200).json({ message: ''})
     }
     catch (e) {

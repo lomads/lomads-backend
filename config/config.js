@@ -7,7 +7,7 @@ const { SupportedChainId } = require('@config/constants');
 const envVarsSchema = Joi.object({
   BASE_URL: Joi.string().default('https://app.lomads.xyz/api'),
   NODE_ENV: Joi.string()
-    .allow('development', 'production', 'test', 'provision')
+    .allow('development', 'production', 'test', 'provision', 'local')
     .default('development'),
   PORT: Joi.number()
     .default(8080),
