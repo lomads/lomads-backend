@@ -75,7 +75,7 @@ const create = async (req, res) => {
                 }
             )
         }
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
 
         // return res.status(200).json({ message: 'Contract created successfully' })
@@ -92,7 +92,7 @@ const update = async (req, res) => {
     try {
 
         await Contract.findOneAndUpdate({ address: contractAddress }, rest);
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
     catch (e) {
@@ -118,7 +118,7 @@ const getContract = async (req, res) => {
 const getContractDAO = async (req, res) => {
     const { sbtId } = req.params;
     try {
-        const dao = await DAO.findOne({ sbt: sbtId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
+        const dao = await DAO.findOne({ sbt: sbtId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).exec()
         console.log("DAO : ", dao);
         return res.status(200).json(dao)
     }

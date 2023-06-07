@@ -1,5 +1,17 @@
 const gnosisSafeTxModel = require("./gnosisSafeTx.model");
 
+const get = async (req, res) => {
+    try {
+        const { safeTxHash } = req.params;
+        const { safeAddress } = req.query;
+        const txn = await gnosisSafeTxModel.findOne({ safeAddress, 'rawTx.safeTxHash' : safeTxHash })
+        return res.status(200).json(txn)
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: e })
+    }
+}
+
 const load = async (req, res) => {
     try {
         const { safes } = req.query;
@@ -35,7 +47,6 @@ const update = async (req, res) => {
 }
 
 const updateTxLabel = async (req, res) => {
-    console.log(req.body)
     const { safeAddress, safeTxHash, label, tag, recipient } = req.body;
     try {
         if(label){
@@ -59,4 +70,33 @@ const updateTxLabel = async (req, res) => {
     }
 }
 
-module.exports = { load, create, update, updateTxLabel };
+const confirmOffChainTxn = async (req, res) => {
+    const { safeTxHash } = req.params;
+    const { safeAddress, confirmation } = req.body;
+    try {
+        let offChainTx = await gnosisSafeTxModel.findOneAndUpdate(
+            { safeAddress, 'rawTx.safeTxHash': safeTxHash },
+            { $addToSet: { 'confirmations': req.body.confirmation } }
+        );
+        offChainTx = await gnosisSafeTxModel.findOne(
+            { safeAddress, 'rawTx.safeTxHash': safeTxHash }
+        );
+        return res.status(200).json(offChainTx)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const postExecution = async (req, res) => {
+    try {
+        
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+module.exports = { get, load, create, update, updateTxLabel, confirmOffChainTxn, postExecution };

@@ -112,7 +112,7 @@ const syncRoles = async (req, res) => {
                 { $set: { [`members.$.discordRoles.${guildId}`]: guildMember.roles } }
             )
         }
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         return res.status(200).json(d)
     } catch (e) {
         console.log(e)

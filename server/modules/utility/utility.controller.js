@@ -420,7 +420,7 @@ const storeIssues = async (req, res) => {
                             )
                         }
 
-                        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+                        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
                         return res.status(200).json({ dao: d });
                     }
@@ -446,7 +446,7 @@ const storeIssues = async (req, res) => {
                 )
             }
 
-            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
             return res.status(200).json({ dao: d });
         }
@@ -483,7 +483,7 @@ const storeIssues = async (req, res) => {
                         )
                     }
 
-                    const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+                    const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
                     return res.status(200).json({ dao: d });
                 }
@@ -1417,13 +1417,13 @@ const syncTrelloData = async (req, res) => {
                 }
             }
 
-            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
             return res.status(200).json({ dao: d });
         }
         else {
             // webhook at workspace could not be created...simple return dao
-            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
             return res.status(200).json({ dao: d });
         }
@@ -1476,7 +1476,7 @@ const syncTrelloData = async (req, res) => {
             }
         )
 
-        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
         return res.status(200).json({ dao: d });
     }
