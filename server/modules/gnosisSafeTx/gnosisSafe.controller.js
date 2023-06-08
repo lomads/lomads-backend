@@ -1,5 +1,9 @@
 const gnosisSafeTxModel = require("./gnosisSafeTx.model");
 const gnosisSafeTxSyncTrackerModel = require("./gnosisSafeTxSyncTracker.model");
+const Member = require('@server/modules/member/member.model');
+const Task = require('@server/modules/task/task.model');
+const { taskPaid } = require('@server/events');
+const _ = require('lodash')
 
 const get = async (req, res) => {
     try {
@@ -91,8 +95,72 @@ const confirmOffChainTxn = async (req, res) => {
 }
 
 const postExecution = async (req, res) => {
+    const { safeTxHash } = req.params;
     try {
+        const actionList = req.body;
+        for (let index = 0; index < actionList.length; index++) {
+            const actions = actionList[index];
+            if(actions?.UPDATE_EARNING) {
+                let { user: recipient, daoId, symbol, value, currency } = actions?.UPDATE_EARNING;
+                if(value && currency && !isNaN(value) && symbol) {
+                    let user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient || '0x'}$`, "i") } })
+                    if(user) {
+                        let earnings = user.earnings
+                        const symbol = _.find(earnings, e => e.symbol === symbol && String(e.daoId) === daoId)
+                        if(symbol) {
+                            earnings = earnings.map(e => {
+                                if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT') && String(e.daoId) === daoId){
+                                    return { ...e._doc, value: +e.value + (amount / 10 ** _.get(safeTx, 'token.decimals', 18)) }
+                                }
+                                return e
+                            }) 
+                        } else {
+                            earnings.push({
+                                symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
+                                value: amount / 10 ** _.get(safeTx, 'token.decimals', 18),
+                                currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT'),
+                                daoId
+                            })
+                        }
+                        await Member.findOneAndUpdate(
+                            { _id: user?._id },
+                            { earnings }
+                        )
+                    }
+                }
 
+            } 
+            
+            if (actions?.RESET_SWEAT) {
+                let { user: recipient, daoId } = actions?.RESET_SWEAT;
+                let user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient || '0x'}$`, "i") } })
+                if(user) {
+                    let earnings = user.earnings;
+                    earnings = earnings.map(e => {
+                        if(e.symbol === 'SWEAT' && String(e.daoId) === daoId) {
+                            return { ...e._doc, value: 0 }
+                        }
+                        return e
+                    }) 
+                    await Member.findOneAndUpdate(
+                        { _id: user?._id },
+                        { earnings }
+                    )
+                }
+            }
+
+            if(actions?.TASK_PAID) {
+                let { taskId, user: recipient } = actions?.TASK_PAID;
+                let user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient || '0x'}$`, "i") } })
+                let task = await Task.findOne({ $or: [{ _id: taskId }, { 'compensation.txnHash': safeTxHash }] })
+                if(user && task && ((task.contributionType !== 'open') || (task.contributionType === 'open' && task.isSingleContributor === true))){
+                    task.taskStatus = 'paid'
+                    await task.save()
+                    taskPaid.emit({ $task: task, $member: user })
+                }
+            }
+        }
+        return res.status(200).json({ message: 'Success' })
     }
     catch (e) {
         console.error(e)
