@@ -11,6 +11,6 @@ router.get('/:safeTxHash', web3Auth, gnosisSafeCtrl.get)
 router.patch('/tx-label', web3Auth, gnosisSafeCtrl.updateTxLabel)
 router.patch('/off-chain/:confirm', web3Auth, gnosisSafeCtrl.confirmOffChainTxn)
 
-router.get('/:safeTxHash/executed', web3Auth, gnosisSafeCtrl.postExecution)
+router.post('/:safeTxHash/executed', web3Auth, gnosisSafeCtrl.postExecution)
 
 module.exports = router;

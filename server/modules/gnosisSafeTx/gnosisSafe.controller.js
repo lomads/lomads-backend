@@ -100,25 +100,28 @@ const postExecution = async (req, res) => {
         const actionList = req.body;
         for (let index = 0; index < actionList.length; index++) {
             const actions = actionList[index];
+            console.log(actions)
             if(actions?.UPDATE_EARNING) {
                 let { user: recipient, daoId, symbol, value, currency } = actions?.UPDATE_EARNING;
                 if(value && currency && !isNaN(value) && symbol) {
                     let user = await Member.findOne({ wallet: { $regex: new RegExp(`^${recipient || '0x'}$`, "i") } })
                     if(user) {
                         let earnings = user.earnings
-                        const symbol = _.find(earnings, e => e.symbol === symbol && String(e.daoId) === daoId)
-                        if(symbol) {
+                        const symbolExists = _.find(earnings, e => e.symbol === symbol && String(e.daoId) === daoId)
+                        console.log("symbolExists", earnings, symbolExists)
+                        if(symbolExists) {
                             earnings = earnings.map(e => {
-                                if(e.symbol === _.get(safeTx, 'token.symbol', 'SWEAT') && String(e.daoId) === daoId){
-                                    return { ...e._doc, value: +e.value + (amount / 10 ** _.get(safeTx, 'token.decimals', 18)) }
+                                console.log("symbolExists", e.symbol === symbol && String(e.daoId) === daoId)
+                                if(e.symbol === symbol && String(e.daoId) === daoId){
+                                    return { ...e._doc, value: +e.value + (+value) }
                                 }
                                 return e
                             }) 
                         } else {
                             earnings.push({
-                                symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
-                                value: amount / 10 ** _.get(safeTx, 'token.decimals', 18),
-                                currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT'),
+                                symbol: symbol,
+                                value: +value,
+                                currency: currency,
                                 daoId
                             })
                         }
