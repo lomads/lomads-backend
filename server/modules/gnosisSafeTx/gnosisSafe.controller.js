@@ -1,4 +1,5 @@
 const gnosisSafeTxModel = require("./gnosisSafeTx.model");
+const gnosisSafeTxSyncTrackerModel = require("./gnosisSafeTxSyncTracker.model");
 
 const get = async (req, res) => {
     try {
@@ -91,7 +92,7 @@ const confirmOffChainTxn = async (req, res) => {
 
 const postExecution = async (req, res) => {
     try {
-        
+
     }
     catch (e) {
         console.error(e)
@@ -99,4 +100,14 @@ const postExecution = async (req, res) => {
     }
 }
 
-module.exports = { get, load, create, update, updateTxLabel, confirmOffChainTxn, postExecution };
+const syncSafe = async (req, res) => {
+    const { safes } = req.body;
+    try {
+        await gnosisSafeTxSyncTrackerModel.findOneAndUpdate({ safeAddress: { $in: safes } }, { $set: { lastSync: null } })
+        return res.status(200).json({ message: "Sync triggered. Safe will sync in few seconds.. " })
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+module.exports = { syncSafe, get, load, create, update, updateTxLabel, confirmOffChainTxn, postExecution };
