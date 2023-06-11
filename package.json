@@ -79,7 +79,7 @@
     "moment": "^2.29.4",
     "mongoose": "^5.9.1",
     "morgan": "^1.10.0",
-    "nanoid": "^4.0.1",
+    "nanoid": "^4.0.2",
     "nft.storage": "^7.0.3",
     "node-cron": "^3.0.2",
     "node-fetch": "2",
