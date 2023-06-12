@@ -249,7 +249,7 @@ const storeGithubIssues = async (req, res) => {
             await DAO.findOneAndUpdate(
                 { _id: daoId },
                 {
-                    dummyTaskFlag : false,
+                    dummyTaskFlag: false,
                     $addToSet: { tasks: { $each: arr } },
                 }
             )
@@ -734,7 +734,7 @@ const editTask = async (req, res) => {
     const {
         name,
         description,
-        projectId,
+        project,
         discussionChannel,
         deadline,
         submissionLink,
@@ -758,7 +758,9 @@ const editTask = async (req, res) => {
 
         //check if projectId has changed
         let prevProjectId = task.project;
+        let projectId = project;
         if (projectId && prevProjectId && prevProjectId.toString() !== projectId) {
+            console.log("ProjectId has changed")
             // add task in new project
             let projectNew = await Project.findOne({ _id: projectId });
             if (projectNew) {

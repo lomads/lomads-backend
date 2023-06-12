@@ -40,7 +40,7 @@ const load = async (req, res) => {
 const loadSBTDao = async (req, res) => {
     const { _id } = req.user;
     try {
-        const dao = await DAO.find({ deletedAt: null, sbt: { $ne: null }, 'members': { $elemMatch: { role: "role1", member: ObjectId(_id) }}  }).populate({ path: 'sbt members.member', populate: { path: 'owners members members.member metadata' } }).exec()
+        const dao = await DAO.find({ deletedAt: null, sbt: { $ne: null }, 'members': { $elemMatch: { role: "role1", member: ObjectId(_id) } } }).populate({ path: 'sbt members.member', populate: { path: 'owners members members.member metadata' } }).exec()
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -135,46 +135,46 @@ const create = async (req, res, next) => {
             ],
             milestones: [
                 {
-                    amount : 10,
-                    complete : false,
-                    deadline : moment().add(10, 'days').format('YYYY-MM-DD'),
-                    deliverables : "Requirements Gathering",
-                    name : "Requirements Gathering",
+                    amount: 10,
+                    complete: false,
+                    deadline: moment().add(10, 'days').format('YYYY-MM-DD'),
+                    deliverables: "Requirements Gathering",
+                    name: "Requirements Gathering",
                 },
                 {
-                    amount : 25,
-                    complete : false,
-                    deadline : moment().add(11, 'days').format('YYYY-MM-DD'),
-                    deliverables : "Design + User Feedback",
-                    name : "Design + User Feedback",
+                    amount: 25,
+                    complete: false,
+                    deadline: moment().add(11, 'days').format('YYYY-MM-DD'),
+                    deliverables: "Design + User Feedback",
+                    name: "Design + User Feedback",
                 },
                 {
-                    amount : 45,
-                    complete : false,
-                    deadline : moment().add(12, 'days').format('YYYY-MM-DD'),
-                    deliverables : "Development Complete",
-                    name : "Development Complete",
+                    amount: 45,
+                    complete: false,
+                    deadline: moment().add(12, 'days').format('YYYY-MM-DD'),
+                    deliverables: "Development Complete",
+                    name: "Development Complete",
                 },
                 {
-                    amount : 10,
-                    complete : false,
-                    deadline : moment().add(13, 'days').format('YYYY-MM-DD'),
-                    deliverables : "Quality Assurance Testing ",
-                    name : "Quality Assurance Testing ",
+                    amount: 10,
+                    complete: false,
+                    deadline: moment().add(13, 'days').format('YYYY-MM-DD'),
+                    deliverables: "Quality Assurance Testing ",
+                    name: "Quality Assurance Testing ",
                 },
                 {
-                    amount : 10,
-                    complete : false,
-                    deadline : moment().add(14, 'days').format('YYYY-MM-DD'),
-                    deliverables : "Deployment",
-                    name : "Deployment",
+                    amount: 10,
+                    complete: false,
+                    deadline: moment().add(14, 'days').format('YYYY-MM-DD'),
+                    deliverables: "Deployment",
+                    name: "Deployment",
                 },
             ],
             compensation: {
-                amount:  "100",
-                currency : "SWEAT",
-                symbol : "SWEAT",
-                tokenAddress : "SWEAT"
+                amount: "100",
+                currency: "SWEAT",
+                symbol: "SWEAT",
+                tokenAddress: "SWEAT"
             },
             kra: kraOb,
             creator: wallet,
@@ -194,7 +194,7 @@ const create = async (req, res, next) => {
             compensation: {
                 amount: "1",
                 currency: "SWEAT",
-                symbol : "SWEAT"
+                symbol: "SWEAT"
             },
             project: project._id,
             discussionChannel: 'https://goerlifaucet.com/',
@@ -217,7 +217,7 @@ const create = async (req, res, next) => {
             compensation: {
                 amount: "1",
                 currency: "SWEAT",
-                symbol : "SWEAT"
+                symbol: "SWEAT"
             },
             project: project._id,
             discussionChannel: '',
@@ -366,8 +366,8 @@ const addDaoMemberList = async (req, res) => {
 
         for (let i = 0; i < memberList.length; i++) {
             let user = memberList[i];
-            const exists =  _.find(dao?.members, member => toChecksumAddress(member.member.wallet) === toChecksumAddress(user.address))
-            if(!exists) {
+            const exists = _.find(dao?.members, member => toChecksumAddress(member.member.wallet) === toChecksumAddress(user.address))
+            if (!exists) {
                 const filter = { wallet: { $regex: new RegExp(`^${user.address}$`, "i") } }
                 let m = await Member.findOne(filter);
                 if (!m) {
@@ -694,7 +694,7 @@ const attachSafe = async (req, res) => {
 
     try {
         const dao = await DAO.findOne({ url })
-        if(!dao)
+        if (!dao)
             return res.status(404).json({ message: 'DAO not found' });
 
         let mMembers = []
@@ -726,16 +726,16 @@ const attachSafe = async (req, res) => {
         })
 
         await DAO.findOneAndUpdate(
-            { url }, 
-            { 
+            { url },
+            {
                 ...(!dao?.safe ? { safe: newSafe?._id } : {}),
                 $addToSet: { safes: newSafe?._id },
-                members: mem 
+                members: mem
             })
 
         return res.status(200).json({ message: 'Success' });
 
-    } catch(e) {
+    } catch (e) {
         console.log(e)
         return res.status(500).json({ message: 'Something went wrong' });
     }
