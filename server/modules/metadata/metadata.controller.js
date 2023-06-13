@@ -8,6 +8,7 @@ const ObjectId = require('mongodb').ObjectID;
 const addMetaData = async (req, res) => {
     const { _id } = req.user;
     let { contractAddress } = req.params;
+    const { link = null } = req.query
     const { id, description, name, image, attributes, daoUrl } = req.body;
 
     if(!contractAddress)
@@ -15,29 +16,39 @@ const addMetaData = async (req, res) => {
 
     try {
         let c = await Contract.findOne({ address: contractAddress });
-        let metaData = new Metadata({
-            id,
-            description,
-            name,
-            image,
-            attributes,
-            contract: c._id
-        })
-        metaData = await metaData.save();
-        // c.metadata.push(metaData);
-        // c = await c.save();
 
-        await Contract.findOneAndUpdate({ address: contractAddress }, 
-            { $addToSet : { metadata: ObjectId(metaData._id) } }
-        )
+        let metadata = await Metadata.findOne({ id, contract: c._id })
 
-        await Member.findOneAndUpdate(
-            { _id },             
-            { $addToSet: { sbtTokens: ObjectId(c._id), sbtMetaData: ObjectId(metaData._id) } }
-        )
+        if(!metadata) {
+            metaData = new Metadata({
+                id,
+                description,
+                name,
+                image,
+                attributes,
+                contract: c._id
+            })
+            metaData = await metaData.save();
+        } else {
+            metadata.description = description;
+            metadata.name = name;
+            metadata.image = image;
+            metadata.attributes = attributes;
+            metaData = await metaData.save();
+        }
+
+        if(link) {
+            await Contract.findOneAndUpdate({ address: contractAddress }, 
+                { $addToSet : { metadata: ObjectId(metaData._id) } }
+            )
+            await Member.findOneAndUpdate(
+                { _id },             
+                { $addToSet: { sbtTokens: ObjectId(c._id), sbtMetaData: ObjectId(metaData._id) } }
+            )
+        }
 
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
-        return res.status(200).json(d);
+        return res.status(200).json({ message: "success" });
     }
     catch (e) {
         console.error(e)

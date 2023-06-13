@@ -1537,23 +1537,6 @@ const updateSafe = async (req, res) => {
         // console.log(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
         // gnosisSafeTxSyncTrackerModel.create(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
 
-       // move labels
-        const txlabels = await TxlabelModel.find({})
-
-        for (let index = 0; index < txlabels.length; index++) {
-            const element = txlabels[index];
-            const gtx = await GnosisSafeTxModel.findOne({ 'safeAddress': element.safeAddress, $or: [{ 'rawTx.safeTxHash' : element.safeTxHash }, { 'rawTx.transactionHash' : element.safeTxHash }] })
-            if(gtx && element.recipient && element.recipient.indexOf('...') === -1) {
-                console.log(element)
-                const resp = await GnosisSafeTxModel.findOneAndUpdate({ _id: gtx._id }, {
-                    $set: {
-                        [`metadata.${element.recipient}`]: element
-                    }
-                })
-                console.log(resp)
-            }
-        }
-
         // ofchain to safe tx list
         // const offChain = await offchainModel.find({})
         // let txns = []
@@ -1563,7 +1546,22 @@ const updateSafe = async (req, res) => {
         // }
         // const gtx = await GnosisSafeTxModel.create(txns)
 
+       // move labels
+    //    const txlabels = await TxlabelModel.find({})
 
+    //    for (let index = 0; index < txlabels.length; index++) {
+    //        const element = txlabels[index];
+    //        const gtx = await GnosisSafeTxModel.findOne({ 'safeAddress': element.safeAddress, $or: [{ 'rawTx.safeTxHash' : element.safeTxHash }, { 'rawTx.transactionHash' : element.safeTxHash }] })
+    //        if(gtx && element.recipient && element.recipient.indexOf('...') === -1) {
+    //            console.log(element)
+    //            const resp = await GnosisSafeTxModel.findOneAndUpdate({ _id: gtx._id }, {
+    //                $set: {
+    //                    [`metadata.${element.recipient}`]: element
+    //                }
+    //            })
+    //            console.log(resp)
+    //        }
+    //    }
 
         return res.status(200).json({ message: "Success" })
     } catch (e) {
