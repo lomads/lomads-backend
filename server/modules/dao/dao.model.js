@@ -12,13 +12,13 @@ const DAOSchema = new mongoose.Schema({
     default: 5,
     required: true
   },
-  dummyTaskFlag : {
-    type:Boolean,
-    default:false
+  dummyTaskFlag: {
+    type: Boolean,
+    default: false
   },
-  dummyProjectFlag : {
-    type:Boolean,
-    default:false
+  dummyProjectFlag: {
+    type: Boolean,
+    default: false
   },
   contractAddress: {
     type: String,
@@ -98,7 +98,11 @@ const DAOSchema = new mongoose.Schema({
     joined: { type: Date, default: Date.now },
     role: { type: String },
     discordId: { type: String },
-    discordRoles: { type: Object }
+    discordRoles: { type: Object },
+    deletedAt: {
+      type: Date,
+      default: null
+    }
   }],
   projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
@@ -110,29 +114,29 @@ const DAOSchema = new mongoose.Schema({
     type: Array,
     default: [
       {
-        "label" : "IT Services",
-        "value" : "IT Services",
-        "color" : "#B12F15"
+        "label": "IT Services",
+        "value": "IT Services",
+        "color": "#B12F15"
       },
       {
-        "label" : "Marketing",
-        "value" : "Marketing",
-        "color" : "#5D00FF"
+        "label": "Marketing",
+        "value": "Marketing",
+        "color": "#5D00FF"
       },
       {
-        "label" : "UI Design",
-        "value" : "UI Design",
-        "color" : "#1A15B1"
+        "label": "UI Design",
+        "value": "UI Design",
+        "color": "#1A15B1"
       },
       {
-        "label" : "Management",
-        "value" : "Management",
-        "color" : "#13C299"
+        "label": "Management",
+        "value": "Management",
+        "color": "#13C299"
       },
       {
-        "label" : "Android Dev",
-        "value" : "Android Dev",
-        "color" : "#F73109"
+        "label": "Android Dev",
+        "value": "Android Dev",
+        "color": "#F73109"
       },
     ],
   },
@@ -172,7 +176,7 @@ const DAOSchema = new mongoose.Schema({
 DAOSchema.method({
 });
 
-DAOSchema.pre('save', function(next) {
+DAOSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
