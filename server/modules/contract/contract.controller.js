@@ -158,7 +158,7 @@ const validateReferalCode = async (req, res) => {
     const { code } = req.query;
     try {
         let contract = await Contract.findOne({ address: contractAddress });
-        const discountCode =  _.find(contract?.discountCodes, d => d.code === code)
+        const discountCode =  _.find(contract?.discountCodes, d => d.code.toLowerCase() === code.toLowerCase())
         if(discountCode){
             return res.status(200).json(discountCode);
         } else {

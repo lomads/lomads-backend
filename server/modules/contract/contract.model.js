@@ -33,7 +33,15 @@ const ContractSchema = new mongoose.Schema({
     paymentLink: 'https://buy.onramper.com',
     provider: 'on-ramper'
   } 
-},
+  },
+  mintPageConfig: { type: mongoose.Schema.Types.Object, 
+    default: {
+      metamask: true,
+      overrideDisplayPrice: false,
+      mintSuccessMessage: null,
+      discordLink: null
+    } 
+    },
   createdAt: {
     type: Date,
     default: Date.now

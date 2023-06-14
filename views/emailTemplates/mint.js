@@ -133,45 +133,6 @@ module.exports = (data) => `<!DOCTYPE html>
 <div align="center" style="font-family:'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;text-align:center;">
 <div class="our-class" style="background-color: #FFF; margin: 4px;">
     <img style="width: 300px; height: 300px;" src="${data?.image}"/>
-    <table align="center" border="0" cellpadding="0" cellspacing="0" class="row-content stack" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #000000; border-radius: 0; padding-bottom: 16px; width: 300px;" width="300">
-        <tbody>
-            <tr>
-                <table style="width:100%">
-                    <tbody>
-                        <tr>
-                            <td style="min-width:100px;color: rgba(27, 43, 65, 0.5); font-size: 14px; text-align:left; padding-left: 16px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">View on</td>
-                            <td style="width:100%;vertical-align: center;">
-                                <div style="border-bottom:1px dashed #EA6447"></div>
-                            </td>
-                            <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;"><a style="color: #EA6447; text-decoration: none; margin-right: 16px;" target="_blank" href="${data?.lomadsLink}">Lomads</a></td>
-                        </tr>  
-                    <tbody>  
-                </table>
-                <table style="width:100%">
-                    <tbody>
-                        <tr>
-                            <td style="min-width:100px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;"></td>
-                            <td style="width:100%;vertical-align: center;">
-                                <div style="border-bottom:1px dashed #EA6447"></div>
-                            </td>
-                            <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;"><a style="color: #EA6447; text-decoration: none; margin-right: 16px;" target="_blank" href="${data?.openSea}">Opensea</a></td>
-                        </tr>  
-                    <tbody>  
-                </table>
-                <table style="width:100%">
-                    <tbody>
-                        <tr>
-                            <td style="min-width:100px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;"></td>
-                            <td style="width:100%;vertical-align: center;">
-                                <div style="border-bottom:1px dashed #EA6447"></div>
-                            </td>
-                            <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;"><a style="color: #EA6447; text-decoration: none; margin-right: 16px;" target="_blank" href="${data?.link}">${ data?.chain?.toLowerCase() === 'polygon' ? 'Polygonscan' : 'Etherscan' }</a></td>
-                        </tr>  
-                    <tbody>  
-                </table>
-            </tr>
-        <tbody>
-    </table>
 </div>
 </div>
 </td>
@@ -202,13 +163,12 @@ module.exports = (data) => `<!DOCTYPE html>
 </td>
 </tr>
 </table>
-<div class="spacer_block block-4" style="height:20px;line-height:20px;font-size:1px;"> </div>
 <table border="0" cellpadding="0" cellspacing="0" class="text_block block-5" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;" width="100%">
 <tr>
 <td class="pad" style="padding-bottom:10px;padding-left:35px;padding-right:10px;">
 <div style="font-family: sans-serif">
 <div class="" style="font-size: 12px; font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; mso-line-height-alt: 24px; color: #b12f15; line-height: 2;">
-<p style="margin: 0; font-size: 14px; mso-line-height-alt: 76px;"><span style="font-size:38px;"><strong><span style="">${ data?.sbtName }</span></strong></span></p>
+<p style="margin: 0; font-size: 14px; mso-line-height-alt: 76px;"><span style="font-size:38px;"><strong><span style="font-size: 24px;">${ data?.sbtName }</span></strong></span></p>
 </div>
 </div>
 </td>
@@ -226,7 +186,7 @@ module.exports = (data) => `<!DOCTYPE html>
 <td class="pad" style="vertical-align: middle; color: #000000; text-align: center; font-family: inherit; font-weight: 400; font-size: 14px;">
 <table cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;" width="100%">
 <tr>
-<td class="alignment" style="vertical-align: middle; text-align: center;"><!--[if vml]><table align="left" cellpadding="0" cellspacing="0" role="presentation" style="display:inline-block;padding-left:0px;padding-right:0px;mso-table-lspace: 0pt;mso-table-rspace: 0pt;"><![endif]-->
+<td class="alignment" style="vertical-align: middle; text-align: left;"><!--[if vml]><table align="left" cellpadding="0" cellspacing="0" role="presentation" style="display:inline-block;padding-left:0px;padding-right:0px;mso-table-lspace: 0pt;mso-table-rspace: 0pt;"><![endif]-->
 <!--[if !vml]><!-->
 <table cellpadding="0" cellspacing="0" class="icons-inner" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block; margin-right: 0px; padding-left: 0px; padding-right: 0px;"><!--<![endif]-->
 <tr>
@@ -256,16 +216,6 @@ module.exports = (data) => `<!DOCTYPE html>
 </td>
 </tr>
 </table>
-<table border="0" cellpadding="0" cellspacing="0" class="paragraph_block block-7" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;" width="100%">
-<tr>
-<td class="pad" style="padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:35px;">
-<div style="color:#1b2b41;font-size:24px;font-family:'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-weight:400;line-height:120%;text-align:left;direction:ltr;letter-spacing:0px;mso-line-height-alt:28.799999999999997px;">
-<p style="margin: 0;">Congratulations on minting your pass token.</p>
-</div>
-</td>
-</tr>
-</table>
-<div class="spacer_block block-8" style="height:20px;line-height:20px;font-size:1px;"> </div>
 <table border="0" cellpadding="0" cellspacing="0" class="html_block block-9" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;" width="100%">
 <tr>
 <td class="pad">
@@ -276,52 +226,45 @@ module.exports = (data) => `<!DOCTYPE html>
             <table style="width:100%">
                 <tbody>
                     <tr>
-                        <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">Contract</td>
+                        <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">See your pass here</td>
                         <td style="width:100%;vertical-align: center;">
                             <div style="border-bottom:1px dashed #EA6447"></div>
                         </td>
-                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">${ data?.contractAddress }
-                        <span>
-                            <a href="${data?.link}">
-                                <img style=" margin-left:6px; width:14px; height: 14px;" src="${data?.chainLogo}" />
-                            </a>
-                        </span></td>
+                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">
+                            <a href="${data?.openSea}">OPENSEA</a>
+                        </td>
                     </tr>  
                 <tbody>  
             </table>
-            <table style="width:100%">
+            ${ data?.discord && `<table style="width:100%">
                 <tbody>
                     <tr>
-                        <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">Token Standard</td>
+                        <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">Join our community</td>
                         <td style="width:100%;vertical-align: center;">
                             <div style="border-bottom:1px dashed #EA6447"></div>
                         </td>
-                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">ERC721</td>
+                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">
+                        <a href="` + data?.discord +`">Discord</a>
+                        </td>
                     </tr>  
                 <tbody>  
-            </table>
+            </table>` }
             <table style="width:100%">
-                <tbody>
-                    <tr>
-                        <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">Token Id</td>
-                        <td style="width:100%;vertical-align: center;">
-                            <div style="border-bottom:1px dashed #EA6447"></div>
-                        </td>
-                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">${ data?.tokenId }</td>
-                    </tr>  
-                <tbody>  
-            </table>
-            <table style="width:100%">
-                <tbody>
-                    <tr>
-                        <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">Chain</td>
-                        <td style="width:100%;vertical-align: center;">
-                            <div style="border-bottom:1px dashed #EA6447"></div>
-                        </td>
-                        <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">${ data?.chain }</td>
-                    </tr>  
-                <tbody>  
-            </table>
+            <tbody>
+                <tr>
+                    <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">Contract</td>
+                    <td style="width:100%;vertical-align: center;">
+                        <div style="border-bottom:1px dashed #EA6447"></div>
+                    </td>
+                    <td style="color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;min-width:150px; text-align:right;vertical-align: center;">${ data?.contractAddress }
+                    <span>
+                        <a href="${data?.link}">
+                            <img style=" margin-left:6px; width:14px; height: 14px;" src="${data?.chainLogo}" />
+                        </a>
+                    </span></td>
+                </tr>  
+            <tbody>  
+        </table>
         </tr>
     <tbody>
 </table>
@@ -330,17 +273,7 @@ module.exports = (data) => `<!DOCTYPE html>
 </td>
 </tr>
 </table>
-<table border="0" cellpadding="0" cellspacing="0" class="html_block block-10" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;" width="100%">
-<tr>
-<td class="pad">
-<div align="center" style="font-family:'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;text-align:center;"><div style="margin:0 32px;display:flex;flex-direction:row;justify-content:flex-end">
-    ${ data?.redirectUrl ?
-        '<a href="'+ data?.redirectUrl +'" style="font-size:12px; font-weight:400; color:rgba(27, 43, 65, 0.5);">'+ data?.redirectUrl +'</a>' : ''
-    }
-</div></div>
-</td>
-</tr>
-</table>
+
 </td>
 </tr>
 </tbody>
