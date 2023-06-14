@@ -425,7 +425,8 @@ const manageDaoMember = async (req, res) => {
             // if included in delete array
             if (deleteList.includes(user.member.toString())) {
                 console.log(user.member, " to be deleted")
-                // members.splice(i, 1);
+                user.deletedAt = Date.now();
+                members.push(user);
             }
 
             // if included in update array
