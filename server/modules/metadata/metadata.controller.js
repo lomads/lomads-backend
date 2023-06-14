@@ -20,7 +20,7 @@ const addMetaData = async (req, res) => {
         let metadata = await Metadata.findOne({ id, contract: c._id })
 
         if(!metadata) {
-            metaData = new Metadata({
+            metadata = new Metadata({
                 id,
                 description,
                 name,
@@ -28,22 +28,22 @@ const addMetaData = async (req, res) => {
                 attributes,
                 contract: c._id
             })
-            metaData = await metaData.save();
+            metadata = await metadata.save();
         } else {
             metadata.description = description;
             metadata.name = name;
             metadata.image = image;
             metadata.attributes = attributes;
-            metaData = await metaData.save();
+            metadata = await metadata.save();
         }
 
         if(link) {
             await Contract.findOneAndUpdate({ address: contractAddress }, 
-                { $addToSet : { metadata: ObjectId(metaData._id) } }
+                { $addToSet : { metadata: ObjectId(metadata._id) } }
             )
             await Member.findOneAndUpdate(
                 { _id },             
-                { $addToSet: { sbtTokens: ObjectId(c._id), sbtMetaData: ObjectId(metaData._id) } }
+                { $addToSet: { sbtTokens: ObjectId(c._id), sbtMetaData: ObjectId(metadata._id) } }
             )
         }
 
