@@ -40,9 +40,9 @@ const create = async (req, res) => {
 }
 
 const update = async (req, res) => {
-    const { safeAddress, rawTx } = req.body
+    const { safeAddress, rawTx, offChainTxHash = null } = req.body
     try {
-        const txn = await gnosisSafeTxModel.findOneAndUpdate({ safeAddress, 'rawTx.safeTxHash': rawTx.safeTxHash }, { $set: { rawTx } })
+        const txn = await gnosisSafeTxModel.findOneAndUpdate({ safeAddress, 'rawTx.safeTxHash': offChainTxHash ? offChainTxHash : rawTx.safeTxHash }, { $set: { rawTx } })
         const txnResponse = await gnosisSafeTxModel.findOne({ safeAddress, 'rawTx.safeTxHash': rawTx.safeTxHash })
         return res.status(200).json(txnResponse)
     } catch (e) {
