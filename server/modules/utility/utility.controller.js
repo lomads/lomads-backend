@@ -272,20 +272,21 @@ const getIssues = async (req, res) => {
                 }
 
                 let project = new Project({
-                    daoId,
-                    provider: 'Github',
-                    name: repoName[1],
-                    description: '',
-                    members: [_id],
-                    tasks: [],
-                    links: [],
-                    milestones: [],
-                    compensation: null,
-                    kra: kraOb,
-                    creator: wallet,
-                    inviteType: 'Open',
-                    validRoles: []
-                })
+                  daoId,
+                  provider: "Github",
+                  name: repoName[1],
+                  description: "",
+                  descrpimage: "",
+                  members: [_id],
+                  tasks: [],
+                  links: [],
+                  milestones: [],
+                  compensation: null,
+                  kra: kraOb,
+                  creator: wallet,
+                  inviteType: "Open",
+                  validRoles: [],
+                });
 
                 project = await project.save();
                 console.log("Project created...");
@@ -339,30 +340,34 @@ const getIssues = async (req, res) => {
                     }
                 }
                 projectCreated.emit(project);
-                var newArray = issues.filter(item => item.html_url.includes('issues'))
-                    .map((i) => (
-                        {
-                            daoId: daoId,
-                            provider: 'Github',
-                            metaData: {
-                                externalId: i.id.toString(),
-                                repoUrl: new URL(i.html_url).origin + '/' + new URL(i.html_url).pathname.split("/")[1] + '/' + new URL(i.html_url).pathname.split("/")[2]
-                            },
-                            name: i.title,
-                            description: i.body,
-                            creator: null,
-                            members: [],
-                            project: project._id,
-                            discussionChannel: i.html_url,
-                            deadline: null,
-                            submissionLink: i.html_url,
-                            compensation: null,
-                            reviewer: null,
-                            contributionType: 'open',
-                            createdAt: i.created_at,
-                            draftedAt: Date.now(),
-                        }
-                    ))
+                var newArray = issues
+                  .filter((item) => item.html_url.includes("issues"))
+                  .map((i) => ({
+                    daoId: daoId,
+                    provider: "Github",
+                    metaData: {
+                      externalId: i.id.toString(),
+                      repoUrl:
+                        new URL(i.html_url).origin +
+                        "/" +
+                        new URL(i.html_url).pathname.split("/")[1] +
+                        "/" +
+                        new URL(i.html_url).pathname.split("/")[2],
+                    },
+                    name: i.title,
+                    description: i.body,
+                    creator: null,
+                    members: [],
+                    project: project._id,
+                    discussionChannel: i.html_url,
+                    deadline: null,
+                    submissionLink: i.html_url,
+                    compensation: null,
+                    reviewer: null,
+                    contributionType: "open",
+                    createdAt: i.created_at,
+                    draftedAt: Date.now(),
+                  }));
                 return res.json({ data: newArray, message: 'success' });
             })
             .catch((e) => {
@@ -506,27 +511,32 @@ const issuesListener = async (req, res) => {
             // create task with daoId
 
             let task = new Task({
-                daoId: daoIds[i],
-                provider: 'Github',
-                metaData: {
-                    externalId: payload.issue.id.toString(),
-                    repoUrl: new URL(payload.issue.html_url).origin + '/' + new URL(payload.issue.html_url).pathname.split("/")[1] + '/' + new URL(payload.issue.html_url).pathname.split("/")[2]
-                },
-                name: payload.issue.title,
-                description: payload.issue.body,
-                creator: null,
-                members: [],
-                project: null,
-                discussionChannel: payload.issue.html_url,
-                deadline: null,
-                submissionLink: payload.issue.html_url,
-                compensation: null,
-                reviewer: null,
-                contributionType: 'open',
-                createdAt: payload.issue.created_at,
-                draftedAt: Date.now(),
-                updatedAt: Date.now()
-            })
+              daoId: daoIds[i],
+              provider: "Github",
+              metaData: {
+                externalId: payload.issue.id.toString(),
+                repoUrl:
+                  new URL(payload.issue.html_url).origin +
+                  "/" +
+                  new URL(payload.issue.html_url).pathname.split("/")[1] +
+                  "/" +
+                  new URL(payload.issue.html_url).pathname.split("/")[2],
+              },
+              name: payload.issue.title,
+              description: payload.issue.body,
+              creator: null,
+              members: [],
+              project: null,
+              discussionChannel: payload.issue.html_url,
+              deadline: null,
+              submissionLink: payload.issue.html_url,
+              compensation: null,
+              reviewer: null,
+              contributionType: "open",
+              createdAt: payload.issue.created_at,
+              draftedAt: Date.now(),
+              updatedAt: Date.now(),
+            });
 
             task = await task.save();
             if (task) {
@@ -837,29 +847,27 @@ const trelloListener = async (req, res) => {
                 const cards = await axios.get(`https://api.trello.com/1/boards/${payload.action.data.board.id}/cards?key=${config.trelloApiKey}&token=${creator.accessToken}`);
                 if (cards && cards.data && cards.data.length > 0) {
                     console.log("cards found.... : ", cards.data.length);
-                    var tasksArray = cards.data.map((i) => (
-                        {
-                            daoId: daoId,
-                            provider: 'Trello',
-                            metaData: {
-                                externalId: i.id.toString(),
-                                cardUrl: i.url
-                            },
-                            name: i.name,
-                            description: i.desc,
-                            creator: null,
-                            members: [],
-                            project: project._id,
-                            discussionChannel: i.url,
-                            deadline: null,
-                            submissionLink: i.url,
-                            compensation: null,
-                            reviewer: null,
-                            contributionType: 'open',
-                            createdAt: Date.now(),
-                            draftedAt: Date.now(),
-                        }
-                    ))
+                    var tasksArray = cards.data.map((i) => ({
+                      daoId: daoId,
+                      provider: "Trello",
+                      metaData: {
+                        externalId: i.id.toString(),
+                        cardUrl: i.url,
+                      },
+                      name: i.name,
+                      description: i.desc,
+                      creator: null,
+                      members: [],
+                      project: project._id,
+                      discussionChannel: i.url,
+                      deadline: null,
+                      submissionLink: i.url,
+                      compensation: null,
+                      reviewer: null,
+                      contributionType: "open",
+                      createdAt: Date.now(),
+                      draftedAt: Date.now(),
+                    }));
 
                     // store draft task and update dao
                     let arr = [];
@@ -1037,26 +1045,27 @@ const trelloListener = async (req, res) => {
 
             if (project) {
                 let task = new Task({
-                    daoId: daoId,
-                    provider: 'Trello',
-                    metaData: {
-                        externalId: payload.action.data.card.id.toString(),
-                        cardUrl: 'N/A'
-                    },
-                    name: payload.action.data.card.name,
-                    description: '',
-                    creator: null,
-                    members: [],
-                    project: project._id,
-                    discussionChannel: '',
-                    deadline: null,
-                    submissionLink: '',
-                    compensation: null,
-                    reviewer: null,
-                    contributionType: 'open',
-                    createdAt: Date.now(),
-                    draftedAt: Date.now(),
-                })
+                  daoId: daoId,
+                  provider: "Trello",
+                  metaData: {
+                    externalId: payload.action.data.card.id.toString(),
+                    cardUrl: "N/A",
+                  },
+                  name: payload.action.data.card.name,
+                  description: "",
+                  descrpimage: "",
+                  creator: null,
+                  members: [],
+                  project: project._id,
+                  discussionChannel: "",
+                  deadline: null,
+                  submissionLink: "",
+                  compensation: null,
+                  reviewer: null,
+                  contributionType: "open",
+                  createdAt: Date.now(),
+                  draftedAt: Date.now(),
+                });
 
                 task = await task.save();
 
@@ -1248,29 +1257,27 @@ const syncTrelloData = async (req, res) => {
                             console.log("Total Cards found...", cards.data.length);
                             cardsArray = [...cardsArray, ...cards.data];
 
-                            var tasksArray = cardsArray.map((i) => (
-                                {
-                                    daoId: daoId,
-                                    provider: 'Trello',
-                                    metaData: {
-                                        externalId: i.id.toString(),
-                                        cardUrl: i.url
-                                    },
-                                    name: i.name,
-                                    description: i.desc,
-                                    creator: null,
-                                    members: [],
-                                    project: project._id,
-                                    discussionChannel: i.url,
-                                    deadline: null,
-                                    submissionLink: i.url,
-                                    compensation: null,
-                                    reviewer: null,
-                                    contributionType: 'open',
-                                    createdAt: Date.now(),
-                                    draftedAt: Date.now(),
-                                }
-                            ))
+                            var tasksArray = cardsArray.map((i) => ({
+                              daoId: daoId,
+                              provider: "Trello",
+                              metaData: {
+                                externalId: i.id.toString(),
+                                cardUrl: i.url,
+                              },
+                              name: i.name,
+                              description: i.desc,
+                              creator: null,
+                              members: [],
+                              project: project._id,
+                              discussionChannel: i.url,
+                              deadline: null,
+                              submissionLink: i.url,
+                              compensation: null,
+                              reviewer: null,
+                              contributionType: "open",
+                              createdAt: Date.now(),
+                              draftedAt: Date.now(),
+                            }));
 
                             // store draft task and update dao
                             let arr = [];

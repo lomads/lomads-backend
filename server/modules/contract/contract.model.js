@@ -16,36 +16,41 @@ const ContractSchema = new mongoose.Schema({
   master: { type: String, default: null },
   address: { type: String },
   treasury: { type: String },
+  descrpimage: { type: String },
   mintPrice: { type: String },
   nonPayingMembers: [{ type: String }],
   discountCodes: [{ type: mongoose.Schema.Types.Object }],
-  mintPriceToken: { type: String, default: "0x0000000000000000000000000000000000000000" },
+  mintPriceToken: {
+    type: String,
+    default: "0x0000000000000000000000000000000000000000",
+  },
   version: { type: String, default: "1" },
   membersList: [{ type: mongoose.Schema.Types.Object }],
-  admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
-  metadata: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Metadata' }],
+  admin: { type: mongoose.Schema.Types.ObjectId, ref: "Member" },
+  metadata: [{ type: mongoose.Schema.Types.ObjectId, ref: "Metadata" }],
   contactDetail: { type: Array },
   redirectUrl: { type: String },
   gasless: { type: mongoose.Schema.Types.Boolean, default: false },
   gasConfig: { type: mongoose.Schema.Types.Object },
-  externalPaymentProvider: { type: mongoose.Schema.Types.Object, 
-  default: {
-    paymentLink: 'https://buy.onramper.com',
-    provider: 'on-ramper'
-  } 
-},
+  externalPaymentProvider: {
+    type: mongoose.Schema.Types.Object,
+    default: {
+      paymentLink: "https://buy.onramper.com",
+      provider: "on-ramper",
+    },
+  },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   deletedAt: {
     type: Date,
-    default: null
-  }
+    default: null,
+  },
 });
 
 /**

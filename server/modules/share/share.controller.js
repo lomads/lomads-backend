@@ -9,11 +9,15 @@ const handleProjectShare = async (req, res) => {
     const { daoId, projectId } = req.params;
     const dao = await DAO.findOne({ url: daoId })
     const project = await Project.findOne({ _id: ObjectId(projectId) })
-    res.render('share', { 
-        title: `${_.get(dao, 'name', '')} | ${_.get(project, 'name', '')}`,
-        description: `${_.get(project, 'description', '')}`,
-        baseUrl: config.baseUrl,
-        script: config.baseUrl.indexOf('app-dev') > -1 ? '/share/redirect.dev.js' : '/share/redirect.prod.js'
+    res.render("share", {
+      title: `${_.get(dao, "name", "")} | ${_.get(project, "name", "")}`,
+      description: `${_.get(project, "description", "")}`,
+      descrpimage: `${_.get(project, "descrpimage", "")}`,
+      baseUrl: config.baseUrl,
+      script:
+        config.baseUrl.indexOf("app-dev") > -1
+          ? "/share/redirect.dev.js"
+          : "/share/redirect.prod.js",
     });
 }
 
@@ -21,11 +25,15 @@ const handleTaskShare = async (req, res) => {
     const { daoId, taskId } = req.params;
     const dao = await DAO.findOne({ url: daoId })
     const task = await Task.findOne({ _id: ObjectId(taskId) })
-    res.render('share', { 
-        title: `${_.get(dao, 'name', '')} | ${_.get(task, 'name', '')}`,
-        description: `${_.get(task, 'description', '')}`,
-        baseUrl: config.baseUrl,
-        script: config.baseUrl.indexOf('app-dev') > -1 ? '/share/redirect.dev.js' : '/share/redirect.prod.js'
+    res.render("share", {
+      title: `${_.get(dao, "name", "")} | ${_.get(task, "name", "")}`,
+      description: `${_.get(task, "description", "")}`,
+      descrpimage: `${_.get(task, "descrpimage", "")}`,
+      baseUrl: config.baseUrl,
+      script:
+        config.baseUrl.indexOf("app-dev") > -1
+          ? "/share/redirect.dev.js"
+          : "/share/redirect.prod.js",
     });
 }
 

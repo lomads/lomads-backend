@@ -14,7 +14,10 @@ const getById = async (req, res) => {
     const { taskId } = req.params;
     try {
 
-        const task = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
+        const task = await Task.findOne({ _id: taskId }).populate({
+          path: "members.member project reviewer ",
+          populate: { path: "members" },
+        });
         return res.status(200).json(task)
     }
     catch (e) {
@@ -29,7 +32,7 @@ const create = async (req, res) => {
         daoId,
         provider,
         name,
-        description,
+        description,descrpimage,
         applicant,
         projectId,
         discussionChannel,
@@ -45,24 +48,27 @@ const create = async (req, res) => {
     try {
 
         let task = new Task({
-            daoId,
-            provider,
-            taskStatus: applicant ? 'assigned' : 'open',
-            name,
-            description,
-            members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
-            creator: _id,
-            project: projectId,
-            discussionChannel,
-            deadline,
-            submissionLink,
-            compensation,
-            reviewer,
-            contributionType,
-            isSingleContributor,
-            isFilterRoles,
-            validRoles,
-        })
+          daoId,
+          provider,
+          taskStatus: applicant ? "assigned" : "open",
+          name,
+          description,
+          descrpimage,
+          members: applicant
+            ? [{ member: applicant._id, status: "approved" }]
+            : [],
+          creator: _id,
+          project: projectId,
+          discussionChannel,
+          deadline,
+          submissionLink,
+          compensation,
+          reviewer,
+          contributionType,
+          isSingleContributor,
+          isFilterRoles,
+          validRoles,
+        });
 
         task = await task.save();
 
@@ -133,44 +139,48 @@ const create = async (req, res) => {
 const draftTask = async (req, res) => {
     const { _id, wallet } = req.user;
     const {
-        daoId,
-        provider,
-        name,
-        description,
-        applicant,
-        projectId,
-        discussionChannel,
-        deadline,
-        submissionLink,
-        compensation,
-        reviewer,
-        contributionType,
-        isSingleContributor,
-        isFilterRoles,
-        validRoles,
+      daoId,
+      provider,
+      name,
+      descrpimage,
+      description,
+      applicant,
+      projectId,
+      discussionChannel,
+      deadline,
+      submissionLink,
+      compensation,
+      reviewer,
+      contributionType,
+      isSingleContributor,
+      isFilterRoles,
+      validRoles,
     } = req.body;
     try {
 
         let task = new Task({
-            daoId,
-            provider,
-            taskStatus: applicant ? 'assigned' : 'open',
-            name,
-            description,
-            members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
-            creator: _id,
-            project: projectId,
-            discussionChannel,
-            deadline,
-            submissionLink,
-            compensation,
-            reviewer,
-            contributionType,
-            isSingleContributor,
-            isFilterRoles,
-            validRoles,
-            draftedAt: Date.now(),
-        })
+          daoId,
+          provider,
+          taskStatus: applicant ? "assigned" : "open",
+          name,
+          description,
+          descrpimage,
+          members: applicant
+            ? [{ member: applicant._id, status: "approved" }]
+            : [],
+          creator: _id,
+          project: projectId,
+          discussionChannel,
+          deadline,
+          submissionLink,
+          compensation,
+          reviewer,
+          contributionType,
+          isSingleContributor,
+          isFilterRoles,
+          validRoles,
+          draftedAt: Date.now(),
+        });
 
         task = await task.save();
 
@@ -732,19 +742,20 @@ const editTask = async (req, res) => {
     const { daoUrl } = req.query;
     const { taskId } = req.params;
     const {
-        name,
-        description,
-        projectId,
-        discussionChannel,
-        deadline,
-        submissionLink,
-        compensation,
-        contributionType,
-        isSingleContributor,
-        isFilterRoles,
-        validRoles,
-        members,
-        reviewer
+      name,
+      description,
+      projectId,
+      descrpimage,
+      discussionChannel,
+      deadline,
+      submissionLink,
+      compensation,
+      contributionType,
+      isSingleContributor,
+      isFilterRoles,
+      validRoles,
+      members,
+      reviewer,
     } = req.body;
 
     let taskStatus = contributionType === 'open' ? 'open' : 'assigned';
@@ -799,19 +810,20 @@ const editDraftTask = async (req, res) => {
     const { taskId } = req.params;
     console.log("Task id : ", taskId)
     const {
-        name,
-        description,
-        applicant,
-        projectId,
-        discussionChannel,
-        deadline,
-        submissionLink,
-        compensation,
-        reviewer,
-        contributionType,
-        isSingleContributor,
-        isFilterRoles,
-        validRoles,
+      name,
+      description,
+      applicant,
+      descrpimage,
+      projectId,
+      discussionChannel,
+      deadline,
+      submissionLink,
+      compensation,
+      reviewer,
+      contributionType,
+      isSingleContributor,
+      isFilterRoles,
+      validRoles,
     } = req.body;
     try {
         let task = await Task.findOne({ _id: taskId });
@@ -838,26 +850,38 @@ const editDraftTask = async (req, res) => {
             }
         }
         await Task.findOneAndUpdate(
-            { _id: taskId },
-            {
-                taskStatus: applicant?._id ? 'assigned' : 'open',
-                name,
-                description,
-                members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
-                project: projectId,
-                discussionChannel,
-                deadline,
-                submissionLink,
-                compensation,
-                reviewer,
-                contributionType,
-                isSingleContributor,
-                isFilterRoles,
-                validRoles,
-                updatedAt: Date.now(),
-                draftedAt: Date.now()
-            }
-        )
+          { _id: taskId },
+          {
+            taskStatus: applicant?._id ? "assigned" : "open",
+            name,
+            description,
+            descrpimage,
+            members: applicant?._id
+              ? [
+                  {
+                    member: applicant._id,
+                    status: "approved",
+                    appliedAt: Date.now(),
+                    note: "",
+                    rejectionNote: "",
+                    links: [],
+                  },
+                ]
+              : [],
+            project: projectId,
+            discussionChannel,
+            deadline,
+            submissionLink,
+            compensation,
+            reviewer,
+            contributionType,
+            isSingleContributor,
+            isFilterRoles,
+            validRoles,
+            updatedAt: Date.now(),
+            draftedAt: Date.now(),
+          }
+        );
         const p = await Project.findOne({ _id: prevProjectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } });
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
@@ -874,19 +898,20 @@ const convertDraftTask = async (req, res) => {
     const { taskId } = req.params;
     const { _id, wallet } = req.user;
     const {
-        name,
-        description,
-        applicant,
-        projectId,
-        discussionChannel,
-        deadline,
-        submissionLink,
-        compensation,
-        reviewer,
-        contributionType,
-        isSingleContributor,
-        isFilterRoles,
-        validRoles,
+      name,
+      description,
+      descrpimage,
+      applicant,
+      projectId,
+      discussionChannel,
+      deadline,
+      submissionLink,
+      compensation,
+      reviewer,
+      contributionType,
+      isSingleContributor,
+      isFilterRoles,
+      validRoles,
     } = req.body;
     try {
         let task = await Task.findOne({ _id: taskId });
@@ -913,27 +938,39 @@ const convertDraftTask = async (req, res) => {
             }
         }
         await Task.findOneAndUpdate(
-            { _id: taskId },
-            {
-                taskStatus: applicant?._id ? 'assigned' : 'open',
-                name,
-                description,
-                members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
-                project: projectId,
-                discussionChannel,
-                deadline,
-                submissionLink,
-                compensation,
-                reviewer,
-                creator: _id,
-                contributionType,
-                isSingleContributor,
-                isFilterRoles,
-                validRoles,
-                updatedAt: Date.now(),
-                draftedAt: null
-            }
-        )
+          { _id: taskId },
+          {
+            taskStatus: applicant?._id ? "assigned" : "open",
+            name,
+            description,
+            descrpimage,
+            members: applicant?._id
+              ? [
+                  {
+                    member: applicant._id,
+                    status: "approved",
+                    appliedAt: Date.now(),
+                    note: "",
+                    rejectionNote: "",
+                    links: [],
+                  },
+                ]
+              : [],
+            project: projectId,
+            discussionChannel,
+            deadline,
+            submissionLink,
+            compensation,
+            reviewer,
+            creator: _id,
+            contributionType,
+            isSingleContributor,
+            isFilterRoles,
+            validRoles,
+            updatedAt: Date.now(),
+            draftedAt: null,
+          }
+        );
         const p = await Project.findOne({ _id: prevProjectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } });
         const t = await Task.findOne({ _id: taskId }).populate({ path: 'members.member project reviewer', populate: { path: 'members' } });
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })

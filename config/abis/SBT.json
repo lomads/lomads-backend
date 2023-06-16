@@ -12,6 +12,11 @@
           "type": "string"
         },
         {
+          "internalType": "string",
+          "name": "_descrpimage",
+          "type": "string"
+        },
+        {
           "internalType": "address",
           "name": "owner_",
           "type": "address"

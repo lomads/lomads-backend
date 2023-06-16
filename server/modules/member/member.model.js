@@ -10,55 +10,57 @@ const MemberSchema = new mongoose.Schema({
   platformRole: {
     type: String,
     required: false,
-    default: 'member'
+    default: "member",
   },
   name: {
     type: String,
     required: false,
-    default: ''
+    default: "",
   },
   image: {
     type: String,
     required: false,
-    default: null
+    default: null,
   },
   wallet: {
     type: String,
     unique: true,
-    required: true
+    required: true,
   },
   onboardingViewCount: {
     type: [{ type: mongoose.Schema.Types.ObjectId }],
-    default: []
+    default: [],
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   deletedAt: {
     type: Date,
-    default: null
+    default: null,
   },
-  sbtTokens: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contract' }],
-  sbtMetaData: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Metadata' }],
+  sbtTokens: [{ type: mongoose.Schema.Types.ObjectId, ref: "Contract" }],
+  sbtMetaData: [{ type: mongoose.Schema.Types.ObjectId, ref: "Metadata" }],
   notionUserId: {
     type: String,
     required: false,
-    default: null
+    default: null,
   },
   earnings: {
-    type: [{
-      symbol: String,
-      currency: String,
-      value: Number,
-      daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
-    }],
-    default: []
-  }
+    type: [
+      {
+        symbol: String, 
+        currency: String,
+        value: Number,
+        daoId: { type: mongoose.Schema.Types.ObjectId, ref: "DAO" },
+      },
+    ],
+    default: [],
+  },
 });
 
 /**

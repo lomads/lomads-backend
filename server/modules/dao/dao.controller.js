@@ -86,18 +86,18 @@ const create = async (req, res, next) => {
         let daoURL = url;
 
         let dao = new DAO({
-            contractAddress,
-            url: daoURL,
-            name,
-            description,
-            image,
-            members: mem,
-            safe: newSafe?._id,
-            sbt: sbt,
-            chainId,
-            dummyProjectFlag: true,
-            dummyTaskFlag: true,
-        })
+          contractAddress,
+          url: daoURL,
+          name,
+          description,
+          image,
+          members: mem,
+          safe: newSafe?._id,
+          sbt: sbt,
+          chainId,
+          dummyProjectFlag: true,
+          dummyTaskFlag: true,
+        });
 
         dao = await dao.save();
 
@@ -131,40 +131,42 @@ const create = async (req, res, next) => {
         project = await project.save();
 
         let task1 = new Task({
-            daoId: dao._id,
-            isDummy: true,
-            name: 'Dummy Task 1',
-            description: '',
-            creator: _id,
-            members: [],
-            project: project._id,
-            discussionChannel: '',
-            deadline: null,
-            submissionLink: '',
-            compensation: null,
-            reviewer: _id,
-            contributionType: 'open',
-            createdAt: Date.now(),
-        })
+          daoId: dao._id,
+          isDummy: true,
+          name: "Dummy Task 1",
+          description: "",
+          descrpimage: "",
+          creator: _id,
+          members: [],
+          project: project._id,
+          discussionChannel: "",
+          deadline: null,
+          submissionLink: "",
+          compensation: null,
+          reviewer: _id,
+          contributionType: "open",
+          createdAt: Date.now(),
+        });
 
         task1 = await task1.save();
 
         let task2 = new Task({
-            daoId: dao._id,
-            isDummy: true,
-            name: 'Dummy Task 2',
-            description: '',
-            creator: _id,
-            members: [],
-            project: project._id,
-            discussionChannel: '',
-            deadline: null,
-            submissionLink: '',
-            compensation: null,
-            reviewer: _id,
-            contributionType: 'open',
-            createdAt: Date.now(),
-        })
+          daoId: dao._id,
+          isDummy: true,
+          name: "Dummy Task 2",
+          description: "",
+          descrpimage: "",
+          creator: _id,
+          members: [],
+          project: project._id,
+          discussionChannel: "",
+          deadline: null,
+          submissionLink: "",
+          compensation: null,
+          reviewer: _id,
+          contributionType: "open",
+          createdAt: Date.now(),
+        });
 
         task2 = await task2.save();
 

@@ -155,11 +155,17 @@ const executedOnChain = async (req, res) => {
                         }) 
                     } else {
                         earnings.push({
-                            symbol: _.get(safeTx, 'token.symbol', 'SWEAT'),
-                            value: amount / 10 ** _.get(safeTx, 'token.decimals', 18),
-                            currency: _.get(safeTx, 'token.tokenAddress', 'SWEAT'),
-                            daoId
-                        })
+                          symbol: _.get(safeTx, "token.symbol", "SWEAT"),
+                          value:
+                            amount / 10 ** _.get(safeTx, "token.decimals", 18),
+                          currency: _.get(
+                            safeTx,
+                            "token.tokenAddress",
+                            "SWEAT"
+                          ),
+                         
+                          daoId,
+                        });
                     }
     
                     if(txl && txl.sweatConversion) { 
@@ -252,11 +258,16 @@ const executeOffChainTransaction = async (req, res) => {
                         }) 
                     } else {
                         earnings.push({
-                            symbol: _.get(offChainTx, 'token.symbol', 'SWEAT'),
-                            value: amount / 10 ** (+decimals),
-                            currency: _.get(offChainTx, 'token.tokenAddress', 'SWEAT'),
-                            daoId
-                        })
+                          symbol: _.get(offChainTx, "token.symbol", "SWEAT"),
+                          value: amount / 10 ** +decimals,
+                          currency: _.get(
+                            offChainTx,
+                            "token.tokenAddress",
+                            "SWEAT"
+                          ),
+
+                          daoId,
+                        });
                     }
                     console.log("earnings", earnings)
                     await Member.findByIdAndUpdate(

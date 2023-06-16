@@ -9,25 +9,28 @@ const APIError = require('@server/helpers/APIError');
 const MetadataSchema = new mongoose.Schema({
   id: { type: String },
   description: { type: String },
+  descrpimage: { type: String },
   name: { type: String },
   image: { type: String },
-  attributes: [{
-    trait_type: String,
-    value: mongoose.Schema.Types.Mixed
-  }],
-  contract: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
+  attributes: [
+    {
+      trait_type: String,
+      value: mongoose.Schema.Types.Mixed,
+    },
+  ],
+  contract: { type: mongoose.Schema.Types.ObjectId, ref: "Contract" },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   deletedAt: {
     type: Date,
-    default: null
-  }
+    default: null,
+  },
 });
 
 /**

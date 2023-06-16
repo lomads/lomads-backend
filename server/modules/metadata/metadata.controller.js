@@ -8,7 +8,8 @@ const ObjectId = require('mongodb').ObjectID;
 const addMetaData = async (req, res) => {
     const { _id } = req.user;
     let { contractAddress } = req.params;
-    const { id, description, name, image, attributes, daoUrl } = req.body;
+    const { id, description, name, image, attributes, daoUrl, descrpimage } =
+      req.body;
 
     if(!contractAddress)
         contractAddress = req?.body?.contract
@@ -17,7 +18,7 @@ const addMetaData = async (req, res) => {
         let c = await Contract.findOne({ address: contractAddress });
         let metaData = new Metadata({
             id,
-            description,
+            description,descrpimage,
             name,
             image,
             attributes,

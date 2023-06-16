@@ -10,25 +10,25 @@ const DAOSchema = new mongoose.Schema({
   chainId: {
     type: Number,
     default: 5,
-    required: true
+    required: true,
   },
-  dummyTaskFlag : {
-    type:Boolean,
-    default:false
+  dummyTaskFlag: {
+    type: Boolean,
+    default: false,
   },
-  dummyProjectFlag : {
-    type:Boolean,
-    default:false
+  dummyProjectFlag: {
+    type: Boolean,
+    default: false,
   },
   contractAddress: {
     type: String,
     default: null,
-    required: false
+    required: false,
   },
   url: {
     type: String,
     default: null,
-    required: false
+    required: false,
   },
   walkthrough: {
     type: Boolean,
@@ -36,17 +36,22 @@ const DAOSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: true
+    required: true,
+  },
+  descrpimage: {
+    type: String,
+    default: null,
+    required: false,
   },
   description: {
     type: String,
     default: null,
-    required: false
+    required: false,
   },
   image: {
     type: String,
     default: null,
-    required: false
+    required: false,
   },
   sweatPoints: {
     type: Boolean,
@@ -55,53 +60,55 @@ const DAOSchema = new mongoose.Schema({
   terminologies: {
     type: Object,
     default: {
-      "roles": {
-        "role1": {
-          "label": 'Admin',
-          "value": 'ADMIN',
-          "permissions": ["*"]
+      roles: {
+        role1: {
+          label: "Admin",
+          value: "ADMIN",
+          permissions: ["*"],
         },
-        "role2": {
-          "label": 'Core Contributor',
-          "value": 'CORE_CONTRIBUTOR',
-          "permissions": ["*"]
+        role2: {
+          label: "Core Contributor",
+          value: "CORE_CONTRIBUTOR",
+          permissions: ["*"],
         },
-        "role3": {
-          "label": 'Active Contributor',
-          "value": 'ACTIVE_CONTRIBUTOR',
-          "permissions": ["*"]
+        role3: {
+          label: "Active Contributor",
+          value: "ACTIVE_CONTRIBUTOR",
+          permissions: ["*"],
         },
-        "role4": {
-          "label": 'Contributor',
-          "value": 'CONTRIBUTOR',
-          "permissions": ["*"]
+        role4: {
+          label: "Contributor",
+          value: "CONTRIBUTOR",
+          permissions: ["*"],
         },
       },
-      "task": {
-        "label": "Task",
-        "labelPlural": "Tasks",
-        "value": "TASK"
+      task: {
+        label: "Task",
+        labelPlural: "Tasks",
+        value: "TASK",
       },
-      "workspace": {
-        "label": "Workspace",
-        "labelPlural": "Workspaces",
-        "value": "WORKSPACE"
+      workspace: {
+        label: "Workspace",
+        labelPlural: "Workspaces",
+        value: "WORKSPACE",
       },
-    }
+    },
   },
-  safe: { type: mongoose.Schema.Types.ObjectId, ref: 'Safe' },
-  safes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Safe' }],
-  sbt: { type: mongoose.Schema.Types.ObjectId, ref: 'Contract' },
-  members: [{
-    member: { type: mongoose.Schema.Types.ObjectId, ref: 'Member' },
-    creator: { type: mongoose.Schema.Types.Boolean, default: false },
-    joined: { type: Date, default: Date.now },
-    role: { type: String },
-    discordId: { type: String },
-    discordRoles: { type: Object }
-  }],
-  projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
-  tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
+  safe: { type: mongoose.Schema.Types.ObjectId, ref: "Safe" },
+  safes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Safe" }],
+  sbt: { type: mongoose.Schema.Types.ObjectId, ref: "Contract" },
+  members: [
+    {
+      member: { type: mongoose.Schema.Types.ObjectId, ref: "Member" },
+      creator: { type: mongoose.Schema.Types.Boolean, default: false },
+      joined: { type: Date, default: Date.now },
+      role: { type: String },
+      discordId: { type: String },
+      discordRoles: { type: Object },
+    },
+  ],
+  projects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
+  tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
   links: {
     type: Array,
     default: [],
@@ -110,53 +117,63 @@ const DAOSchema = new mongoose.Schema({
     type: Array,
     default: [
       {
-        "label" : "IT Services",
-        "value" : "IT Services",
-        "color" : "#B12F15"
+        label: "IT Services",
+        value: "IT Services",
+        color: "#B12F15",
       },
       {
-        "label" : "Marketing",
-        "value" : "Marketing",
-        "color" : "#5D00FF"
+        label: "Marketing",
+        value: "Marketing",
+        color: "#5D00FF",
       },
       {
-        "label" : "UI Design",
-        "value" : "UI Design",
-        "color" : "#1A15B1"
+        label: "UI Design",
+        value: "UI Design",
+        color: "#1A15B1",
       },
       {
-        "label" : "Management",
-        "value" : "Management",
-        "color" : "#13C299"
+        label: "Management",
+        value: "Management",
+        color: "#13C299",
       },
       {
-        "label" : "Android Dev",
-        "value" : "Android Dev",
-        "color" : "#F73109"
+        label: "Android Dev",
+        value: "Android Dev",
+        color: "#F73109",
       },
     ],
   },
   discord: {
-    type: Object
+    type: Object,
   },
   github: {
-    type: Object
+    type: Object,
   },
   trello: {
-    type: Object
+    type: Object,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   deletedAt: {
     type: Date,
-    default: null
-  }
+    default: null,
+  },
+  description: {
+    type: String,
+    default: null,
+    required: false,
+  },
+  descrpimage: {
+    type: String,
+    default: null,
+    required: false,
+  },
 });
 
 /**

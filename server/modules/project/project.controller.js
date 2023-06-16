@@ -26,7 +26,19 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     const { _id, wallet } = req.user;
-    const { name, description, members, links, milestones, compensation, kra, daoId, inviteType, validRoles } = req.body;
+    const {
+      name,
+      description,
+      members,
+      links,
+      milestones,
+      compensation,
+      kra,
+      daoId,
+      inviteType,
+      validRoles,
+      descrpimage,
+    } = req.body;
     let mMembers = [];
     try {
 
@@ -57,8 +69,18 @@ const create = async (req, res) => {
         }
 
         let project = new Project({
-            daoId, name, description, members: mem, links, milestones, compensation, kra: kra1, creator: wallet, inviteType, validRoles
-        })
+          daoId,
+          name,
+          description,descrpimage,
+          members: mem,
+          links,
+          milestones,
+          compensation,
+          kra: kra1,
+          creator: wallet,
+          inviteType,
+          validRoles,
+        });
 
         project = await project.save();
 
@@ -120,7 +142,7 @@ const create = async (req, res) => {
 const updateProjectDetails = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
-    const { name, description } = req.body;
+    const { name, description, descrpimage } = req.body;
     try {
 
         let project = await Project.findOne({ _id: projectId });
@@ -129,9 +151,9 @@ const updateProjectDetails = async (req, res) => {
         }
 
         await Project.findOneAndUpdate(
-            { _id: projectId },
-            { name, description }
-        )
+          { _id: projectId },
+          { name, description, descrpimage }
+        );
 
         const d = await DAO.findOne({ url: daoUrl }).populate({ path: 'safe sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         const p = await Project.findOne({ _id: projectId }).populate({ path: 'tasks members', populate: { path: 'members.member' } })
