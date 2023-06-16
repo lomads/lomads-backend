@@ -158,8 +158,8 @@ const validateReferalCode = async (req, res) => {
     const { code } = req.query;
     try {
         let contract = await Contract.findOne({ address: contractAddress });
-        const discountCode =  _.find(contract?.discountCodes, d => d.code.toLowerCase() === code.toLowerCase())
-        if(discountCode){
+        const discountCode = _.find(contract?.discountCodes, d => d.code.toLowerCase() === code.toLowerCase())
+        if (discountCode) {
             return res.status(200).json(discountCode);
         } else {
             return res.status(500).json({ message: 'Invalid discount code' })
@@ -171,5 +171,22 @@ const validateReferalCode = async (req, res) => {
     }
 }
 
+const checkContractAddress = async (req, res) => {
+    const { contracts } = req.body;
+    try {
+        let contractArr = await Contract.find({ address: { $in: contracts } })
+        if (contractArr) {
+            return res.status(200).json(contractArr);
+        }
+        else {
+            return res.status(200).json([]);
+        }
+    }
+    catch (e) {
+        console.error("contract.controller::get::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
 
-module.exports = { validateReferalCode, load, create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature, getContractDAO };
+
+module.exports = { validateReferalCode, load, create, update, getContract, getContractTokenMetadata, getWhitelistSignature, signature, getContractDAO, checkContractAddress };
