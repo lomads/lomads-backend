@@ -14,7 +14,9 @@ router.post('/create-notification', web3Auth, utilityCtrl.createNotification)
 router.get('/getGithubAccessToken', utilityCtrl.getGithubAccessToken);
 router.get('/get-issues', web3Auth, utilityCtrl.getIssues);
 router.post('/store-issues', utilityCtrl.storeIssues);
+router.post('/desync-github', utilityCtrl.deSyncGithub);
 router.post('/create-webhook', utilityCtrl.createWebhook);
+router.post('/requiresGitAuthentication', utilityCtrl.requiresGitAuthentication);
 router.post('/github/issues-listener', utilityCtrl.issuesListener);
 
 //  trello
