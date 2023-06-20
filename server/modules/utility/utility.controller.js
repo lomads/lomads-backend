@@ -264,6 +264,7 @@ const getIssues = async (req, res) => {
                 }
             })
             .then(async issues => {
+                console.log("Issues : ", issues);
                 // create project
                 let kraOb = {
                     frequency: '',
@@ -465,7 +466,7 @@ const storeIssues = async (req, res) => {
                         await DAO.findOneAndUpdate(
                             { _id: daoId },
                             {
-                                [`github.${repoInfo}`]: { 'webhookId': '' },
+                                [`github.${repoInfo}`]: { 'webhookId': null },
                                 dummyTaskFlag: false,
                                 $addToSet: {
                                     tasks: { $each: arr },
@@ -687,6 +688,74 @@ const createWebhook = async (token, repoInfo) => {
         console.log("try catch error 537 : ", e)
     }
 }
+
+const requiresGitAuthentication = async (req, res) => {
+    const { repoInfo } = req.body;
+
+    try {
+        let daoIds = await DAO.find({
+            [`github.${repoInfo}`]: { $ne: null }
+        })
+        console.log("daoIds length : ", daoIds.length)
+        return res.status(200).json({ requires: daoIds.length === 1 });
+    } catch (error) {
+
+    }
+}
+
+const deSyncGithub = async (req, res) => {
+    const { repoInfo, daoId, webhookId, token } = req.body;
+
+    console.log("Desync : ", repoInfo, daoId, webhookId, token);
+    try {
+
+        let daoRes = await DAO.findOne({ _id: daoId })
+        delete daoRes._doc.github[repoInfo]
+
+        await DAO.findOneAndUpdate(
+            { _id: daoId },
+            {
+                [`github`]: daoRes._doc.github,
+            }
+        )
+
+        if (webhookId && token) {
+            console.log("Deleting webhook...")
+            return axios.post(`https://api.github.com/repos/${repoInfo}/hooks/${parseInt(webhookId)}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "cache-control": "no-cache"
+                }
+            })
+                .then((response) => {
+                    return console.log("response after  git webhook : ", response.data);
+                })
+                .catch((e) => {
+                    console.log("delete git webhook error : ", e);
+                })
+        }
+
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+        return res.status(200).json({ dao: d });
+
+    } catch (error) {
+
+    }
+
+}
+
+
+
+
+
+
+// ------------------------------------- TRELLO -------------------------------------------
+
+
+
+
+
 
 
 const getTrelloOrganization = async (req, res) => {
@@ -1546,22 +1615,22 @@ const updateSafe = async (req, res) => {
         // }
         // const gtx = await GnosisSafeTxModel.create(txns)
 
-       // move labels
-    //    const txlabels = await TxlabelModel.find({})
+        // move labels
+        //    const txlabels = await TxlabelModel.find({})
 
-    //    for (let index = 0; index < txlabels.length; index++) {
-    //        const element = txlabels[index];
-    //        const gtx = await GnosisSafeTxModel.findOne({ 'safeAddress': element.safeAddress, $or: [{ 'rawTx.safeTxHash' : element.safeTxHash }, { 'rawTx.transactionHash' : element.safeTxHash }] })
-    //        if(gtx && element.recipient && element.recipient.indexOf('...') === -1) {
-    //            console.log(element)
-    //            const resp = await GnosisSafeTxModel.findOneAndUpdate({ _id: gtx._id }, {
-    //                $set: {
-    //                    [`metadata.${element.recipient}`]: element
-    //                }
-    //            })
-    //            console.log(resp)
-    //        }
-    //    }
+        //    for (let index = 0; index < txlabels.length; index++) {
+        //        const element = txlabels[index];
+        //        const gtx = await GnosisSafeTxModel.findOne({ 'safeAddress': element.safeAddress, $or: [{ 'rawTx.safeTxHash' : element.safeTxHash }, { 'rawTx.transactionHash' : element.safeTxHash }] })
+        //        if(gtx && element.recipient && element.recipient.indexOf('...') === -1) {
+        //            console.log(element)
+        //            const resp = await GnosisSafeTxModel.findOneAndUpdate({ _id: gtx._id }, {
+        //                $set: {
+        //                    [`metadata.${element.recipient}`]: element
+        //                }
+        //            })
+        //            console.log(resp)
+        //        }
+        //    }
 
         return res.status(200).json({ message: "Success" })
     } catch (e) {
@@ -1589,7 +1658,7 @@ const getEstimateMintGas = async (req, res) => {
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);
-    } 
+    }
 }
 
 const sendAlert = async (req, res) => {
@@ -1644,7 +1713,7 @@ const onRamperStatus = async (req, res) => {
 const onStripeStatus = async (req, res) => {
     const stripeBody = req.body;
     try {
-        if(stripeBody?.type === "checkout.session.completed") {
+        if (stripeBody?.type === "checkout.session.completed") {
             const stripeBody = req.body;
             await ExternalPaymentStatus.findOneAndUpdate({ _id: ObjectId(stripeBody?.data?.object?.client_reference_id) }, { response: stripeBody?.data?.object })
         }
@@ -1659,7 +1728,7 @@ const getTxnStatus = async (req, res) => {
     const { txnId, chainId } = req.query;
     try {
         let apiKey = config.etherScanKey;
-        if(+chainId === 137)
+        if (+chainId === 137)
             apiKey = config.polyScanKey;
         const scanBaseUrl = NETWORK_SCAN_LINKS[+chainId].baseUrl
         const txnResponse = await axios.get(`${scanBaseUrl}api?module=proxy&action=eth_getTransactionByHash&txhash=${txnId}&apikey=${apiKey}`)
@@ -1681,7 +1750,9 @@ module.exports = {
     getGithubAccessToken,
     getIssues,
     storeIssues,
+    deSyncGithub,
     createWebhook,
+    requiresGitAuthentication,
     issuesListener,
     getTrelloOrganization,
     getTrelloBoards,
