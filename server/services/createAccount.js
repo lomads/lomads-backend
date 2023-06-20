@@ -6,6 +6,7 @@ const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-a
 const createAccount = async (req, res, next) => {
     try {
         const token = req.headers['authorization']
+        const userInfo = req.body;
         if (!token)
             return res.status(401).json({ message: 'Authorization token required' })
         console.log("token : ", token);
@@ -13,10 +14,17 @@ const createAccount = async (req, res, next) => {
         console.log("address : ", address);
         console.log("address", toChecksumAddress(address))
         let member = await Member.findOne({ wallet: toChecksumAddress(address) })
-        if (member)
+        if (member) {
+            if(!member.name || member.name === ''){
+                if(userInfo?.name || userInfo?.email) {
+                    member.name = userInfo?.name || userInfo?.email
+                    member = await member.save()
+                }
+            }
             return res.status(200).json(member)
+        }
         else {
-            member = new Member({ wallet: toChecksumAddress(address), name: '' })
+            member = new Member({ wallet: toChecksumAddress(address), name: userInfo?.name || userInfo?.email || '' })
             member = await member.save()
             return res.status(201).json(member)
         }

@@ -3,7 +3,10 @@ const gnosisSafeTxSyncTrackerModel = require("./gnosisSafeTxSyncTracker.model");
 const Member = require('@server/modules/member/member.model');
 const Task = require('@server/modules/task/task.model');
 const { taskPaid } = require('@server/events');
-const _ = require('lodash')
+const _ = require('lodash');
+const moment = require('moment')
+const RecurringPayment = require("../RecurringPayment/recurringPayment.model");
+const RecurringPaymentQueue = require("../RecurringPayment/recurringPaymentQueue.model");
 
 const get = async (req, res) => {
     try {
@@ -162,6 +165,29 @@ const postExecution = async (req, res) => {
                     taskPaid.emit({ $task: task, $member: user })
                 }
             }
+
+            if(actions?.RECURRING_PAYMENT) {
+                let { safeTxHash, reject } = actions?.RECURRING_PAYMENT;
+                let recurringPayment = await RecurringPayment.findOne({ deletedAt: null, allowanceTxnHash: safeTxHash })
+                if(recurringPayment) {
+                    if(reject) {
+                        await RecurringPayment.findOneAndUpdate({ _id: recurringPayment._id, deletedAt: null }, { $set: { deletedAt: moment().utc().toDate() } } )
+                        await RecurringPaymentQueue.deleteMany({ recurringPayment: recurringPayment._id, moduleTxnHash: null })
+                    } else {
+                        if(recurringPayment.active === false) {
+                            let isPast = moment(recurringPayment.startDate).utc().isBefore(moment().utc())
+                            let nextDate = moment(recurringPayment.startDate).startOf('day').utc().toDate()
+                            let firstTx = nextDate;
+                            const q = await RecurringPaymentQueue.create({ recurringPayment: recurringPayment._id, nonce: `${moment(nextDate).unix()}`})
+                            await RecurringPayment.updateOne({ _id: recurringPayment._id },{ $set: { nextDate: nextDate }, $addToSet: { queue: q._id } })
+                            recurringPayment.nextDate = firstTx;
+                        }
+                        recurringPayment.active = true;
+                        await recurringPayment.save()
+                    }
+                }
+            }
+
         }
         return res.status(200).json({ message: 'Success' })
     }

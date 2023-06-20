@@ -28,7 +28,7 @@ const loadAll = async (req, res) => {
 const load = async (req, res) => {
     const { _id } = req.user;
     try {
-        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).sort({ createAt: -1 })
         return res.status(200).json(dao)
     }
     catch (e) {
@@ -725,6 +725,9 @@ const attachSafe = async (req, res) => {
         let mem = mMembers.map(m => {
             return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
         })
+
+        mem  = dao?.members?.concat(mem)
+        mem = _.uniqBy(mem, m => String(m.member))
 
         await DAO.findOneAndUpdate(
             { url },

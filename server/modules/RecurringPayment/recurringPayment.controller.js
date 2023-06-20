@@ -4,9 +4,10 @@ const moment = require('moment')
 
 const load = async (req, res, next) => {
     const { _id } = req.user;
-    const { safeAddress } = req.query;
+    const { safes } = req.query;
     try {
-        const queue = await RecurringPayment.find({ safeAddress, deletedAt: null }).populate({ path: 'queue receiver delegate' })
+        //const queue = await RecurringPayment.find({ safeAddress, deletedAt: null }).populate({ path: 'queue receiver delegate' })
+        const queue = await RecurringPayment.find({ deletedAt: null, safeAddress: { $in: safes.split(',') } }).populate({ path: 'queue receiver delegate' })
         if(queue)
             return res.status(200).json(queue) 
         return res.status(500).json({ message: 'Something went wrong' }) 
@@ -25,6 +26,7 @@ const create = async (req, res, next) => {
             // let nextDate = moment(recurringPayment.startDate).startOf('day').utc().toDate()
             // const q = await RecurringPaymentQueue.create({ safeAddress: recurringPayment.safeAddress, recurringPayment: recurringPayment._id,  nonce: `${moment(nextDate).unix()}`})
             // await RecurringPayment.updateOne({ _id: recurringPayment._id }, { $set: { nextDate: nextDate }, $addToSet: { queue: q._id } })
+            recurringPayment = await RecurringPayment.findOne({ _id: recurringPayment._id }).populate({ path: 'queue receiver delegate' })
             return res.status(200).json(recurringPayment) 
         }
         return res.status(500).json({ message: 'Something went wrong' }) 
