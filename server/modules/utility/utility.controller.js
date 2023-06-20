@@ -383,6 +383,8 @@ const getIssues = async (req, res) => {
 const storeIssues = async (req, res) => {
     const { token, repoInfo, daoId, issueList, linkOb } = req.body;
 
+    console.log("stroing issues...", token, repoInfo, daoId, issueList.length, linkOb);
+
     let tempLink = linkOb.link;
     if (tempLink.indexOf('https://') === -1 && tempLink.indexOf('http://') === -1) {
         tempLink = 'https://' + linkOb.link;
@@ -507,6 +509,8 @@ const issuesListener = async (req, res) => {
 
         daoIds = daoIds.map(d => d._id);
 
+        console.log("DaoIds : ", daoIds);
+
         for (let i = 0; i < daoIds.length; i++) {
             // create task with daoId
 
@@ -627,6 +631,7 @@ const issuesListener = async (req, res) => {
 }
 
 const createWebhook = async (token, repoInfo) => {
+    console.log("creating webhook ....", token, repoInfo)
     let _body = {
         name: 'web',
         active: true,
@@ -721,14 +726,14 @@ const deSyncGithub = async (req, res) => {
 
         if (webhookId && token) {
             console.log("Deleting webhook...")
-            return axios.post(`https://api.github.com/repos/${repoInfo}/hooks/${parseInt(webhookId)}`, {
+            axios.delete(`https://api.github.com/repos/${repoInfo}/hooks/${parseInt(webhookId)}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "cache-control": "no-cache"
                 }
             })
                 .then((response) => {
-                    return console.log("response after  git webhook : ", response.data);
+                    console.log("response after  git webhook : ", response.data);
                 })
                 .catch((e) => {
                     console.log("delete git webhook error : ", e);
@@ -745,7 +750,31 @@ const deSyncGithub = async (req, res) => {
 
 }
 
+const deSyncDiscord = async (req, res) => {
+    const { channelId, daoId } = req.body;
 
+    console.log("Desync : ", channelId, daoId);
+    try {
+
+        let daoRes = await DAO.findOne({ _id: daoId })
+        delete daoRes._doc.discord[channelId]
+
+        await DAO.findOneAndUpdate(
+            { _id: daoId },
+            {
+                [`discord`]: daoRes._doc.discord,
+            }
+        )
+
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+        return res.status(200).json({ dao: d });
+
+    } catch (error) {
+
+    }
+
+}
 
 
 
@@ -1586,6 +1615,61 @@ const createTrelloWebhook = async (accessToken, idModel, daoId, modelType) => {
     }
 }
 
+const deSyncTrello = async (req, res) => {
+    const { daoId, trelloId, trelloData, token } = req.body;
+
+    try {
+
+        let daoRes = await DAO.findOne({ _id: daoId })
+        delete daoRes._doc.trello[trelloId]
+
+        await DAO.findOneAndUpdate(
+            { _id: daoId },
+            {
+                [`trello`]: daoRes._doc.trello,
+            }
+        )
+
+        if (trelloData.webhookId) {
+            fetch(`https://api.trello.com/1/webhooks/${trelloData.webhookId}?key=${config.trelloApiKey}&token=${token}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    console.log(
+                        `Response deleted worksapce webhook: ${response.status} ${response.statusText}`
+                    );
+                })
+                .catch(err => console.error(err));
+        }
+
+        if (trelloData.boards) {
+            let boards = Object.keys(trelloData.boards);
+            await Promise.all(
+                boards.map((board, index) => {
+
+                    fetch(`https://api.trello.com/1/webhooks/${trelloData.boards[board].webhookId}?key=${config.trelloApiKey}&token=${token}`, {
+                        method: 'DELETE'
+                    })
+                        .then(response => {
+                            console.log(
+                                `Response deleted board webhook for index ${index}: ${response.status} ${response.statusText}`
+                            );
+                        })
+                        .catch(err => console.error(err));
+                })
+            )
+        }
+
+        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+        return res.status(200).json({ dao: d });
+
+    } catch (error) {
+
+    }
+
+}
+
 const updateSafe = async (req, res) => {
     try {
         // const daos = await DAO.find()
@@ -1765,5 +1849,7 @@ module.exports = {
     sendAlert,
     onRamperStatus,
     getTxnStatus,
-    onStripeStatus
+    onStripeStatus,
+    deSyncDiscord,
+    deSyncTrello
 };

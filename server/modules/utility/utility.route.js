@@ -19,6 +19,8 @@ router.post('/create-webhook', utilityCtrl.createWebhook);
 router.post('/requiresGitAuthentication', utilityCtrl.requiresGitAuthentication);
 router.post('/github/issues-listener', utilityCtrl.issuesListener);
 
+router.post('/desync-discord', utilityCtrl.deSyncDiscord);
+
 //  trello
 router.get('/get-trello-organizations', utilityCtrl.getTrelloOrganization);
 router.get('/get-trello-boards', utilityCtrl.getTrelloBoards);
@@ -26,6 +28,7 @@ router.post('/sync-trello-data', web3Auth, utilityCtrl.syncTrelloData);
 
 router.get('/trello/trello-listener', utilityCtrl.trelloListener);
 router.post('/trello/trello-listener', utilityCtrl.trelloListener);
+router.post('/desync-trello', utilityCtrl.deSyncTrello);
 
 router.get('/update-safe', utilityCtrl.updateSafe)
 
