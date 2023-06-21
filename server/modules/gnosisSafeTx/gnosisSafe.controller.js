@@ -4,6 +4,7 @@ const Member = require('@server/modules/member/member.model');
 const Task = require('@server/modules/task/task.model');
 const { taskPaid } = require('@server/events');
 const _ = require('lodash');
+const ObjectId = require('mongodb').ObjectID;
 const moment = require('moment')
 const RecurringPayment = require("../RecurringPayment/recurringPayment.model");
 const RecurringPaymentQueue = require("../RecurringPayment/recurringPaymentQueue.model");
@@ -51,6 +52,21 @@ const update = async (req, res) => {
     } catch (e) {
         console.log(e)
         return res.status(500).json({ message: e })
+    }
+}
+
+const updateMetadata = async (req, res) => {
+    const { txId, recipient, key, value } = req.body;
+    try {
+        await gnosisSafeTxModel.findOneAndUpdate(
+            { _id: ObjectId(txId) },
+            { $set: { [`metadata.${recipient}.${key}`]: value } }
+        )
+        return res.status(200).json(txId)
+    }
+    catch (e) {
+        console.error(e)
+        return res.status(500).json({ message: 'Something went wrong' })
     }
 }
 
@@ -188,6 +204,13 @@ const postExecution = async (req, res) => {
                 }
             }
 
+            if(actions.UPDATE_FIAT_CONVERSION) {
+                let { txId, recipient, fiatConversion } = actions?.UPDATE_FIAT_CONVERSION;
+                const gstx = await gnosisSafeTxModel.findOneAndUpdate({ _id: ObjectId(txId) }, {
+                    [`metadata.${recipient}.fiatConversion`] : fiatConversion
+                })
+            }
+
         }
         return res.status(200).json({ message: 'Success' })
     }
@@ -207,4 +230,4 @@ const syncSafe = async (req, res) => {
     }
 }
 
-module.exports = { syncSafe, get, load, create, update, updateTxLabel, confirmOffChainTxn, postExecution };
+module.exports = { syncSafe, get, load, create, update, updateTxLabel, confirmOffChainTxn, postExecution, updateMetadata };

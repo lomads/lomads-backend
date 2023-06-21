@@ -745,4 +745,21 @@ const attachSafe = async (req, res) => {
     }
 }
 
-module.exports = { loadSBTDao, attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
+const toggleSafeState  = async (req, res) => {
+    const { url } = req.params;
+    const { safeAddress } = req.body;
+    try {
+        const hasDisabledSafe = await DAO.findOne({ url, disabledSafes: { $in: [safeAddress] } })
+        if(hasDisabledSafe) 
+            await DAO.findOneAndUpdate({ url }, { $pull: { disabledSafes: { $in: [safeAddress] } } })
+        else
+            await DAO.findOneAndUpdate({ url }, { $addToSet: { disabledSafes: safeAddress } })
+        const d = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        return res.status(200).json(d);
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' });
+    }
+}
+
+module.exports = { toggleSafeState, loadSBTDao, attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };

@@ -1716,7 +1716,9 @@ const updateSafe = async (req, res) => {
         //        }
         //    }
 
-        return res.status(200).json({ message: "Success" })
+        const result = await GnosisSafeTxModel.find({})
+
+        return res.status(200).json(result)
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);

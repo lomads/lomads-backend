@@ -22,5 +22,6 @@ router.patch('/:url/update-details', web3Auth, daoCtrl.updateDetails);
 router.patch('/:url/sync-safe-owners', web3Auth, daoCtrl.syncSafeOwners);
 router.patch('/:url/update-user-discord', web3Auth, daoCtrl.updateUserDiscord);
 router.post('/:url/attach-safe', web3Auth, daoCtrl.attachSafe);
+router.post('/:url/toggle-safe-state', web3Auth, daoCtrl.toggleSafeState);
 
 module.exports = router;
