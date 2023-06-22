@@ -244,7 +244,7 @@ const getGithubAccessToken = async (req, res) => {
 
 const getIssues = async (req, res) => {
     const { _id, wallet } = req.user;
-    const { token, repoInfo, daoId } = req.query;
+    const { token, repoInfo, repoId, repoUrl, daoId } = req.query;
     let repoName = repoInfo.split('/')
     try {
         fetch(`https://api.github.com/repos/${repoInfo}/issues`,
@@ -264,111 +264,144 @@ const getIssues = async (req, res) => {
                 }
             })
             .then(async issues => {
-                console.log("Issues : ", issues);
-                // create project
-                let kraOb = {
-                    frequency: '',
-                    results: [],
-                    tracker: [{
-                        start: moment().startOf('day').unix(),
-                        end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
-                        results: []
-                    }]
+                let p = await Project.findOne({ "metaData.externalId": repoId, daoId });
+                if (p) {
+                    var newArray = issues.filter(item => item.html_url.includes('issues'))
+                        .map((i) => (
+                            {
+                                daoId: daoId,
+                                provider: 'Github',
+                                metaData: {
+                                    externalId: i.id.toString(),
+                                    repoUrl: new URL(i.html_url).origin + '/' + new URL(i.html_url).pathname.split("/")[1] + '/' + new URL(i.html_url).pathname.split("/")[2]
+                                },
+                                name: i.title,
+                                description: i.body,
+                                creator: null,
+                                members: [],
+                                project: p._id,
+                                discussionChannel: i.html_url,
+                                deadline: null,
+                                submissionLink: i.html_url,
+                                compensation: null,
+                                reviewer: null,
+                                contributionType: 'open',
+                                createdAt: i.created_at,
+                                draftedAt: Date.now(),
+                            }
+                        ))
+                    return res.json({ data: newArray, message: 'success' });
                 }
+                else {
+                    console.log("Project not found...creating new")
+                    let kraOb = {
+                        frequency: '',
+                        results: [],
+                        tracker: [{
+                            start: moment().startOf('day').unix(),
+                            end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
+                            results: []
+                        }]
+                    }
 
-                let project = new Project({
-                    daoId,
-                    provider: 'Github',
-                    name: repoName[1],
-                    description: '',
-                    members: [_id],
-                    tasks: [],
-                    links: [],
-                    milestones: [],
-                    compensation: null,
-                    kra: kraOb,
-                    creator: wallet,
-                    inviteType: 'Open',
-                    validRoles: []
-                })
-
-                project = await project.save();
-                console.log("Project created...");
-
-                await DAO.findOneAndUpdate(
-                    { _id: daoId },
-                    {
-                        dummyProjectFlag: false,
-                        $addToSet: {
-                            projects: project._id
+                    let project = new Project({
+                        daoId,
+                        provider: 'Github',
+                        metaData: {
+                            externalId: repoId.toString(),
+                            repoUrl: repoUrl,
                         },
-                    }
-                )
+                        name: repoName[1],
+                        description: '',
+                        members: [_id],
+                        tasks: [],
+                        links: [],
+                        milestones: [],
+                        compensation: null,
+                        kra: kraOb,
+                        creator: wallet,
+                        inviteType: 'Open',
+                        validRoles: []
+                    })
 
-                const d = await DAO.findOne({ _id: daoId });
-                //update metadata
+                    project = await project.save();
+                    console.log("Project created...");
 
-                let members = [{ id: req.user._id, address: req.user.wallet }];
-
-                if (d.sbt) {
-                    for (let index = 0; index < members.length; index++) {
-                        const member = members[index];
-                        const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
-                        const metadata = await Metadata.findOne(filter)
-                        if (metadata) {
-                            let attrs = [...metadata._doc.attributes];
-                            if (!find(attrs, attr => attr.trait_type === 'projects')) {
-                                attrs.push({ trait_type: 'projects', value: project._id.toString() })
-                            } else {
-                                attrs = attrs.map(attr => {
-                                    if (attr.trait_type === 'projects') {
-                                        return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
-                                    }
-                                    return attr
-                                })
-                            }
-                            if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                                attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
-                            } else {
-                                attrs = attrs.map(attr => {
-                                    if (attr.trait_type === 'project_names') {
-                                        return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
-                                    }
-                                    return attr
-                                })
-                            }
-                            console.log("attrs", attrs);
-                            metadata._doc.attributes = attrs;
-                            await metadata.save();
-                        }
-                    }
-                }
-                projectCreated.emit(project);
-                var newArray = issues.filter(item => item.html_url.includes('issues'))
-                    .map((i) => (
+                    await DAO.findOneAndUpdate(
+                        { _id: daoId },
                         {
-                            daoId: daoId,
-                            provider: 'Github',
-                            metaData: {
-                                externalId: i.id.toString(),
-                                repoUrl: new URL(i.html_url).origin + '/' + new URL(i.html_url).pathname.split("/")[1] + '/' + new URL(i.html_url).pathname.split("/")[2]
+                            dummyProjectFlag: false,
+                            $addToSet: {
+                                projects: project._id
                             },
-                            name: i.title,
-                            description: i.body,
-                            creator: null,
-                            members: [],
-                            project: project._id,
-                            discussionChannel: i.html_url,
-                            deadline: null,
-                            submissionLink: i.html_url,
-                            compensation: null,
-                            reviewer: null,
-                            contributionType: 'open',
-                            createdAt: i.created_at,
-                            draftedAt: Date.now(),
                         }
-                    ))
-                return res.json({ data: newArray, message: 'success' });
+                    )
+
+                    const d = await DAO.findOne({ _id: daoId });
+
+                    let members = [{ id: req.user._id, address: req.user.wallet }];
+
+                    if (d.sbt) {
+                        for (let index = 0; index < members.length; index++) {
+                            const member = members[index];
+                            const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                            const metadata = await Metadata.findOne(filter)
+                            if (metadata) {
+                                let attrs = [...metadata._doc.attributes];
+                                if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                    attrs.push({ trait_type: 'projects', value: project._id.toString() })
+                                } else {
+                                    attrs = attrs.map(attr => {
+                                        if (attr.trait_type === 'projects') {
+                                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                        }
+                                        return attr
+                                    })
+                                }
+                                if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                    attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                                } else {
+                                    attrs = attrs.map(attr => {
+                                        if (attr.trait_type === 'project_names') {
+                                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                        }
+                                        return attr
+                                    })
+                                }
+                                console.log("attrs", attrs);
+                                metadata._doc.attributes = attrs;
+                                await metadata.save();
+                            }
+                        }
+                    }
+                    projectCreated.emit(project);
+                    var newArray = issues.filter(item => item.html_url.includes('issues'))
+                        .map((i) => (
+                            {
+                                daoId: daoId,
+                                provider: 'Github',
+                                metaData: {
+                                    externalId: i.id.toString(),
+                                    repoUrl: new URL(i.html_url).origin + '/' + new URL(i.html_url).pathname.split("/")[1] + '/' + new URL(i.html_url).pathname.split("/")[2]
+                                },
+                                name: i.title,
+                                description: i.body,
+                                creator: null,
+                                members: [],
+                                project: project._id,
+                                discussionChannel: i.html_url,
+                                deadline: null,
+                                submissionLink: i.html_url,
+                                compensation: null,
+                                reviewer: null,
+                                contributionType: 'open',
+                                createdAt: i.created_at,
+                                draftedAt: Date.now(),
+                            }
+                        ))
+                    return res.json({ data: newArray, message: 'success' });
+                }
+
             })
             .catch((e) => {
                 console.log("request error 280 : ", e);
@@ -383,19 +416,49 @@ const getIssues = async (req, res) => {
 const storeIssues = async (req, res) => {
     const { token, repoInfo, daoId, issueList, linkOb } = req.body;
 
-    console.log("stroing issues...", token, repoInfo, daoId, issueList.length, linkOb);
+    let newArray = [];
+    let updateArray = [];
 
     let tempLink = linkOb.link;
     if (tempLink.indexOf('https://') === -1 && tempLink.indexOf('http://') === -1) {
         tempLink = 'https://' + linkOb.link;
     }
+
+    if (issueList.length > 0) {
+        let tempIds = issueList.map((item) => {
+            return item.metaData.externalId
+        })
+
+        let taskArray = await Task.find({ "metaData.externalId": { $in: tempIds }, daoId });
+
+        for (let i = 0; i < tempIds.length; i++) {
+            let found = _.find(taskArray, t => t.metaData.externalId === tempIds[i]);
+            if (found) {
+                updateArray.push(_.find(issueList, issue => issue.metaData.externalId === tempIds[i]))
+            }
+            else {
+                newArray.push(_.find(issueList, issue => issue.metaData.externalId === tempIds[i]))
+            }
+        }
+
+        if (updateArray.length > 0) {
+            for (let i = 0; i < updateArray.length; i++) {
+                let query = await Task.findOneAndUpdate({ "metaData.externalId": updateArray[i].metaData.externalId, daoId }, updateArray[i]);
+            }
+        }
+    }
+
+    console.log("new array : ", newArray)
+    console.log("update array : ", updateArray)
+
     const result = await createWebhook(token, repoInfo);
 
     if (result) {
-        if (issueList.length > 0) {
+
+        if (newArray.length > 0) {
             let arr = [];
             try {
-                let insertMany = await Task.insertMany(issueList, async function (error, docs) {
+                let insertMany = await Task.insertMany(newArray, async function (error, docs) {
                     for (let i = 0; i < docs.length; i++) {
                         arr.push(docs[i]._id);
                     }
@@ -414,7 +477,7 @@ const storeIssues = async (req, res) => {
                                 }
                             )
                             await Project.findOneAndUpdate(
-                                { _id: issueList[0].project },
+                                { _id: newArray[0].project },
                                 {
                                     $addToSet: {
                                         tasks: { $each: arr },
@@ -434,7 +497,7 @@ const storeIssues = async (req, res) => {
             }
         }
         else {
-            console.log("no issues present")
+            console.log("no new issues present")
             const dao = await DAO.findOne({ _id: daoId });
             if (dao) {
 
@@ -456,44 +519,66 @@ const storeIssues = async (req, res) => {
     }
     else {
         console.log("Cannot create webhook ... just pull issues");
-        let arr = [];
-        try {
-            let insertMany = await Task.insertMany(issueList, async function (error, docs) {
-                for (let i = 0; i < docs.length; i++) {
-                    arr.push(docs[i]._id);
-                }
-                if (arr.length > 0) {
-                    const dao = await DAO.findOne({ _id: daoId });
-                    if (dao) {
-                        await DAO.findOneAndUpdate(
-                            { _id: daoId },
-                            {
-                                [`github.${repoInfo}`]: { 'webhookId': null },
-                                dummyTaskFlag: false,
-                                $addToSet: {
-                                    tasks: { $each: arr },
-                                    links: { title: linkOb.title, link: tempLink }
-                                },
-                            }
-                        )
-                        await Project.findOneAndUpdate(
-                            { _id: issueList[0].project },
-                            {
-                                $addToSet: {
-                                    tasks: { $each: arr },
-                                },
-                            }
-                        )
+        if (newArray.length > 0) {
+            let arr = [];
+            try {
+                let insertMany = await Task.insertMany(newArray, async function (error, docs) {
+                    for (let i = 0; i < docs.length; i++) {
+                        arr.push(docs[i]._id);
                     }
+                    if (arr.length > 0) {
+                        const dao = await DAO.findOne({ _id: daoId });
+                        if (dao) {
+                            await DAO.findOneAndUpdate(
+                                { _id: daoId },
+                                {
+                                    [`github.${repoInfo}`]: { 'webhookId': null },
+                                    dummyTaskFlag: false,
+                                    $addToSet: {
+                                        tasks: { $each: arr },
+                                        links: { title: linkOb.title, link: tempLink }
+                                    },
+                                }
+                            )
+                            await Project.findOneAndUpdate(
+                                { _id: newArray[0].project },
+                                {
+                                    $addToSet: {
+                                        tasks: { $each: arr },
+                                    },
+                                }
+                            )
+                        }
 
-                    const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+                        const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
 
-                    return res.status(200).json({ dao: d });
-                }
-            })
+                        return res.status(200).json({ dao: d });
+                    }
+                })
+            }
+            catch (e) {
+                console.log("error 328: ", e);
+            }
         }
-        catch (e) {
-            console.log("error 328: ", e);
+        else {
+            console.log("no new issues present");
+            const dao = await DAO.findOne({ _id: daoId });
+            if (dao) {
+
+                await DAO.findOneAndUpdate(
+                    { _id: daoId },
+                    {
+                        [`github.${repoInfo}`]: { 'webhookId': rnull },
+                        $addToSet: {
+                            links: { title: linkOb.title, link: tempLink }
+                        },
+                    }
+                )
+            }
+
+            const d = await DAO.findOne({ _id: daoId }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: "owners members members.member tasks transactions project metadata" } })
+
+            return res.status(200).json({ dao: d });
         }
     }
 }
