@@ -1391,213 +1391,486 @@ const syncTrelloData = async (req, res) => {
                     console.log("Board", i + 1);
                     console.log("Board name & Id : ", board.name, board.id);
 
-                    let kraOb = {
-                        frequency: '',
-                        results: [],
-                        tracker: [{
-                            start: moment().startOf('day').unix(),
-                            end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
-                            results: []
-                        }]
-                    }
+                    // find project
+                    let projectCheck = await Project.findOne({ "metaData.externalId": board.id.toString(), daoId });
 
-                    let project = new Project({
-                        daoId,
-                        provider: 'Trello',
-                        metaData: {
-                            externalId: board.id.toString(),
-                            boardUrl: board.url
-                        },
-                        name: board.name,
-                        description: board.desc,
-                        members: [_id],
-                        tasks: [],
-                        links: [],
-                        milestones: [],
-                        compensation: null,
-                        kra: kraOb,
-                        creator: wallet,
-                        inviteType: 'Open',
-                        validRoles: []
-                    })
+                    if (projectCheck) {
+                        console.log("Project as a board already exists....just updating")
+                        let queryUpdateBoard = await Project.findOneAndUpdate({ "metaData.externalId": board.id.toString(), daoId }, { name: board.name, description: board.desc });
+                        const boardWebhook = await createTrelloWebhook(accessToken, board.id, daoId, 'board');
+                        if (boardWebhook) {
+                            bId.push(boardWebhook.id);
+                            console.log("Board webhook created...");
+                            console.log("Fetching board cards...");
+                            let cardsArray = [];
 
-                    project = await project.save();
-                    pId.push(project._id);
-                    console.log("Project created...");
+                            const cards = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
+                            if (cards && cards.data && cards.data.length > 0) {
+                                console.log("Total Cards found...", cards.data.length);
+                                cardsArray = [...cardsArray, ...cards.data];
 
-                    const boardWebhook = await createTrelloWebhook(accessToken, board.id, daoId, 'board');
-                    if (boardWebhook) {
-                        bId.push(boardWebhook.id);
-                        console.log("Board webhook created...");
-                        console.log("Fetching board cards...");
-                        let cardsArray = [];
-                        const cards = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
-                        if (cards && cards.data && cards.data.length > 0) {
-                            console.log("Total Cards found...", cards.data.length);
-                            cardsArray = [...cardsArray, ...cards.data];
-
-                            var tasksArray = cardsArray.map((i) => (
-                                {
-                                    daoId: daoId,
-                                    provider: 'Trello',
-                                    metaData: {
-                                        externalId: i.id.toString(),
-                                        cardUrl: i.url
-                                    },
-                                    name: i.name,
-                                    description: i.desc,
-                                    creator: null,
-                                    members: [],
-                                    project: project._id,
-                                    discussionChannel: i.url,
-                                    deadline: null,
-                                    submissionLink: i.url,
-                                    compensation: null,
-                                    reviewer: null,
-                                    contributionType: 'open',
-                                    createdAt: Date.now(),
-                                    draftedAt: Date.now(),
-                                }
-                            ))
-
-                            // store draft task and update dao
-                            let arr = [];
-                            try {
-                                let insertMany = await Task.create(tasksArray)
-                                if (insertMany) {
-                                    console.log("insert many : ", insertMany)
-                                    for (let i = 0; i < insertMany.length; i++) {
-                                        arr.push(insertMany[i]._id);
-                                        taskIds.push(insertMany[i]._id);
+                                var tasksArray = cardsArray.map((i) => (
+                                    {
+                                        daoId: daoId,
+                                        provider: 'Trello',
+                                        metaData: {
+                                            externalId: i.id.toString(),
+                                            cardUrl: i.url
+                                        },
+                                        name: i.name,
+                                        description: i.desc,
+                                        creator: null,
+                                        members: [],
+                                        project: projectCheck._id,
+                                        discussionChannel: i.url,
+                                        deadline: null,
+                                        submissionLink: i.url,
+                                        compensation: null,
+                                        reviewer: null,
+                                        contributionType: 'open',
+                                        createdAt: Date.now(),
+                                        draftedAt: Date.now(),
                                     }
-                                    if (arr.length > 0) {
-                                        console.log("Total Tasks created...", arr.length);
+                                ))
+
+
+                                if (tasksArray.length > 0) {
+
+                                    let newArray = [];
+                                    let updateArray = [];
+
+                                    let tempIds = tasksArray.map((item) => {
+                                        return item.metaData.externalId
+                                    })
+
+                                    let taskArray = await Task.find({ "metaData.externalId": { $in: tempIds }, daoId });
+
+                                    for (let i = 0; i < tempIds.length; i++) {
+                                        let found = _.find(taskArray, t => t.metaData.externalId === tempIds[i]);
+                                        if (found) {
+                                            updateArray.push(_.find(tasksArray, issue => issue.metaData.externalId === tempIds[i]))
+                                        }
+                                        else {
+                                            newArray.push(_.find(tasksArray, issue => issue.metaData.externalId === tempIds[i]))
+                                        }
+                                    }
+
+                                    // update existing tasks
+                                    if (updateArray.length > 0) {
+                                        console.log("updating existing tasks...")
+                                        for (let i = 0; i < updateArray.length; i++) {
+                                            let query = await Task.findOneAndUpdate({ "metaData.externalId": updateArray[i].metaData.externalId, daoId }, updateArray[i]);
+                                        }
                                         await DAO.findOneAndUpdate(
                                             { _id: daoId },
                                             {
                                                 [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
                                                 dummyProjectFlag: false,
                                                 dummyTaskFlag: false,
-                                                $addToSet: {
-                                                    tasks: { $each: arr },
-                                                    projects: project._id
-                                                },
                                             }
                                         )
-                                        await Project.findOneAndUpdate(
-                                            { _id: project._id },
-                                            {
-                                                $addToSet: {
-                                                    tasks: { $each: arr },
-                                                },
-                                            }
-                                        )
-                                        console.log("DAO and project updated...")
+                                    }
 
-                                        const d = await DAO.findOne({ _id: daoId });
-                                        //update metadata
+                                    // create new tasks
+                                    if (newArray.length > 0) {
+                                        // store new draft task and update dao
+                                        let arr = [];
+                                        try {
+                                            console.log("creating new tasks...")
+                                            let insertMany = await Task.create(newArray)
+                                            if (insertMany) {
+                                                for (let i = 0; i < insertMany.length; i++) {
+                                                    arr.push(insertMany[i]._id);
+                                                    taskIds.push(insertMany[i]._id);
+                                                }
+                                                if (arr.length > 0) {
+                                                    console.log("Total Tasks created...", arr.length);
+                                                    await DAO.findOneAndUpdate(
+                                                        { _id: daoId },
+                                                        {
+                                                            [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                                            dummyProjectFlag: false,
+                                                            dummyTaskFlag: false,
+                                                            $addToSet: {
+                                                                tasks: { $each: arr },
+                                                                projects: projectCheck._id
+                                                            },
+                                                        }
+                                                    )
+                                                    await Project.findOneAndUpdate(
+                                                        { _id: projectCheck._id },
+                                                        {
+                                                            $addToSet: {
+                                                                tasks: { $each: arr },
+                                                            },
+                                                        }
+                                                    )
+                                                    console.log("DAO and project updated...")
 
-                                        let members = [{ id: req.user._id, address: req.user.wallet }];
+                                                    const d = await DAO.findOne({ _id: daoId });
+                                                    //update metadata
 
-                                        if (d.sbt) {
-                                            for (let index = 0; index < members.length; index++) {
-                                                const member = members[index];
-                                                const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
-                                                const metadata = await Metadata.findOne(filter)
-                                                if (metadata) {
-                                                    let attrs = [...metadata._doc.attributes];
-                                                    if (!find(attrs, attr => attr.trait_type === 'projects')) {
-                                                        attrs.push({ trait_type: 'projects', value: project._id.toString() })
-                                                    } else {
-                                                        attrs = attrs.map(attr => {
-                                                            if (attr.trait_type === 'projects') {
-                                                                return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                                    let members = [{ id: req.user._id, address: req.user.wallet }];
+
+                                                    if (d.sbt) {
+                                                        for (let index = 0; index < members.length; index++) {
+                                                            const member = members[index];
+                                                            const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                                                            const metadata = await Metadata.findOne(filter)
+                                                            if (metadata) {
+                                                                let attrs = [...metadata._doc.attributes];
+                                                                if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                                                    attrs.push({ trait_type: 'projects', value: projectCheck._id.toString() })
+                                                                } else {
+                                                                    attrs = attrs.map(attr => {
+                                                                        if (attr.trait_type === 'projects') {
+                                                                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), projectCheck._id.toString()].join(',') }
+                                                                        }
+                                                                        return attr
+                                                                    })
+                                                                }
+                                                                if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                                                    attrs.push({ trait_type: 'project_names', value: `${projectCheck.name} (${projectCheck._id})` })
+                                                                } else {
+                                                                    attrs = attrs.map(attr => {
+                                                                        if (attr.trait_type === 'project_names') {
+                                                                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${projectCheck.name} (${projectCheck._id})`].join(',') }
+                                                                        }
+                                                                        return attr
+                                                                    })
+                                                                }
+                                                                console.log("attrs", attrs);
+                                                                metadata._doc.attributes = attrs;
+                                                                await metadata.save();
                                                             }
-                                                            return attr
-                                                        })
+                                                        }
                                                     }
-                                                    if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                                                        attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
-                                                    } else {
-                                                        attrs = attrs.map(attr => {
-                                                            if (attr.trait_type === 'project_names') {
-                                                                return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
-                                                            }
-                                                            return attr
-                                                        })
-                                                    }
-                                                    console.log("attrs", attrs);
-                                                    metadata._doc.attributes = attrs;
-                                                    await metadata.save();
+
                                                 }
                                             }
                                         }
-                                        projectCreated.emit(project)
+                                        catch (e) {
+                                            console.log("error 710: ", e);
 
+                                        }
+                                    }
+                                }
+
+                            }
+
+                            else {
+                                console.log("No cards found in the board...simply update dao")
+                                await DAO.findOneAndUpdate(
+                                    { _id: daoId },
+                                    {
+                                        [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                        $addToSet: {
+                                            projects: projectCheck._id
+                                        },
+                                    }
+                                )
+
+                                console.log("DAO updated...")
+
+                                const d = await DAO.findOne({ _id: daoId });
+                                //update metadata
+
+                                let members = [user];
+
+                                if (d.sbt) {
+                                    for (let index = 0; index < members.length; index++) {
+                                        const member = members[index];
+                                        const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                                        const metadata = await Metadata.findOne(filter)
+                                        if (metadata) {
+                                            let attrs = [...metadata._doc.attributes];
+                                            if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                                attrs.push({ trait_type: 'projects', value: projectCheck._id.toString() })
+                                            } else {
+                                                attrs = attrs.map(attr => {
+                                                    if (attr.trait_type === 'projects') {
+                                                        return { ...attr._doc, value: [...get(attr, 'value', '').split(','), projectCheck._id.toString()].join(',') }
+                                                    }
+                                                    return attr
+                                                })
+                                            }
+                                            if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                                attrs.push({ trait_type: 'project_names', value: `${projectCheck.name} (${projectCheck._id})` })
+                                            } else {
+                                                attrs = attrs.map(attr => {
+                                                    if (attr.trait_type === 'project_names') {
+                                                        return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${projectCheck.name} (${projectCheck._id})`].join(',') }
+                                                    }
+                                                    return attr
+                                                })
+                                            }
+                                            console.log("attrs", attrs);
+                                            metadata._doc.attributes = attrs;
+                                            await metadata.save();
+                                        }
                                     }
                                 }
                             }
-                            catch (e) {
-                                console.log("error 710: ", e);
-
-                            }
-                        }
-
-                        else {
-                            console.log("No cards found in the board...simply update dao")
-                            await DAO.findOneAndUpdate(
-                                { _id: daoId },
-                                {
-                                    [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
-                                    $addToSet: {
-                                        projects: project._id
-                                    },
-                                }
-                            )
-
-                            console.log("DAO updated...")
-
-                            const d = await DAO.findOne({ _id: daoId });
-                            //update metadata
-
-                            let members = [user];
-
-                            if (d.sbt) {
-                                for (let index = 0; index < members.length; index++) {
-                                    const member = members[index];
-                                    const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
-                                    const metadata = await Metadata.findOne(filter)
-                                    if (metadata) {
-                                        let attrs = [...metadata._doc.attributes];
-                                        if (!find(attrs, attr => attr.trait_type === 'projects')) {
-                                            attrs.push({ trait_type: 'projects', value: project._id.toString() })
-                                        } else {
-                                            attrs = attrs.map(attr => {
-                                                if (attr.trait_type === 'projects') {
-                                                    return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
-                                                }
-                                                return attr
-                                            })
-                                        }
-                                        if (!find(attrs, attr => attr.trait_type === 'project_names')) {
-                                            attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
-                                        } else {
-                                            attrs = attrs.map(attr => {
-                                                if (attr.trait_type === 'project_names') {
-                                                    return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
-                                                }
-                                                return attr
-                                            })
-                                        }
-                                        console.log("attrs", attrs);
-                                        metadata._doc.attributes = attrs;
-                                        await metadata.save();
-                                    }
-                                }
-                            }
-                            projectCreated.emit(project)
                         }
                     }
+
+                    else {
+                        // create project
+                        console.log("Creating project...")
+                        let kraOb = {
+                            frequency: '',
+                            results: [],
+                            tracker: [{
+                                start: moment().startOf('day').unix(),
+                                end: moment().startOf('day').add(1, 'month').endOf('day').unix(),
+                                results: []
+                            }]
+                        }
+
+                        let project = new Project({
+                            daoId,
+                            provider: 'Trello',
+                            metaData: {
+                                externalId: board.id.toString(),
+                                boardUrl: board.url
+                            },
+                            name: board.name,
+                            description: board.desc,
+                            members: [_id],
+                            tasks: [],
+                            links: [],
+                            milestones: [],
+                            compensation: null,
+                            kra: kraOb,
+                            creator: wallet,
+                            inviteType: 'Open',
+                            validRoles: []
+                        })
+
+                        project = await project.save();
+                        pId.push(project._id);
+                        console.log("Project created...");
+
+                        const boardWebhook = await createTrelloWebhook(accessToken, board.id, daoId, 'board');
+                        if (boardWebhook) {
+                            bId.push(boardWebhook.id);
+                            console.log("Board webhook created...");
+                            console.log("Fetching board cards...");
+                            let cardsArray = [];
+
+                            const cards = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards?key=${config.trelloApiKey}&token=${accessToken}`);
+                            if (cards && cards.data && cards.data.length > 0) {
+                                console.log("Total Cards found...", cards.data.length);
+                                cardsArray = [...cardsArray, ...cards.data];
+
+                                var tasksArray = cardsArray.map((i) => (
+                                    {
+                                        daoId: daoId,
+                                        provider: 'Trello',
+                                        metaData: {
+                                            externalId: i.id.toString(),
+                                            cardUrl: i.url
+                                        },
+                                        name: i.name,
+                                        description: i.desc,
+                                        creator: null,
+                                        members: [],
+                                        project: project._id,
+                                        discussionChannel: i.url,
+                                        deadline: null,
+                                        submissionLink: i.url,
+                                        compensation: null,
+                                        reviewer: null,
+                                        contributionType: 'open',
+                                        createdAt: Date.now(),
+                                        draftedAt: Date.now(),
+                                    }
+                                ))
+
+
+                                if (tasksArray.length > 0) {
+
+                                    let newArray = [];
+                                    let updateArray = [];
+
+                                    let tempIds = tasksArray.map((item) => {
+                                        return item.metaData.externalId
+                                    })
+
+                                    let taskArray = await Task.find({ "metaData.externalId": { $in: tempIds }, daoId });
+
+                                    for (let i = 0; i < tempIds.length; i++) {
+                                        let found = _.find(taskArray, t => t.metaData.externalId === tempIds[i]);
+                                        if (found) {
+                                            updateArray.push(_.find(tasksArray, issue => issue.metaData.externalId === tempIds[i]))
+                                        }
+                                        else {
+                                            newArray.push(_.find(tasksArray, issue => issue.metaData.externalId === tempIds[i]))
+                                        }
+                                    }
+
+                                    // update existing tasks
+                                    if (updateArray.length > 0) {
+                                        console.log("updating existing tasks...")
+                                        for (let i = 0; i < updateArray.length; i++) {
+                                            let query = await Task.findOneAndUpdate({ "metaData.externalId": updateArray[i].metaData.externalId, daoId }, updateArray[i]);
+                                        }
+
+                                        await DAO.findOneAndUpdate(
+                                            { _id: daoId },
+                                            {
+                                                [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                                dummyProjectFlag: false,
+                                                dummyTaskFlag: false,
+                                            }
+                                        )
+                                    }
+
+                                    // create new tasks
+                                    if (newArray.length > 0) {
+                                        console.log("creating new tasks...")
+                                        // store new draft task and update dao
+                                        let arr = [];
+                                        try {
+                                            let insertMany = await Task.create(newArray)
+                                            if (insertMany) {
+                                                for (let i = 0; i < insertMany.length; i++) {
+                                                    arr.push(insertMany[i]._id);
+                                                    taskIds.push(insertMany[i]._id);
+                                                }
+                                                if (arr.length > 0) {
+                                                    console.log("Total Tasks created...", arr.length);
+                                                    await DAO.findOneAndUpdate(
+                                                        { _id: daoId },
+                                                        {
+                                                            [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                                            dummyProjectFlag: false,
+                                                            dummyTaskFlag: false,
+                                                            $addToSet: {
+                                                                tasks: { $each: arr },
+                                                                projects: project._id
+                                                            },
+                                                        }
+                                                    )
+                                                    await Project.findOneAndUpdate(
+                                                        { _id: project._id },
+                                                        {
+                                                            $addToSet: {
+                                                                tasks: { $each: arr },
+                                                            },
+                                                        }
+                                                    )
+                                                    console.log("DAO and project updated...")
+
+                                                    const d = await DAO.findOne({ _id: daoId });
+                                                    //update metadata
+
+                                                    let members = [{ id: req.user._id, address: req.user.wallet }];
+
+                                                    if (d.sbt) {
+                                                        for (let index = 0; index < members.length; index++) {
+                                                            const member = members[index];
+                                                            const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                                                            const metadata = await Metadata.findOne(filter)
+                                                            if (metadata) {
+                                                                let attrs = [...metadata._doc.attributes];
+                                                                if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                                                    attrs.push({ trait_type: 'projects', value: project._id.toString() })
+                                                                } else {
+                                                                    attrs = attrs.map(attr => {
+                                                                        if (attr.trait_type === 'projects') {
+                                                                            return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                                                        }
+                                                                        return attr
+                                                                    })
+                                                                }
+                                                                if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                                                    attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                                                                } else {
+                                                                    attrs = attrs.map(attr => {
+                                                                        if (attr.trait_type === 'project_names') {
+                                                                            return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                                                        }
+                                                                        return attr
+                                                                    })
+                                                                }
+                                                                console.log("attrs", attrs);
+                                                                metadata._doc.attributes = attrs;
+                                                                await metadata.save();
+                                                            }
+                                                        }
+                                                    }
+                                                    projectCreated.emit(project)
+
+                                                }
+                                            }
+                                        }
+                                        catch (e) {
+                                            console.log("error 710: ", e);
+
+                                        }
+                                    }
+                                }
+
+                            }
+
+                            else {
+                                console.log("No cards found in the board...simply update dao")
+                                await DAO.findOneAndUpdate(
+                                    { _id: daoId },
+                                    {
+                                        [`trello.${idModel}.boards.${board.id}`]: { 'webhookId': boardWebhook.id.toString() },
+                                        $addToSet: {
+                                            projects: project._id
+                                        },
+                                    }
+                                )
+
+                                console.log("DAO updated...")
+
+                                const d = await DAO.findOne({ _id: daoId });
+                                //update metadata
+
+                                let members = [user];
+
+                                if (d.sbt) {
+                                    for (let index = 0; index < members.length; index++) {
+                                        const member = members[index];
+                                        const filter = { 'attributes.value': { $regex: new RegExp(`^${member.address}$`, "i") }, contract: d.sbt._id }
+                                        const metadata = await Metadata.findOne(filter)
+                                        if (metadata) {
+                                            let attrs = [...metadata._doc.attributes];
+                                            if (!find(attrs, attr => attr.trait_type === 'projects')) {
+                                                attrs.push({ trait_type: 'projects', value: project._id.toString() })
+                                            } else {
+                                                attrs = attrs.map(attr => {
+                                                    if (attr.trait_type === 'projects') {
+                                                        return { ...attr._doc, value: [...get(attr, 'value', '').split(','), project._id.toString()].join(',') }
+                                                    }
+                                                    return attr
+                                                })
+                                            }
+                                            if (!find(attrs, attr => attr.trait_type === 'project_names')) {
+                                                attrs.push({ trait_type: 'project_names', value: `${project.name} (${project._id})` })
+                                            } else {
+                                                attrs = attrs.map(attr => {
+                                                    if (attr.trait_type === 'project_names') {
+                                                        return { ...attr._doc, value: [...get(attr, 'value', '').toString().split(','), `${project.name} (${project._id})`].join(',') }
+                                                    }
+                                                    return attr
+                                                })
+                                            }
+                                            console.log("attrs", attrs);
+                                            metadata._doc.attributes = attrs;
+                                            await metadata.save();
+                                        }
+                                    }
+                                }
+                                projectCreated.emit(project)
+                            }
+                        }
+                    }
+
                 }
             }
 
