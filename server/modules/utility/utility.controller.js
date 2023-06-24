@@ -27,6 +27,7 @@ const gnosisSafeTxSyncTrackerModel = require('../gnosisSafeTx/gnosisSafeTxSyncTr
 const TxlabelModel = require('../transaction/txlabel.model');
 const GnosisSafeTxModel = require('../gnosisSafeTx/gnosisSafeTx.model');
 const offchainModel = require('../transaction/offchain.model');
+const gnosisSafeTxModel = require('../gnosisSafeTx/gnosisSafeTx.model');
 
 function beautifyHexToken(token) {
     return (token.slice(0, 6) + "..." + token.slice(-4))
@@ -1757,53 +1758,9 @@ const deSyncTrello = async (req, res) => {
 
 const updateSafe = async (req, res) => {
     try {
-        // const daos = await DAO.find()
-        // for (let index = 0; index < daos.length; index++) {
-        //     const dao = daos[index];
-        //     console.log(dao)
-        //     if(dao.safe) {
-        //         await DAO.findOneAndUpdate(
-        //             { _id: ObjectId(dao._id) },
-        //             { $addToSet: { safes: ObjectId(dao.safe._id) } }
-        //         )
-        //     }
-        // }
-
-        // safe sync 
-        // let safes = await Safe.find({})
-        // safes = _.uniqBy(safes, s => s.address)
-        // console.log(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
-        // gnosisSafeTxSyncTrackerModel.create(safes.map(s => { return { safeAddress: s.address, chainId: s.chainId } }))
-
-        // ofchain to safe tx list
-        // const offChain = await offchainModel.find({})
-        // let txns = []
-        // for (let index = 0; index < offChain.length; index++) {
-        //     const { daoId, ...rest } = offChain[index]._doc;
-        //     txns.push({ safeAddress: rest.safe, daoId: daoId, rawTx: rest })
-        // }
-        // const gtx = await GnosisSafeTxModel.create(txns)
-
-        // move labels
-        //    const txlabels = await TxlabelModel.find({})
-
-        //    for (let index = 0; index < txlabels.length; index++) {
-        //        const element = txlabels[index];
-        //        const gtx = await GnosisSafeTxModel.findOne({ 'safeAddress': element.safeAddress, $or: [{ 'rawTx.safeTxHash' : element.safeTxHash }, { 'rawTx.transactionHash' : element.safeTxHash }] })
-        //        if(gtx && element.recipient && element.recipient.indexOf('...') === -1) {
-        //            console.log(element)
-        //            const resp = await GnosisSafeTxModel.findOneAndUpdate({ _id: gtx._id }, {
-        //                $set: {
-        //                    [`metadata.${element.recipient}`]: element
-        //                }
-        //            })
-        //            console.log(resp)
-        //        }
-        //    }
-
-        const result = await GnosisSafeTxModel.find({})
-
-        return res.status(200).json(result)
+        //const safes = await Safe.find({})
+        const gstx = await gnosisSafeTxModel.find({})
+        return res.status(200).json(gstx)
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);

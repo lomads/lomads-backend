@@ -230,4 +230,18 @@ const syncSafe = async (req, res) => {
     }
 }
 
-module.exports = { syncSafe, get, load, create, update, updateTxLabel, confirmOffChainTxn, postExecution, updateMetadata };
+const loadUserTransaction = async (req, res) => {
+    const { wallet } = req.params;
+    try {
+        const gstx = await gnosisSafeTxModel.find({
+            [`metadata.${wallet}.parsedTxValue`] : { $exists: true  },
+            // [`metadata.${wallet}.parsedTxValue.formattedValue`] : { $gt: 0  },
+            // [`metadata.${wallet}.recurringPaymentAmount`] : { $exists: false  }
+        }).populate('daoId')
+        return res.status(200).json(gstx)
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+module.exports = { loadUserTransaction, syncSafe, get, load, create, update, updateTxLabel, confirmOffChainTxn, postExecution, updateMetadata };

@@ -5,6 +5,8 @@ const web3AdminAuth = require('@server/services/web3AdminAuth');
 
 const router = express.Router(); // eslint-disable-line new-cap
 
+router.patch('/:address', web3Auth, safeCtrl.updateSafe)
 router.post('/:address/sync', web3Auth, safeCtrl.syncSafe)
+
 
 module.exports = router;
