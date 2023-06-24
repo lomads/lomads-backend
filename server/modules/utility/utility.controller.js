@@ -2032,8 +2032,8 @@ const deSyncTrello = async (req, res) => {
 const updateSafe = async (req, res) => {
     try {
         //const safes = await Safe.find({})
-        const gstx = await gnosisSafeTxModel.find({})
-        return res.status(200).json(gstx)
+        // const gstx = await gnosisSafeTxModel.find({})
+        // return res.status(200).json(gstx)
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);
