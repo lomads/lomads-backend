@@ -771,4 +771,15 @@ const toggleSafeState  = async (req, res) => {
     }
 }
 
-module.exports = { toggleSafeState, loadSBTDao, attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
+const deleteByUrl = async (req, res) => {
+    const { url } = req.params;
+    try {
+        await DAO.findOneAndUpdate({ url }, { deletedAt: moment().toDate() })
+        return res.status(200).json({ success: true, message: "Deleted successfully" });
+    }  catch (e) {
+        console.log(e)
+        return res.status(500).json({ message: 'Something went wrong' });
+    }
+}
+
+module.exports = { deleteByUrl, toggleSafeState, loadSBTDao, attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
