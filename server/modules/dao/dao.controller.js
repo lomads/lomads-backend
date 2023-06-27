@@ -171,7 +171,7 @@ const create = async (req, res, next) => {
                 },
             ],
             compensation: {
-                amount: "100",
+                amount: "10",
                 currency: "SWEAT",
                 symbol: "SWEAT",
                 tokenAddress: "SWEAT"
@@ -192,7 +192,7 @@ const create = async (req, res, next) => {
             creator: _id,
             members: [],
             compensation: {
-                amount: "1",
+                amount: "10",
                 currency: "SWEAT",
                 symbol: "SWEAT"
             },
@@ -215,7 +215,7 @@ const create = async (req, res, next) => {
             creator: _id,
             members: [],
             compensation: {
-                amount: "1",
+                amount: "10",
                 currency: "SWEAT",
                 symbol: "SWEAT"
             },
@@ -729,13 +729,22 @@ const attachSafe = async (req, res) => {
         mem  = dao?.members?.concat(mem)
         mem = _.uniqBy(mem, m => String(m.member))
 
+        if(dao?.safes?.length == 0) {
+            await Project.updateMany({ isDummy: true, daoId: dao?._id }, { 
+                $set : { 'compensation.currency': safe?.token?.tokenAddress, 'compensation.symbol': safe?.token?.symbol, 'compensation.tokenAddress': safe?.token?.tokenAddress }
+            })
+            await Task.updateMany({ isDummy: true, daoId: dao?._id }, { 
+                $set : { 'compensation.currency': safe?.token?.tokenAddress, 'compensation.symbol': safe?.token?.symbol }
+            })
+        }
+
         await DAO.findOneAndUpdate(
             { url },
             {
                 ...(!dao?.safe ? { safe: newSafe?._id } : {}),
                 $addToSet: { safes: newSafe?._id },
                 members: mem
-            })
+        })
 
         return res.status(200).json({ message: 'Success' });
 
