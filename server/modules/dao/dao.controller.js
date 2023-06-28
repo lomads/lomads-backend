@@ -10,6 +10,7 @@ const { daoMemberAdded } = require('@server/events');
 const moment = require('moment')
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
+const gnosisSafeTxSyncTrackerModel = require('../gnosisSafeTx/gnosisSafeTxSyncTracker.model');
 
 const loadAll = async (req, res) => {
     const { skip = 0, limit = 50 } = req.query;
@@ -737,6 +738,10 @@ const attachSafe = async (req, res) => {
                 $set : { 'compensation.currency': safe?.token?.tokenAddress, 'compensation.symbol': safe?.token?.symbol }
             })
         }
+
+        const gsts = await gnosisSafeTxSyncTrackerModel.findOne({ safeAddress: newSafe?.address })
+        if(!gsts)
+            await gnosisSafeTxSyncTrackerModel.create({ chainId: newSafe?.chainId, safeAddress: newSafe?.safeAddress })
 
         await DAO.findOneAndUpdate(
             { url },
