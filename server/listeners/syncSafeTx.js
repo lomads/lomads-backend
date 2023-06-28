@@ -27,7 +27,10 @@ module.exports = {
             if(existingtxns.length > 0) {
               for (let index = 0; index < existingtxns.length; index++) {
                 const exTxn = existingtxns[index];
-                await GnosisSafeTx.findOneAndUpdate({  $or: [{'rawTx.safeTxHash': exTxn?.rawTx?.safeTxHash }, {'rawTx.txHash': exTxn?.rawTx?.txHash }], safeAddress: safe?.safeAddress }, { rawTx: exTxn.rawTx })
+                if(exTxn?.rawTx?.safeTxHash)
+                  await GnosisSafeTx.findOneAndUpdate({'rawTx.safeTxHash': exTxn?.rawTx?.safeTxHash , safeAddress: safe?.safeAddress }, { rawTx: exTxn.rawTx })
+                else if(exTxn?.rawTx?.txHash)
+                  await GnosisSafeTx.findOneAndUpdate({'rawTx.txHash': exTxn?.rawTx?.txHash , safeAddress: safe?.safeAddress }, { rawTx: exTxn.rawTx })
               }
             }
             console.log("localTxns", localTxns.length, "receivedTxns", res.data.results.length,  "creatingTxns", txns.length, "updatingTxns", existingtxns.length)
