@@ -236,7 +236,7 @@ module.exports = (data) => `<!DOCTYPE html>
                     </tr>  
                 <tbody>  
             </table>
-            ${ data?.discord && `<table style="width:100%">
+            ${ data?.discord ? `<table style="width:100%">
                 <tbody>
                     <tr>
                         <td style="min-width:150px;color: #EA6447; font-size: 14px; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;">Join our community</td>
@@ -248,7 +248,7 @@ module.exports = (data) => `<!DOCTYPE html>
                         </td>
                     </tr>  
                 <tbody>  
-            </table>` }
+            </table>` : `` }
             <table style="width:100%">
             <tbody>
                 <tr>
