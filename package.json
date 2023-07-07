@@ -84,6 +84,7 @@
     "node-cron": "^3.0.2",
     "node-fetch": "2",
     "nodemon": "^2.0.21",
+    "stripe": "^12.10.0",
     "web3": "^1.8.2",
     "web3-token": "^1.0.2",
     "winston": "^3.8.2",

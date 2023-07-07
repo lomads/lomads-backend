@@ -64,7 +64,7 @@ const verify = async (req, res, next) => {
         } else if (paymentType === 'card') {
             const externalPayment = await ExternalPaymentStatus.findOne({ _id: ObjectId(txnReference) })
             if(externalPayment && externalPayment?.response && externalPayment?.response?.status){
-                if(externalPayment?.response?.status === "completed" || externalPayment?.response?.status === "complete") {
+                if(externalPayment?.response?.status === "completed" || externalPayment?.response?.status === "complete" || externalPayment?.response?.status === "succeeded") {
                     isVerified = true;
                 }
             }

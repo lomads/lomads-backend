@@ -58,7 +58,12 @@ const MemberSchema = new mongoose.Schema({
       daoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DAO' },
     }],
     default: []
-  }
+  },
+  stripeCustomerId: {
+    type: String,
+    required: false,
+    default: null
+  },
 });
 
 /**

@@ -29,11 +29,12 @@ const ContractSchema = new mongoose.Schema({
   gasless: { type: mongoose.Schema.Types.Boolean, default: false },
   gasConfig: { type: mongoose.Schema.Types.Object },
   externalPaymentProvider: { type: mongoose.Schema.Types.Object, 
-  default: {
-    paymentLink: 'https://buy.onramper.com',
-    provider: 'on-ramper'
-  } 
+    default: {
+      paymentLink: 'https://buy.onramper.com',
+      provider: 'on-ramper'
+    } 
   },
+  stripeAccount: { type: mongoose.Schema.Types.ObjectId, ref: 'StripeAccount' },
   mintPageConfig: { type: mongoose.Schema.Types.Object, 
     default: {
       metamask: true,
