@@ -30,7 +30,9 @@ const envVarsSchema = Joi.object({
   S3_BUCKET: Joi.string()
     .default('lomads-dao-development'),
   AES_PASS_PHRASE: Joi.string()
-    .default('lomads-dao')
+    .default('lomads-dao'),
+  STRIPE_SECRET_KEY: Joi.string()
+    .default('sk_test_51IygwuJ1UZBlZwFTScX5uBfPeiMlWp8WJ9mBPGYabjlSlqXkxVDsFZnbchNWjnrtViBJiloUNy82mZDxjOFky0EP00m4vAFi1t')
 }).unknown()
   .required();
 
@@ -80,6 +82,7 @@ const config = {
   transakBaseUrl: envVars.TRANSAK_BASE_URL,
   bankPrivateKey: envVars.BANK_PRIVATE_KEY,
   bankPublicKey: envVars.BANK_PUBLIC_KEY,
+  stripeSecretKey: envVars.STRIPE_SECRET_KEY
 };
 
 module.exports = config;

@@ -2031,9 +2031,37 @@ const deSyncTrello = async (req, res) => {
 
 const updateSafe = async (req, res) => {
     try {
-        //const safes = await Safe.find({})
-        // const gstx = await gnosisSafeTxModel.find({})
-        // return res.status(200).json(gstx)
+        const txns = await gnosisSafeTxModel.find({})
+        for (let index = 0; index < txns.length; index++) {
+            const element = txns[index];
+            if(element.rawTx?.safeTxHash && element.rawTx?.safeTxHash.indexOf('0x') > -1) {
+                const tx = await gnosisSafeTxModel.find({ 'rawTx.safeTxHash': element.rawTx.safeTxHash }).select({ "_id": 1 });
+                if(tx.length > 1) {
+                    console.log(element.rawTx.safeTxHash)
+                    console.log(tx)
+                    tx.shift()
+                    console.log(tx.map(t => t._id))
+                    try {
+                        let resp = await gnosisSafeTxModel.deleteMany({ _id : { $in: tx.map(t => t._id) }})
+                        console.log(resp)
+                    } catch (e) {  }
+                }
+            } else if (element.rawTx?.txHash) {
+                const tx = await gnosisSafeTxModel.find({ 'rawTx.txHash': element.rawTx?.txHash }).select({ "_id": 1 });
+                if(tx.length > 1) {
+                    console.log(element.rawTx.txHash)
+                    console.log(tx)
+                    tx.shift()
+                    console.log(tx.map(t => t._id))
+                    try {
+                        let resp = await gnosisSafeTxModel.deleteMany({ _id : { $in: tx.map(t => t._id) }})
+                        console.log(resp)
+                    } catch (e) {  }
+                }
+            }
+        }
+        console.log("DONE")
+        return res.status(200).json({ success: true });
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);

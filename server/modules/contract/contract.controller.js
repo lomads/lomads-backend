@@ -104,7 +104,7 @@ const update = async (req, res) => {
 const getContract = async (req, res) => {
     const { contractAddress } = req.params;
     try {
-        let contract = await Contract.findOne({ address: contractAddress });
+        let contract = await Contract.findOne({ address: contractAddress }).populate('stripeAccount');
         console.log("CONTRACTCONTRACT", contract)
         contract = { ...contract._doc, discountCodes: null, hasDiscountCodes: contract.discountCodes && contract._doc.discountCodes.length > 0 }
         return res.status(200).json(contract);
