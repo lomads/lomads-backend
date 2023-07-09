@@ -41,18 +41,22 @@ const create = async (req, res) => {
         isSingleContributor,
         isFilterRoles,
         validRoles,
+        invitations,
     } = req.body;
     try {
 
         let task = new Task({
             daoId,
             provider,
-            taskStatus: applicant ? 'assigned' : 'open',
+            // taskStatus: applicant ? 'assigned' : 'open',
+            taskStatus: 'open',
             name,
             description,
-            members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
+            // members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
+            members: [],
             creator: _id,
             project: projectId,
+            invitations,
             discussionChannel,
             deadline,
             submissionLink,
@@ -148,16 +152,19 @@ const draftTask = async (req, res) => {
         isSingleContributor,
         isFilterRoles,
         validRoles,
+        invitations,
     } = req.body;
     try {
 
         let task = new Task({
             daoId,
             provider,
-            taskStatus: applicant ? 'assigned' : 'open',
+            // taskStatus: applicant ? 'assigned' : 'open',
+            taskStatus: 'open',
             name,
             description,
-            members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
+            // members: applicant ? [{ member: applicant._id, status: 'approved' }] : [],
+            members: [],
             creator: _id,
             project: projectId,
             discussionChannel,
@@ -169,6 +176,7 @@ const draftTask = async (req, res) => {
             isSingleContributor,
             isFilterRoles,
             validRoles,
+            invitations,
             draftedAt: Date.now(),
         })
 
@@ -814,6 +822,7 @@ const editDraftTask = async (req, res) => {
         isSingleContributor,
         isFilterRoles,
         validRoles,
+        invitations,
     } = req.body;
     try {
         let task = await Task.findOne({ _id: taskId });
@@ -842,10 +851,12 @@ const editDraftTask = async (req, res) => {
         await Task.findOneAndUpdate(
             { _id: taskId },
             {
-                taskStatus: applicant?._id ? 'assigned' : 'open',
+                // taskStatus: applicant?._id ? 'assigned' : 'open',
+                taskStatus: 'open',
                 name,
                 description,
-                members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
+                // members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
+                members: [],
                 project: projectId,
                 discussionChannel,
                 deadline,
@@ -856,6 +867,7 @@ const editDraftTask = async (req, res) => {
                 isSingleContributor,
                 isFilterRoles,
                 validRoles,
+                invitations,
                 updatedAt: Date.now(),
                 draftedAt: Date.now()
             }
@@ -889,6 +901,7 @@ const convertDraftTask = async (req, res) => {
         isSingleContributor,
         isFilterRoles,
         validRoles,
+        invitations,
     } = req.body;
     try {
         let task = await Task.findOne({ _id: taskId });
@@ -917,10 +930,12 @@ const convertDraftTask = async (req, res) => {
         await Task.findOneAndUpdate(
             { _id: taskId },
             {
-                taskStatus: applicant?._id ? 'assigned' : 'open',
+                // taskStatus: applicant?._id ? 'assigned' : 'open',
+                taskStatus: 'open',
                 name,
                 description,
-                members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
+                // members: applicant?._id ? [{ member: applicant._id, status: 'approved', appliedAt: Date.now(), note: '', rejectionNote: '', links: [] }] : [],
+                members: [],
                 project: projectId,
                 discussionChannel,
                 deadline,
@@ -932,6 +947,7 @@ const convertDraftTask = async (req, res) => {
                 isSingleContributor,
                 isFilterRoles,
                 validRoles,
+                invitations,
                 updatedAt: Date.now(),
                 draftedAt: null
             }

@@ -37,6 +37,7 @@ const TaskSchema = new mongoose.Schema({
     isSingleContributor: { type: Boolean, default: false },
     isFilterRoles: { type: Boolean, default: false },
     validRoles: { type: Array, default: [] },
+    invitations: { type: Array, default: [] },
     createdAt: {
         type: Date,
         default: Date.now
