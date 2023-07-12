@@ -20,10 +20,10 @@ module.exports = {
         .then(async res => {
           if(res.data && res.data.results && res.data.results.length > 0) {
             let Alltxns = res.data.results.map(tx => { return { safeAddress: safe?.safeAddress, rawTx: tx } })
-            let txns = Alltxns.filter(tx => !_.find(localTxns, ltxn => ( ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash ||  ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.txHash )))
+            let txns = Alltxns.filter(tx => !_.find(localTxns, ltxn => ( ltxn?._doc?.rawTx?.transactionHash === tx?.rawTx?.transactionHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash ||  ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.txHash )))
             if(txns.length > 0)
               await GnosisSafeTx.create(txns)
-            let existingtxns = Alltxns.filter(tx => _.find(localTxns, ltxn => ( ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash ||  ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.txHash )))
+            let existingtxns = Alltxns.filter(tx => _.find(localTxns, ltxn => ( ltxn?._doc?.rawTx?.transactionHash === tx?.rawTx?.transactionHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash ||  ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.txHash )))
             if(existingtxns.length > 0) {
               for (let index = 0; index < existingtxns.length; index++) {
                 const exTxn = existingtxns[index];
@@ -31,6 +31,8 @@ module.exports = {
                   await GnosisSafeTx.findOneAndUpdate({'rawTx.safeTxHash': exTxn?.rawTx?.safeTxHash , safeAddress: safe?.safeAddress }, { rawTx: exTxn.rawTx })
                 else if(exTxn?.rawTx?.txHash)
                   await GnosisSafeTx.findOneAndUpdate({'rawTx.txHash': exTxn?.rawTx?.txHash , safeAddress: safe?.safeAddress }, { rawTx: exTxn.rawTx })
+                else if(exTxn?.rawTx?.transactionHash)
+                  await GnosisSafeTx.findOneAndUpdate({'rawTx.transactionHash': exTxn?.rawTx?.transactionHash , safeAddress: safe?.safeAddress }, { rawTx: exTxn.rawTx })
               }
             }
             console.log("localTxns", localTxns.length, "receivedTxns", res.data.results.length,  "creatingTxns", txns.length, "updatingTxns", existingtxns.length)
