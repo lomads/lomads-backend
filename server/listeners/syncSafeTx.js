@@ -13,13 +13,17 @@ module.exports = {
     console.log("30s")
     const safe = await GnosisSafeTxSyncTracker.findOne({ chainId: { $ne: null } }).sort({ lastSync: 1 })
     console.log(safe)
-    if(safe.chainId) {
+    if(safe.chainId && safe.safeAddress) {
       // if(!safe.lastSync) {
         const localTxns = await GnosisSafeTx.find({ 'safeAddress': safe?.safeAddress })
         axios.get(`${GNOSIS_API_ENDPOINT[safe.chainId]}/api/v1/safes/${safe?.safeAddress}/all-transactions/?limit=10000&offset=0`)
         .then(async res => {
-          if(res.data && res.data.results && res.data.results.length > 0) {
-            let Alltxns = res.data.results.map(tx => { return { safeAddress: safe?.safeAddress, rawTx: tx } })
+          let atxn = [ ...res.data.results ]
+          const { data } = await axios.get(`${GNOSIS_API_ENDPOINT[safe.chainId]}/api/v1/safes/${safe?.safeAddress}/incoming-transfers/`)
+          console.log("incoming", data.results)
+          atxn = [ ...atxn, ...data.results ]
+          if(atxn.length > 0) {
+            let Alltxns = atxn.map(tx => { return { safeAddress: safe?.safeAddress, rawTx: tx } })
             let txns = Alltxns.filter(tx => !_.find(localTxns, ltxn => ( ltxn?._doc?.rawTx?.transactionHash === tx?.rawTx?.transactionHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash ||  ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.txHash )))
             if(txns.length > 0)
               await GnosisSafeTx.create(txns)
@@ -35,8 +39,11 @@ module.exports = {
                   await GnosisSafeTx.findOneAndUpdate({'rawTx.transactionHash': exTxn?.rawTx?.transactionHash , safeAddress: safe?.safeAddress }, { rawTx: exTxn.rawTx })
               }
             }
-            console.log("localTxns", localTxns.length, "receivedTxns", res.data.results.length,  "creatingTxns", txns.length, "updatingTxns", existingtxns.length)
+            console.log("localTxns", localTxns.length, "receivedTxns", atxn.length,  "creatingTxns", txns.length, "updatingTxns", existingtxns.length)
           }
+        })
+        .catch(e => {
+          console.log(e) 
         })
         .finally(async () => {
           await GnosisSafeTxSyncTracker.findOneAndUpdate({ _id: safe._id }, { $set: { lastSync: moment().utc().toDate() } })
