@@ -2031,26 +2031,7 @@ const deSyncTrello = async (req, res) => {
 
 const updateSafe = async (req, res) => {
     try {
-        await gnosisSafeTxSyncTrackerModel.deleteMany({ safeAddress: null })
-        const safes = await Safe.find({})
-        for (let index = 0; index < safes.length; index++) {
-            const safe = safes[index];
-            const gtxss = await gnosisSafeTxSyncTrackerModel.findOne({ safeAddress: safe.address })
-            console.log(gtxss)
-            if(!gtxss) {
-                console.log(safe)
-                if(safe.address && safe.chainId) {
-                    console.log("creating.. ", safe.address)
-                    await gnosisSafeTxSyncTrackerModel.create({ safeAddress: safe.address, chainId: safe.chainId, lastSync: moment().toDate() })
-                }
-            } else {
-                if(!gtxss.chainId) {
-                    gtxss.chainId = safe.chainId
-                    await gtxss.save()
-                }
-            }
-        }
-        console.log("DONE")
+       
         return res.status(200).json({ success: true });
     } catch (e) {
         console.log(e)
