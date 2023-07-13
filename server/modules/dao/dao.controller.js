@@ -29,7 +29,7 @@ const loadAll = async (req, res) => {
 const load = async (req, res) => {
     const { _id } = req.user;
     try {
-        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [ObjectId(_id)] } }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).sort({ createAt: -1 })
+        const dao = await DAO.find({ deletedAt: null, 'members.member': { $in: [_id] } }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } }).sort({ createAt: -1 })
         return res.status(200).json(dao)
     }
     catch (e) {
