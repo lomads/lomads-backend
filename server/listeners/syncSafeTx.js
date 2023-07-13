@@ -9,7 +9,7 @@ const moment = require('moment')
 
 module.exports = {
   handle: async () => {
-    if(config.env === 'local') return;
+    //if(config.env === 'local') return;
     console.log("30s")
     const safe = await GnosisSafeTxSyncTracker.findOne({ chainId: { $ne: null } }).sort({ lastSync: 1 })
     console.log(safe)
@@ -19,15 +19,29 @@ module.exports = {
         axios.get(`${GNOSIS_API_ENDPOINT[safe.chainId]}/api/v1/safes/${safe?.safeAddress}/all-transactions/?limit=10000&offset=0`)
         .then(async res => {
           let atxn = [ ...res.data.results ]
-          const { data } = await axios.get(`${GNOSIS_API_ENDPOINT[safe.chainId]}/api/v1/safes/${safe?.safeAddress}/incoming-transfers/`)
-          console.log("incoming", data.results)
-          atxn = [ ...atxn, ...data.results ]
+          // const { data } = await axios.get(`${GNOSIS_API_ENDPOINT[safe.chainId]}/api/v1/safes/${safe?.safeAddress}/incoming-transfers/`)
+          // //console.log("incoming", data.results)
+          // atxn = [ ...atxn, ...data.results ]
           if(atxn.length > 0) {
             let Alltxns = atxn.map(tx => { return { safeAddress: safe?.safeAddress, rawTx: tx } })
-            let txns = Alltxns.filter(tx => !_.find(localTxns, ltxn => ( ltxn?._doc?.rawTx?.transactionHash === tx?.rawTx?.transactionHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash ||  ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.txHash )))
+            let txns = Alltxns.filter(tx => { 
+              if(tx.rawTx.txType === "ETHEREUM_TRANSACTION")
+                return !Boolean(_.find(localTxns, ltxn => (ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash))?._doc?.rawTx?.txHash)
+              if(tx?.rawTx?.safeTxHash)
+                return !Boolean(_.find(localTxns, ltxn => (ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash))?._doc?.rawTx?.safeTxHash) 
+              if(tx?.rawTx?.transactionHash)
+                return !Boolean(_.find(localTxns, ltxn => (ltxn?._doc?.rawTx?.transactionHash === tx?.rawTx?.transactionHash))?._doc?.rawTx?.transactionHash) 
+            })
             if(txns.length > 0)
               await GnosisSafeTx.create(txns)
-            let existingtxns = Alltxns.filter(tx => _.find(localTxns, ltxn => ( ltxn?._doc?.rawTx?.transactionHash === tx?.rawTx?.transactionHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash ||  ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash || ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.txHash )))
+            let existingtxns = Alltxns.filter(tx => { 
+              if(tx?.rawTx?.safeTxHash)
+                return _.find(localTxns, ltxn => (ltxn?._doc?.rawTx?.safeTxHash === tx?.rawTx?.safeTxHash))
+              if(tx?.rawTx?.transactionHash)
+                return _.find(localTxns, ltxn => (ltxn?._doc?.rawTx?.transactionHash === tx?.rawTx?.transactionHash))
+              if(tx?.rawTx?.txHash)
+                return _.find(localTxns, ltxn => (ltxn?._doc?.rawTx?.txHash === tx?.rawTx?.txHash))
+            })
             if(existingtxns.length > 0) {
               for (let index = 0; index < existingtxns.length; index++) {
                 const exTxn = existingtxns[index];
