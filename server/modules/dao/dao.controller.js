@@ -741,7 +741,7 @@ const attachSafe = async (req, res) => {
 
         const gsts = await gnosisSafeTxSyncTrackerModel.findOne({ safeAddress: newSafe?.address })
         if(!gsts)
-            await gnosisSafeTxSyncTrackerModel.create({ chainId: newSafe?.chainId, safeAddress: newSafe?.safeAddress })
+            await gnosisSafeTxSyncTrackerModel.create({ chainId: newSafe?.chainId, safeAddress: newSafe?.address })
 
         await DAO.findOneAndUpdate(
             { url },

@@ -2031,32 +2031,22 @@ const deSyncTrello = async (req, res) => {
 
 const updateSafe = async (req, res) => {
     try {
-        const txns = await gnosisSafeTxModel.find({})
-        for (let index = 0; index < txns.length; index++) {
-            const element = txns[index];
-            if(element.rawTx?.safeTxHash && element.rawTx?.safeTxHash.indexOf('0x') > -1) {
-                const tx = await gnosisSafeTxModel.find({ 'rawTx.safeTxHash': element.rawTx.safeTxHash }).select({ "_id": 1 });
-                if(tx.length > 1) {
-                    console.log(element.rawTx.safeTxHash)
-                    console.log(tx)
-                    tx.shift()
-                    console.log(tx.map(t => t._id))
-                    try {
-                        let resp = await gnosisSafeTxModel.deleteMany({ _id : { $in: tx.map(t => t._id) }})
-                        console.log(resp)
-                    } catch (e) {  }
+        await gnosisSafeTxSyncTrackerModel.deleteMany({ safeAddress: null })
+        const safes = await Safe.find({})
+        for (let index = 0; index < safes.length; index++) {
+            const safe = safes[index];
+            const gtxss = await gnosisSafeTxSyncTrackerModel.findOne({ safeAddress: safe.address })
+            console.log(gtxss)
+            if(!gtxss) {
+                console.log(safe)
+                if(safe.address && safe.chainId) {
+                    console.log("creating.. ", safe.address)
+                    await gnosisSafeTxSyncTrackerModel.create({ safeAddress: safe.address, chainId: safe.chainId, lastSync: moment().toDate() })
                 }
-            } else if (element.rawTx?.txHash) {
-                const tx = await gnosisSafeTxModel.find({ 'rawTx.txHash': element.rawTx?.txHash }).select({ "_id": 1 });
-                if(tx.length > 1) {
-                    console.log(element.rawTx.txHash)
-                    console.log(tx)
-                    tx.shift()
-                    console.log(tx.map(t => t._id))
-                    try {
-                        let resp = await gnosisSafeTxModel.deleteMany({ _id : { $in: tx.map(t => t._id) }})
-                        console.log(resp)
-                    } catch (e) {  }
+            } else {
+                if(!gtxss.chainId) {
+                    gtxss.chainId = safe.chainId
+                    await gtxss.save()
                 }
             }
         }
