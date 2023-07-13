@@ -389,7 +389,7 @@ const deleteProjectMember = async (req, res) => {
 
 const editProjectMember = async (req, res) => {
     const { projectId } = req.params;
-    const { memberList, daoId, inviteType, validRoles } = req.body;
+    const { memberList, daoId, inviteType, validRoles, invitations } = req.body;
     try {
         let project = await Project.findOne({ _id: projectId });
         if (!project) {
@@ -419,7 +419,8 @@ const editProjectMember = async (req, res) => {
             {
                 members: memberList,
                 inviteType,
-                validRoles
+                validRoles,
+                invitations
             }
         )
 
