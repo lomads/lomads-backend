@@ -9,7 +9,7 @@ const moment = require('moment')
 
 module.exports = {
   handle: async () => {
-    //if(config.env === 'local') return;
+    if(config.env === 'local') return;
     console.log("30s")
     const safe = await GnosisSafeTxSyncTracker.findOne({ chainId: { $ne: null } }).sort({ lastSync: 1 })
     console.log(safe)
