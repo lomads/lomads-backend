@@ -13,7 +13,7 @@ const ProjectSchema = new mongoose.Schema({
     isDummy: { type: Boolean, default: false },
     provider: { type: String, default: 'Lomads' },
     metaData: { type: mongoose.Schema.Types.Mixed, default: null },
-    viewers : {
+    viewers: {
         type: Array,
         default: []
     },
@@ -28,6 +28,7 @@ const ProjectSchema = new mongoose.Schema({
         type: Array,
         default: []
     },
+    invitations: { type: Array, default: [] },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Member' }],
     tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     links: {

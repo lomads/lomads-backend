@@ -26,7 +26,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     const { _id, wallet } = req.user;
-    const { name, description, members, links, milestones, compensation, kra, daoId, inviteType, validRoles } = req.body;
+    const { name, description, members, links, milestones, compensation, kra, daoId, inviteType, validRoles, invitations } = req.body;
     let mMembers = [];
     try {
 
@@ -57,7 +57,7 @@ const create = async (req, res) => {
         }
 
         let project = new Project({
-            daoId, name, description, members: mem, links, milestones, compensation, kra: kra1, creator: wallet, inviteType, validRoles
+            daoId, name, description, members: mem, links, milestones, compensation, kra: kra1, creator: wallet, inviteType, validRoles, invitations
         })
 
         project = await project.save();
@@ -878,5 +878,5 @@ const editProjectMilestone = async (req, res) => {
 
 module.exports = {
     checkDiscordServerExists, getById, create, addProjectMember, updateProjectMember, deleteProjectMember, editProjectMember, archiveProject, deleteProject, addProjectLinks, updateProjectLink,
-    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, editProjectKRA, updateProjectMilestones, joinDiscordQueue, editProjectLinks, editProjectMilestone,updateViewProject
+    checkNotionSpaceAdminStatus, getNotionUser, addNotionUserRole, updateProjectDetails, updateProjectKRAReview, editProjectKRA, updateProjectMilestones, joinDiscordQueue, editProjectLinks, editProjectMilestone, updateViewProject
 };
