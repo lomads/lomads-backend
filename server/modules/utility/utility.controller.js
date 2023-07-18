@@ -2031,8 +2031,8 @@ const deSyncTrello = async (req, res) => {
 
 const updateSafe = async (req, res) => {
     try {
-       
-        return res.status(200).json({ success: true });
+
+       return res.status(200).json(projects);
     } catch (e) {
         console.log(e)
         return res.status(500).json(e);

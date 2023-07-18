@@ -497,12 +497,7 @@ const approveTask = async (req, res) => {
                 }
             )
         }
-        await Task.findOneAndUpdate(
-            { _id: taskId, 'members.member._id': recipient },
-            {
-                'members.$.status': 'approved'
-            }
-        )
+
         await Task.updateOne(
             {
                 _id: taskId,
@@ -521,7 +516,6 @@ const approveTask = async (req, res) => {
         if (d.sbt) {
             const filter = { 'attributes.value': { $regex: new RegExp(`^${m.wallet}$`, "i") }, contract: d.sbt._id }
             const metadata = await Metadata.findOne(filter)
-            console.log("metadata====>", metadata)
             if (metadata) {
                 let attrs = [...metadata._doc.attributes];
                 if (!find(attrs, attr => attr.trait_type === 'tasks')) {

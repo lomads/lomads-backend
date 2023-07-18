@@ -43,17 +43,12 @@ const create = async (req, res) => {
 
         let mem = uniqBy(mMembers.map(m => m._id))
 
-        let kra1 = {
-            ...kra,
-            tracker: [{
-                start: moment().startOf('day').unix(),
-                end: moment().startOf('day').add(1, kra.frequency === 'daily' ? 'day' : kra.frequency === 'weekly' ? 'week' : kra.frequency === 'monthly' ? 'month' : 'month').endOf('day').unix(),
-                results: kra.results.map(result => {
-                    return {
-                        ...result, progress: 0, color: "#FFCC18"
-                    }
-                })
-            }]
+        let kra1 = undefined;
+        if(kra) {
+            kra1 = {
+                ...kra,
+                tracker: []
+            }
         }
 
         let project = new Project({
@@ -808,6 +803,8 @@ const editProjectKRA = async (req, res) => {
         let ob = { ...project.kra };
         ob.frequency = frequency;
         ob.results = results;
+        if(!project?.kra?.tracker)
+            ob.tracker = []
 
         await Project.findOneAndUpdate(
             { _id: projectId },
