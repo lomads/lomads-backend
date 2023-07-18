@@ -746,8 +746,11 @@ const editTask = async (req, res) => {
         isFilterRoles,
         validRoles,
         members,
+        invitations,
         reviewer
     } = req.body;
+
+    console.log("invitations : ", req.body.invitations);
 
     let taskStatus = contributionType === 'open' ? 'open' : 'assigned';
 
