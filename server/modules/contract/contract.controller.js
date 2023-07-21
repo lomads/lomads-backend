@@ -132,6 +132,7 @@ const signature = async (req, res) => {
     const { chainId, contract, tokenId, payment = "" } = req.query;
     try {
         const signature = await getSignature({ chainId, contract, tokenId, payment })
+        console.log("signature", signature)
         return res.status(200).json({ signature });
     }
     catch (e) {

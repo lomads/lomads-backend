@@ -2051,9 +2051,9 @@ const getEstimateGas = async (req, res) => {
 }
 
 const getEstimateMintGas = async (req, res) => {
-    const { chainId, address, abi } = req.body;
+    const { chainId, address, abi, version = 2 } = req.body;
     try {
-        const gas = await mintEstimateGas({ chainId, address, abi })
+        const gas = await mintEstimateGas({ chainId, address, abi, version })
         return res.status(200).json(gas);
     } catch (e) {
         console.log(e)

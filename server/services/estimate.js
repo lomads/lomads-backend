@@ -16,7 +16,7 @@ const estimateGas = async ({ chainId, to, value }) => {
     return gas
 }
 
-const mintEstimateGas = async ({ chainId, address, abi }) => {
+const mintEstimateGas = async ({ chainId, address, abi, version = 2}) => {
     let provider = new ethers.providers.JsonRpcProvider(INFURA_NETWORK_URLS(config.infuraKey)[chainId])
     let wallet = new ethers.Wallet(config.bankPrivateKey)
     const signer = await provider.getSigner(wallet.address)
@@ -24,12 +24,23 @@ const mintEstimateGas = async ({ chainId, address, abi }) => {
     let tokenId = await contract?.getCurrentTokenId()
     tokenId = parseInt(tokenId.toString());
     const signature = getSignature({ chainId, contract: address, tokenId, payment: '--' });
-    const estimateTransactionCost = await contract?.estimateGas.safeMint(
-        "",
-        tokenId,
-        "--",
-        signature
-      );
+    let estimateTransactionCost = null;
+    if(version >= 3) {
+        estimateTransactionCost = await contract?.estimateGas.safeMint(
+            "",
+            tokenId,
+            "--",
+            signature,
+            "sender"
+        );
+    } else {
+        estimateTransactionCost = await contract?.estimateGas.safeMint(
+            "",
+            tokenId,
+            "--",
+            signature
+        );
+    }
     const gasPrice = await provider?.getGasPrice();
     const parsed = ethers.utils.formatEther((parseFloat(gasPrice.toString()) * parseFloat(estimateTransactionCost.toString())).toString())
     return parsed
