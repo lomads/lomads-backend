@@ -31,7 +31,7 @@ const syncSafe = async (req, res) => {
 const updateSafe = async (req, res) => {
     const { address } = req.params 
     try {
-        const response = await Safe.updateOne({ address }, { $set: { ...req.body } })
+        const response = await Safe.updateMany({ address }, { $set: { ...req.body } })
         return res.status(200).json({ message: 'Success' })
     }
     catch (e) {
