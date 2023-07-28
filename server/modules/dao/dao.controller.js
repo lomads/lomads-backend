@@ -714,9 +714,9 @@ const attachSafe = async (req, res) => {
         }
         mMembers = mMembers.map(m => m._doc)
 
-        let newSafe = null;
+        let newSafe = await Safe.findOne({ address: safe?.address })
         let O = [];
-        if (safe) {
+        if (safe && !newSafe) {
             let { name, address, owners, threshold } = safe;
             O = owners.map(o => o.toLowerCase())
             newSafe = new Safe({ threshold, chainId: safe?.chainId, name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
