@@ -10,12 +10,21 @@ const httpStatus = require('http-status');
 const expressWinston = require('express-winston');
 const expressValidation = require('express-validation');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit')
+const perfectExpressSanitizer = require("perfect-express-sanitizer");
 const winstonInstance = require('./winston');
 const shareRoutes = require('@root/server/modules/share/share.route');
 const routes = require('@root/index.route');
 const config = require('@config/config');
 const APIError = require('@server/helpers/APIError');
 var cron = require('node-cron');
+
+const limiter = rateLimit({
+	windowMs: 1000, // 1 second
+	max: 15, // Limit each IP to 15 requests per `window` (here, per 1 second)
+	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
 
 const app = express();
 
@@ -26,6 +35,16 @@ if (config.env === 'development') {
   app.use(logger('dev'));
 }
 
+app.use(function (req, res, next) {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; frame-src 'self'"
+  );
+  next();
+});
+
+app.use(perfectExpressSanitizer.clean({ xss: true,  noSql: true,  sql: true, level: 2 }));
+
 // parse body params and attache them to req.body
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -33,6 +52,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compress());
 app.use(methodOverride());
+app.use(limiter)
 
 // secure apps by setting various HTTP headers
 app.use(helmet());

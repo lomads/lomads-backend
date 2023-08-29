@@ -6,10 +6,13 @@ const ObjectId = require('mongodb').ObjectID;
 const syncSafe = async (req, res) => {
     const { address } = req.params 
     const { owners, ...others } = req.body;
+    if(!req.body.owners) {
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
     try {
         let members = []
-        for (let index = 0; index < owners.length; index++) {
-            const owner = owners[index];
+        for (let index = 0; index < req.body.owners.length; index++) {
+            const owner = req.body.owners[index];
             const filter = { wallet: { $regex: new RegExp(`^${owner}$`, "i") } }
             let m = await Member.findOne(filter);
             if (!m) {

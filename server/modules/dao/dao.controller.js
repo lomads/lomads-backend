@@ -56,6 +56,14 @@ const create = async (req, res, next) => {
 
     if (!name)
         return res.status(400).json({ message: 'Organisation name is required' })
+    const currDao = await DAO.findOne({ url })
+    if(currDao){
+        return res.status(400).json({ message: `Organisation with url ${url} already exists` })
+    }
+    
+    if(!_.find(members, m => toChecksumAddress(m.address) === toChecksumAddress(wallet))) {
+        return res.status(500).json({ message: 'Something went wrong. Please try again' })
+    }
     let mMembers = []
     try {
         for (let index = 0; index < members.length; index++) {
@@ -263,12 +271,17 @@ const create = async (req, res, next) => {
 }
 
 const updateDetails = async (req, res) => {
+    const { _id } = req.user;
     const { url } = req.params;
-    try {
 
-        let dao = await DAO.findOne({ deletedAt: null, url });
+    try {
+        let dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [_id] } });
         if (!dao)
-            return res.status(404).json({ message: 'DAO not found' })
+            return res.status(404).json({ message: 'DAO not found or Unauthorised action' })
+        const member = _.find(dao.members, m => m.member.toString() === _id.toString())
+        if(!member || (member && member.role !== 'role1')) {
+            return res.status(500).json({ message: 'Unauthorised action' })
+        }
 
         await DAO.findOneAndUpdate(
             { deletedAt: null, url },
@@ -288,8 +301,20 @@ const updateDetails = async (req, res) => {
 
 const getByUrl = async (req, res) => {
     const { url } = req.params;
+    const user = req.user;
     try {
-        const dao = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        let dao = null;
+        let userInDao = null;
+        if(user){
+            userInDao = await DAO.findOne({ url, 'members.member': { $in: [user._id] } })
+            console.log(userInDao)
+        }
+        if(user && userInDao){
+            dao = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
+        } else {
+            dao = await DAO.findOne({ url }, { contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, sbt :0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
+            .populate({ path: 'safe safes' })
+        }
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
         return res.status(200).json(dao)
@@ -305,10 +330,11 @@ const addDaoMember = async (req, res) => {
     const { _id } = req.user;
     const { url } = req.params;
     const { name, address, role = "role4" } = req.body;
+    
 
     try {
         //const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
-        const dao = await DAO.findOne({ deletedAt: null, url })
+        const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
@@ -356,12 +382,13 @@ const createOption = async (req, res) => {
 }
 
 const addDaoMemberList = async (req, res) => {
+    const { _id } = req.user;
     const { url } = req.params;
     let { list: memberList } = req.body;
 
     let mMembers = [];
     try {
-        const dao = await DAO.findOne({ url, deletedAt: null }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
+        const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] }, deletedAt: null }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } });
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
@@ -406,6 +433,7 @@ const addDaoMemberList = async (req, res) => {
 }
 
 const manageDaoMember = async (req, res) => {
+    const { _id } = req.user
     const { url } = req.params;
     const { deleteList, updateList } = req.body;
 
@@ -413,7 +441,7 @@ const manageDaoMember = async (req, res) => {
     console.log("updated array : ", updateList)
 
     try {
-        const dao = await DAO.findOne({ deletedAt: null, url })
+        const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [_id] } })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
@@ -457,12 +485,13 @@ const manageDaoMember = async (req, res) => {
 }
 
 const addDaoLinks = async (req, res) => {
+    const { _id } = req.user
     const { url } = req.params;
     const { title, link } = req.body;
     console.log("link details : ", title, link);
     try {
 
-        let dao = await DAO.findOne({ deletedAt: null, url });
+        let dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [_id] } });
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
@@ -479,12 +508,13 @@ const addDaoLinks = async (req, res) => {
 }
 
 const updateDaoLinks = async (req, res) => {
+    const { _id } = req.user
     const { url } = req.params;
     const { links } = req.body;
     console.log("links : ", links);
     try {
 
-        let dao = await DAO.findOne({ deletedAt: null, url });
+        let dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [_id] } });
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
@@ -512,11 +542,12 @@ const updateDaoLinks = async (req, res) => {
 }
 
 const deleteDaoLink = async (req, res) => {
+    const { _id } = req.user;
     const { url } = req.params;
     const { link, repoInfo, webhookId, token } = req.body;
     try {
 
-        let dao = await DAO.findOne({ deletedAt: null, url });
+        let dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [_id] } });
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
 
@@ -573,10 +604,19 @@ const deleteDaoLink = async (req, res) => {
 }
 
 const updateSweatPoints = async (req, res) => {
+    const {  _id } = req.user;
     const { url } = req.params;
     const { status } = req.body;
     try {
-        await DAO.findOneAndUpdate({ url }, { sweatPoints: status })
+        const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
+        if(!dao) {
+            return res.status(500).json({ message: 'DAO not found' })
+        }
+        const member = _.find(dao.members, m => m.member.toString() === _id.toString())
+        if(!member || (member && member.role !== 'role1')) {
+            return res.status(500).json({ message: 'Unauthorised action' })
+        }
+        await DAO.findOneAndUpdate({ url, 'members.member': { $in: [_id] } }, { sweatPoints: status })
         const d = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         return res.status(200).json(d);
     }
@@ -587,9 +627,10 @@ const updateSweatPoints = async (req, res) => {
 }
 
 const syncSafeOwners = async (req, res) => {
+    const {  _id } = req.user;
     const { url } = req.params;
     const owners = req.body;
-    const dao = await DAO.findOne({ url }).populate({ path: 'members.member', populate: { path: 'owners members members.member' } })
+    const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } }).populate({ path: 'members.member', populate: { path: 'owners members members.member' } })
     if (!dao)
         return res.status(404).json({ message: 'DAO not found' })
     let members = []
@@ -687,17 +728,23 @@ const updateUserDiscord = async (req, res) => {
         return res.status(200).json({ message: 'Success' });
     } catch (e) {
         console.log(e)
+        return res.status(200).json({ message: 'Success' });
     }
 }
 
 const attachSafe = async (req, res) => {
+    const { _id } = req.user
     const { url } = req.params;
     const { safe, members } = req.body;
 
     try {
-        const dao = await DAO.findOne({ url })
+        const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' });
+        const member = _.find(dao.members, m => m.member.toString() === _id.toString())
+        if(!member || (member && member.role !== 'role1')) {
+            return res.status(500).json({ message: 'Unauthorised action' })
+        }
 
         let mMembers = []
         for (let index = 0; index < members.length; index++) {
@@ -760,9 +807,17 @@ const attachSafe = async (req, res) => {
 }
 
 const toggleSafeState  = async (req, res) => {
+    const { _id } = req.user
     const { url } = req.params;
     const { safeAddress } = req.body;
     try {
+        const mydao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
+        if (!mydao)
+            return res.status(404).json({ message: 'DAO not found' });
+        const member = _.find(mydao.members, m => m.member.toString() === _id.toString())
+        if(!member || (member && member.role !== 'role1')) {
+            return res.status(500).json({ message: 'Unauthorised action' })
+        }
         const hasDisabledSafe = await DAO.findOne({ url, disabledSafes: { $in: [safeAddress] } })
         if(hasDisabledSafe) 
             await DAO.findOneAndUpdate({ url }, { $pull: { disabledSafes: { $in: [safeAddress] } } })
@@ -777,8 +832,20 @@ const toggleSafeState  = async (req, res) => {
 }
 
 const deleteByUrl = async (req, res) => {
+    const { _id, platformRole } = req.user;
     const { url } = req.params;
     try {
+        console.log(platformRole)
+        if(platformRole !== 'admin') {
+            const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
+            if(!dao) {
+                return res.status(500).json({ message: 'DAO not found' })
+            }
+            const member = _.find(dao.members, m => m.member.toString() === _id.toString())
+            if(!member || (member && member.role !== 'role1')) {
+                return res.status(500).json({ message: 'Unauthorised action' })
+            }
+        }
         await DAO.findOneAndUpdate({ url }, { deletedAt: moment().toDate() })
         return res.status(200).json({ success: true, message: "Deleted successfully" });
     }  catch (e) {

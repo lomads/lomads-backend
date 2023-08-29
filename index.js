@@ -40,7 +40,7 @@ if (!module.parent) {
   // listen on port config.port
   app.listen(config.port, () => {
     events.boot();
-    discordConnect();
+    //discordConnect();
     schedule();
     console.info(`server started on port ${config.port} (${config.env})`); // eslint-disable-line no-console
   });

@@ -473,7 +473,7 @@ const storeIssues = async (req, res) => {
                                     dummyTaskFlag: false,
                                     $addToSet: {
                                         tasks: { $each: arr },
-                                        links: { title: linkOb.title, link: tempLink }
+                                        links: { title: linkOb.title, link: tempLink, noPreview: true }
                                     },
                                 }
                             )
@@ -507,7 +507,7 @@ const storeIssues = async (req, res) => {
                     {
                         [`github.${repoInfo}`]: { 'webhookId': result.id.toString() },
                         $addToSet: {
-                            links: { title: linkOb.title, link: tempLink }
+                            links: { title: linkOb.title, link: tempLink, noPreview: true }
                         },
                     }
                 )
@@ -537,7 +537,7 @@ const storeIssues = async (req, res) => {
                                     dummyTaskFlag: false,
                                     $addToSet: {
                                         tasks: { $each: arr },
-                                        links: { title: linkOb.title, link: tempLink }
+                                        links: { title: linkOb.title, link: tempLink, noPreview: true }
                                     },
                                 }
                             )
@@ -571,7 +571,7 @@ const storeIssues = async (req, res) => {
                     {
                         [`github.${repoInfo}`]: { 'webhookId': rnull },
                         $addToSet: {
-                            links: { title: linkOb.title, link: tempLink }
+                            links: { title: linkOb.title, link: tempLink, noPreview: true }
                         },
                     }
                 )
