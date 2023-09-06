@@ -4,7 +4,11 @@ const SupportedChainId = {
     MAINNET: 1,
     GOERLI: 5,
     POLYGON: 137,
-    CELO: 42220
+    CELO: 42220,
+    BASE: 8453,
+    OPTIMISM : 10,
+    ARBITRUM : 42161,
+    AVALANCHE : 43114,
   }
 
   const SBT_DEPLOYER_ADDRESSES  = {
@@ -16,7 +20,11 @@ const SupportedChainId = {
     [SupportedChainId.GOERLI]: "https://safe-transaction-goerli.safe.global",
     [SupportedChainId.POLYGON]: 'https://safe-transaction-polygon.safe.global',
     [SupportedChainId.MAINNET]: 'https://safe-transaction-mainnet.safe.global',
-    [SupportedChainId.CELO]: 'https://safe-transaction-celo.safe.global'
+    [SupportedChainId.CELO]: 'https://safe-transaction-celo.safe.global',
+    [SupportedChainId.BASE]: 'https://safe-transaction-base.safe.global',
+    [SupportedChainId.OPTIMISM]:'https://safe-transaction-optimism.safe.global',
+    [SupportedChainId.ARBITRUM]:'https://safe-transaction-arbitrum.safe.global',
+    [SupportedChainId.AVALANCHE]:'https://safe-transaction-avalanche.safe.global'
   } 
 
   const INFURA_NETWORK_URLS = (INFURA_KEY) => {
@@ -24,7 +32,11 @@ const SupportedChainId = {
       [SupportedChainId.MAINNET]: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
       [SupportedChainId.GOERLI]: `https://goerli.infura.io/v3/${INFURA_KEY}`,
       [SupportedChainId.POLYGON]: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
-      [SupportedChainId.CELO]: `https://celo-mainnet.infura.io/v3/${INFURA_KEY}`
+      [SupportedChainId.CELO]: `https://celo-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.BASE]: `https://base-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.OPTIMISM]: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.ARBITRUM]: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.AVALANCHE]: `https://avalanche-mainnet.infura.io/v3/${INFURA_KEY}`,
     }
   }
 
@@ -44,6 +56,22 @@ const SupportedChainId = {
     [SupportedChainId.CELO]: { 
       baseUrl: `https://api.celoscan.com/`,
       apiKey: config.celoScanKey
+    },
+    [`${SupportedChainId.BASE}`]: {
+      id: "base",
+      symbol: "BASE",
+    },
+    [`${SupportedChainId.OPTIMISM}`]: {
+      id: "opt",
+      symbol: "ETH",
+    },
+    [`${SupportedChainId.ARBITRUM}`]: {
+      id: "arb",
+      symbol: "ETH",
+    },
+    [`${SupportedChainId.AVALANCHE}`]: {
+      id: "avax",
+      symbol: "AVAX",
     },
   }
 
