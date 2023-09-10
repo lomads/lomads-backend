@@ -75,17 +75,17 @@ const updateTxLabel = async (req, res) => {
     try {
         if(label){
             await gnosisSafeTxModel.findOneAndUpdate(
-                { safeAddress, 'rawTx.safeTxHash': safeTxHash },
+                { safeAddress, $or: [{'rawTx.safeTxHash': safeTxHash}, {'rawTx.transactionHash': safeTxHash}, {'rawTx.txHash': safeTxHash}] },
                 { $set: { [`metadata.${recipient}.label`]: label } }
             )
         }
         if(tag){
             await gnosisSafeTxModel.findOneAndUpdate(
-                { safeAddress, 'rawTx.safeTxHash': safeTxHash },
+                { safeAddress, $or: [{'rawTx.safeTxHash': safeTxHash}, {'rawTx.transactionHash': safeTxHash}, {'rawTx.txHash': safeTxHash}] },
                 { $set: { [`metadata.${recipient}.tag`]: tag } }
             )
         }
-        const gTx = await gnosisSafeTxModel.findOne({ safeAddress, 'rawTx.safeTxHash': safeTxHash })
+        const gTx = await gnosisSafeTxModel.findOne({ safeAddress, $or: [{'rawTx.safeTxHash': safeTxHash}, {'rawTx.transactionHash': safeTxHash}, {'rawTx.txHash': safeTxHash}]})
         return res.status(200).json(gTx)
     }
     catch (e) {
