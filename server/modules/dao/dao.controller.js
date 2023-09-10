@@ -733,7 +733,7 @@ const updateUserDiscord = async (req, res) => {
 }
 
 const attachSafe = async (req, res) => {
-    const { _id } = req.user
+    const { _id, wallet } = req.user
     const { url } = req.params;
     const { safe, members } = req.body;
 
@@ -741,7 +741,7 @@ const attachSafe = async (req, res) => {
         const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' });
-        const member = _.find(dao.members, m => m.member.toString() === _id.toString())
+        const member = _.find(members, m => toChecksumAddress(m.address) === wallet)
         if(!member || (member && member.role !== 'role1')) {
             return res.status(500).json({ message: 'Unauthorised action' })
         }
