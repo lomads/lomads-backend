@@ -51,14 +51,6 @@ const SupportedChainId = {
       baseUrl: `https://api.celoscan.com/`,
       apiKey: config.celoScanKey
     },
-    [SupportedChainId.BASE]: { 
-      baseUrl: `"https://basescan.org"`,
-      apiKey: config.baseScanKey
-    },
-    [SupportedChainId.GNOSIS]: { 
-      baseUrl: `"https://gnosisscan.io"`,
-      apiKey: config.gnosisScanKey
-    },
   }
 
   module.exports = {
