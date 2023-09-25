@@ -77,7 +77,6 @@ const config = {
   trelloSecret: envVars.TRELLO_SECRET,
   etherScanKey: envVars.ETHERSCAN_KEY,
   polyScanKey: envVars.POLYSCAN_KEY,
-  celoScanKey: envVars.CELOSCAN_KEY,
   transakApiKey: envVars.TRANSAK_API_KEY,
   transakApiSecret: envVars.TRANSAK_API_SECRET,
   transakBaseUrl: envVars.TRANSAK_BASE_URL,
