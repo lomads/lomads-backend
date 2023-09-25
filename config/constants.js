@@ -47,10 +47,6 @@ const SupportedChainId = {
       baseUrl: `https://api.polygonscan.com/`,
       apiKey: config.polyScanKey
     },
-    [SupportedChainId.CELO]: { 
-      baseUrl: `https://api.celoscan.com/`,
-      apiKey: config.celoScanKey
-    },
   }
 
   module.exports = {
