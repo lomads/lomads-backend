@@ -4,7 +4,9 @@ const SupportedChainId = {
     MAINNET: 1,
     GOERLI: 5,
     POLYGON: 137,
-    CELO: 42220
+    CELO: 42220,
+    BASE: 8453,
+    GNOSIS = 100
   }
 
   const SBT_DEPLOYER_ADDRESSES  = {
@@ -16,7 +18,9 @@ const SupportedChainId = {
     [SupportedChainId.GOERLI]: "https://safe-transaction-goerli.safe.global",
     [SupportedChainId.POLYGON]: 'https://safe-transaction-polygon.safe.global',
     [SupportedChainId.MAINNET]: 'https://safe-transaction-mainnet.safe.global',
-    [SupportedChainId.CELO]: 'https://safe-transaction-celo.safe.global'
+    [SupportedChainId.CELO]: 'https://safe-transaction-celo.safe.global',
+    [SupportedChainId.BASE]: 'https://safe-transaction-base.safe.global',
+    [SupportedChainId.GNOSIS]: 'https://safe-transaction-gnosis-chain.safe.global/'
   } 
 
   const INFURA_NETWORK_URLS = (INFURA_KEY) => {
@@ -24,7 +28,9 @@ const SupportedChainId = {
       [SupportedChainId.MAINNET]: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
       [SupportedChainId.GOERLI]: `https://goerli.infura.io/v3/${INFURA_KEY}`,
       [SupportedChainId.POLYGON]: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
-      [SupportedChainId.CELO]: `https://celo-mainnet.infura.io/v3/${INFURA_KEY}`
+      [SupportedChainId.CELO]: `https://celo-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.BASE]: `https://base-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.GNOSIS]: `https://gnosis-mainnet.infura.io/v3/${INFURA_KEY}`
     }
   }
 
@@ -44,6 +50,14 @@ const SupportedChainId = {
     [SupportedChainId.CELO]: { 
       baseUrl: `https://api.celoscan.com/`,
       apiKey: config.celoScanKey
+    },
+    [SupportedChainId.BASE]: { 
+      baseUrl: `"https://basescan.org"`,
+      apiKey: config.baseScanKey
+    },
+    [SupportedChainId.GNOSIS]: { 
+      baseUrl: `"https://gnosisscan.io"`,
+      apiKey: config.gnosisScanKey
     },
   }
 
