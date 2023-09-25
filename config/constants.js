@@ -6,7 +6,7 @@ const SupportedChainId = {
     POLYGON: 137,
     CELO: 42220,
     BASE: 8453,
-    GNOSIS = 100,
+    GNOSIS: 100,
   }
 
   const SBT_DEPLOYER_ADDRESSES  = {
