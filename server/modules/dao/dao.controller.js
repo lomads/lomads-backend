@@ -312,8 +312,8 @@ const getByUrl = async (req, res) => {
         if(user && userInDao){
             dao = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         } else {
-            dao = await DAO.findOne({ url }, { contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, sbt :0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
-            .populate({ path: 'safe safes' })
+            dao = await DAO.findOne({ url }, { contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
+            .populate({ path: 'safe safes sbt' })
         }
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
