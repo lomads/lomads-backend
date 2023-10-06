@@ -84,7 +84,7 @@ const create = async (req, res, next) => {
         if (safe) {
             let { name, address, owners } = safe;
             O = owners.map(o => o.toLowerCase())
-            newSafe = new Safe({ chainId: safe?.chainId, name, address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
+            newSafe = new Safe({ chainId: safe?.chainId, name: name.replace(/[^a-zA-Z ]/g, ""), address: address, owners: mMembers.filter(m => O.indexOf(m.wallet.toLowerCase()) > -1).map(m => m._id) })
             newSafe = await newSafe.save();
         }
 
@@ -97,7 +97,7 @@ const create = async (req, res, next) => {
         let dao = new DAO({
             contractAddress,
             url: daoURL,
-            name,
+            name: name.replace(/[^a-zA-Z ]/g, ""),
             description,
             image,
             members: mem,
@@ -312,8 +312,8 @@ const getByUrl = async (req, res) => {
         if(user && userInDao){
             dao = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         } else {
-            dao = await DAO.findOne({ url }, { contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
-            .populate({ path: 'safe safes sbt' })
+            dao = await DAO.findOne({ url }, {  contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
+            .populate({ path: 'safe safes sbt', select: '-discountCodes -metadata -treasury -nonPayingMembers -membersList -transactions', })
         }
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
