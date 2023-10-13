@@ -7,6 +7,9 @@ const SupportedChainId = {
     CELO: 42220,
     BASE: 8453,
     GNOSIS: 100,
+    OPTIMISM: 10,
+    ARBITRUM: 42161,
+    AVALANCHE: 43114,
   }
 
   const SBT_DEPLOYER_ADDRESSES  = {
@@ -20,7 +23,10 @@ const SupportedChainId = {
     [SupportedChainId.MAINNET]: 'https://safe-transaction-mainnet.safe.global',
     [SupportedChainId.CELO]: 'https://safe-transaction-celo.safe.global',
     [SupportedChainId.BASE]: 'https://safe-transaction-base.safe.global',
-    [SupportedChainId.GNOSIS]: 'https://safe-transaction-gnosis-chain.safe.global/'
+    [SupportedChainId.GNOSIS]: 'https://safe-transaction-gnosis-chain.safe.global/',
+    [SupportedChainId.OPTIMISM]:'https://safe-transaction-optimism.safe.global',
+    [SupportedChainId.ARBITRUM]:'https://safe-transaction-arbitrum.safe.global',
+    [SupportedChainId.AVALANCHE]:'https://safe-transaction-avalanche.safe.global',
   } 
 
   const INFURA_NETWORK_URLS = (INFURA_KEY) => {
@@ -30,7 +36,10 @@ const SupportedChainId = {
       [SupportedChainId.POLYGON]: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
       [SupportedChainId.CELO]: `https://celo-mainnet.infura.io/v3/${INFURA_KEY}`,
       [SupportedChainId.BASE]: `https://base-mainnet.infura.io/v3/${INFURA_KEY}`,
-      [SupportedChainId.GNOSIS]: `https://gnosis-mainnet.infura.io/v3/${INFURA_KEY}`
+      [SupportedChainId.GNOSIS]: `https://gnosis-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.OPTIMISM]: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.ARBITRUM]: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
+      [SupportedChainId.AVALANCHE]: `https://avalanche-mainnet.infura.io/v3/${INFURA_KEY}`,
     }
   }
 
@@ -58,6 +67,18 @@ const SupportedChainId = {
     [SupportedChainId.GNOSIS]: { 
       baseUrl: `https://gnosisscan.io`,
       apiKey: config.gnosisScanKey
+    },
+    [SupportedChainId.OPT]: { 
+      baseUrl: `https://optimistic.etherscan.io`,
+      apiKey: config.optScanKey
+    },
+    [SupportedChainId.ARB]: { 
+      baseUrl: `https://arbiscan.io`,
+      apiKey: config.arbScanKey
+    },
+    [SupportedChainId.AVAX]: { 
+      baseUrl: `https://snowtrace.io`,
+      apiKey: config.avaxScanKey
     },
   }
 
