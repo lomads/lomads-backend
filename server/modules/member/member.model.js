@@ -12,6 +12,11 @@ const MemberSchema = new mongoose.Schema({
     required: false,
     default: 'member'
   },
+  registered: {
+    type: Boolean,
+    required: false,
+    default: false
+  },
   name: {
     type: String,
     required: false,
