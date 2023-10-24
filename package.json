@@ -68,6 +68,7 @@
     "express-rate-limit": "^6.9.0",
     "express-validation": "^1.0.3",
     "express-winston": "^4.2.0",
+    "express-xss-sanitizer": "^1.1.6",
     "helmet": "^6.0.0",
     "http-status": "^1.5.3",
     "joi": "^14.3.1",

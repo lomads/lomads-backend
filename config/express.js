@@ -9,6 +9,7 @@ const cors = require('cors');
 const httpStatus = require('http-status');
 const expressWinston = require('express-winston');
 const expressValidation = require('express-validation');
+const { xss } = require('express-xss-sanitizer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit')
 const perfectExpressSanitizer = require("perfect-express-sanitizer");
@@ -48,7 +49,7 @@ app.use(perfectExpressSanitizer.clean({ xss: true,  noSql: true,  sql: true, lev
 // parse body params and attache them to req.body
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
+app.use(xss());
 app.use(cookieParser());
 app.use(compress());
 app.use(methodOverride());

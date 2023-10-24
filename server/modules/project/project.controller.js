@@ -113,15 +113,17 @@ const create = async (req, res) => {
 }
 
 const updateProjectDetails = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { name, description } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
+
 
         await Project.findOneAndUpdate(
             { _id: projectId },
@@ -139,13 +141,14 @@ const updateProjectDetails = async (req, res) => {
 }
 
 const addProjectMember = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { name, address, role = "role4" } = req.body;
     console.log("member details : ", name, address);
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] } });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -212,11 +215,12 @@ const addProjectMember = async (req, res) => {
 }
 
 const updateProjectMember = async (req, res) => {
+    const { _id } = req.user;
     const { projectId } = req.params;
     const { memberList, daoId } = req.body;
     console.log("Member List : ", memberList);
     try {
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }});
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -317,11 +321,12 @@ const removeNotionUser = async (p) => {
 }
 
 const deleteProjectMember = async (req, res) => {
+    const { _id } = req.user;
     const { projectId } = req.params;
     const { memberList, daoId } = req.body;
     console.log("Member List : ", memberList);
     try {
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -383,10 +388,11 @@ const deleteProjectMember = async (req, res) => {
 }
 
 const editProjectMember = async (req, res) => {
+    const { _id } = req.user;
     const { projectId } = req.params;
     const { memberList, daoId, inviteType, validRoles, invitations } = req.body;
     try {
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]}  });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -501,10 +507,11 @@ const editProjectMember = async (req, res) => {
 }
 
 const archiveProject = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     try {
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -530,7 +537,7 @@ const updateViewProject = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     try {
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -553,10 +560,11 @@ const updateViewProject = async (req, res) => {
 }
 
 const deleteProject = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     try {
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -584,13 +592,14 @@ const deleteProject = async (req, res) => {
 }
 
 const addProjectLinks = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { title, link, accessControl, spaceDomain, roleId = null, guildId = null, id, platformId } = req.body;
     console.log("link details : ", title, link);
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -608,12 +617,13 @@ const addProjectLinks = async (req, res) => {
 }
 
 const editProjectLinks = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { resourceList } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -634,13 +644,14 @@ const editProjectLinks = async (req, res) => {
 }
 
 const updateProjectLink = async (req, res) => {
+    const { _id } = req.user;
     const { wallet } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { id } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [wallet]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -705,6 +716,7 @@ const getNotionUser = async (req, res) => {
 }
 
 const addNotionUserRole = async (req, res) => {
+
     const { notionUserId, linkId, projectId, account } = req.body;
     try {
         const project = await Project.findOne({ _id: projectId })
@@ -765,12 +777,13 @@ const joinDiscordQueue = async (req, res) => {
 }
 
 const updateProjectKRAReview = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { kra } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -791,12 +804,13 @@ const updateProjectKRAReview = async (req, res) => {
 }
 
 const editProjectKRA = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { frequency, results } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -823,12 +837,13 @@ const editProjectKRA = async (req, res) => {
 }
 
 const updateProjectMilestones = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { milestones } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }
@@ -849,12 +864,13 @@ const updateProjectMilestones = async (req, res) => {
 }
 
 const editProjectMilestone = async (req, res) => {
+    const { _id } = req.user;
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     const { milestones, compensation } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
         if (!project) {
             return res.status(404).json({ message: 'Project not found' })
         }

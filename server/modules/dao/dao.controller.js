@@ -302,6 +302,7 @@ const updateDetails = async (req, res) => {
 const getByUrl = async (req, res) => {
     const { url } = req.params;
     const user = req.user;
+    const { mint = 'false' } = req.query
     try {
         let dao = null;
         let userInDao = null;
@@ -313,7 +314,7 @@ const getByUrl = async (req, res) => {
             dao = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         } else {
             dao = await DAO.findOne({ url }, {  contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
-            .populate({ path: 'safe safes sbt', select: '-discountCodes -metadata -treasury -nonPayingMembers -membersList -transactions', })
+            .populate({ path: 'safe safes sbt', select:  mint === 'true' ? '-nonPayingMembers -membersList -transactions -discountCodes' : 'name token image whitelisted version chainId address', })
         }
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
