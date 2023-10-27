@@ -118,12 +118,13 @@ const updateProjectDetails = async (req, res) => {
     const { projectId } = req.params;
     const { name, description } = req.body;
     try {
-
+        
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
         let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
-        if (!project) {
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
-
+        project = await Project.findOne({ _id: projectId  });
 
         await Project.findOneAndUpdate(
             { _id: projectId },
@@ -148,10 +149,13 @@ const addProjectMember = async (req, res) => {
     console.log("member details : ", name, address);
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] } });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
+
         const filter = { wallet: { $regex: new RegExp(`^${address}$`, "i") } }
         let m = await Member.findOne(filter);
         if (!m) {
@@ -220,10 +224,14 @@ const updateProjectMember = async (req, res) => {
     const { memberList, daoId } = req.body;
     console.log("Member List : ", memberList);
     try {
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }});
-        if (!project) {
+
+        const validDao = await DAO.findOne({ _id: daoId, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
+
         console.log("Project found")
         await Project.findOneAndUpdate(
             { _id: projectId },
@@ -326,10 +334,14 @@ const deleteProjectMember = async (req, res) => {
     const { memberList, daoId } = req.body;
     console.log("Member List : ", memberList);
     try {
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+
+        const validDao = await DAO.findOne({ _id: daoId, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+
+        project = await Project.findOne({ _id: projectId  });
         await Project.findOneAndUpdate(
             { _id: projectId },
             {
@@ -392,10 +404,13 @@ const editProjectMember = async (req, res) => {
     const { projectId } = req.params;
     const { memberList, daoId, inviteType, validRoles, invitations } = req.body;
     try {
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]}  });
-        if (!project) {
+
+        const validDao = await DAO.findOne({ _id: daoId, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
 
         let newMembers = [];
         let deletedMembers = [];
@@ -511,10 +526,14 @@ const archiveProject = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     try {
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
+
         await Project.findOneAndUpdate(
             { _id: projectId },
             {
@@ -537,10 +556,14 @@ const updateViewProject = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     try {
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
+
         await Project.findOneAndUpdate(
             { _id: projectId },
             {
@@ -564,11 +587,14 @@ const deleteProject = async (req, res) => {
     const { daoUrl } = req.query;
     const { projectId } = req.params;
     try {
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
-        console.log(project.tasks);
+        project = await Project.findOne({ _id: projectId  });
+
         await Task.updateMany(
             { _id: { $in: project.tasks } },
             { $set: { deletedAt: Date.now() } },
@@ -599,10 +625,13 @@ const addProjectLinks = async (req, res) => {
     console.log("link details : ", title, link);
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
+
         project.links.push({ id, title, link, spaceDomain, roleId, accessControl, guildId, platformId, unlocked: [] });
         project = await project.save();
 
@@ -623,10 +652,12 @@ const editProjectLinks = async (req, res) => {
     const { resourceList } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
 
         await Project.findOneAndUpdate(
             { _id: projectId },
@@ -651,10 +682,13 @@ const updateProjectLink = async (req, res) => {
     const { id } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [wallet]} });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
+
         if (!id) {
             return res.status(404).json({ message: 'Link not found' })
         }
@@ -783,10 +817,12 @@ const updateProjectKRAReview = async (req, res) => {
     const { kra } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
 
         await Project.findOneAndUpdate(
             { _id: projectId },
@@ -810,10 +846,12 @@ const editProjectKRA = async (req, res) => {
     const { frequency, results } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
 
         let ob = { ...project.kra };
         ob.frequency = frequency;
@@ -843,10 +881,12 @@ const updateProjectMilestones = async (req, res) => {
     const { milestones } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
 
         await Project.findOneAndUpdate(
             { _id: projectId },
@@ -870,10 +910,12 @@ const editProjectMilestone = async (req, res) => {
     const { milestones, compensation } = req.body;
     try {
 
-        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id]} });
-        if (!project) {
+        const validDao = await DAO.findOne({ url: daoUrl, 'members.member': _id, $or: [{ 'members.role': 'role1' }, { 'members.role': 'role2' }] });
+        let project = await Project.findOne({ _id: projectId, 'members': { $in: [_id] }  });
+        if (!project && !validDao) {
             return res.status(404).json({ message: 'Project not found' })
         }
+        project = await Project.findOne({ _id: projectId  });
 
         await Project.findOneAndUpdate(
             { _id: projectId },
