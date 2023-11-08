@@ -16,16 +16,22 @@ const loadAll = async (req, res) => {
     const { skip = 0, limit = 50, sortField = 'createdAt', sortDirection = -1 } = req.query;
 
     const sortQuery = { [sortField]: parseInt(sortDirection) }
-    console.log(sortQuery)
+
     const dao = await DAO
         // .find({ deletedAt: null })
         // .lean()
         // .populate({ path: 'members.member safe safes projects' })
         .aggregate([
             {
-                $match: {
-                    deletedAt: null
-                }
+                $match: { deletedAt: null }
+            },
+            {
+                $lookup: {
+                    from: 'saves',
+                    localField: 'safes',
+                    foreignField: '_id',
+                    as: 'safes',
+                },
             },
             {
                 $lookup: {
@@ -37,28 +43,56 @@ const loadAll = async (req, res) => {
             },
             {
                 $addFields: {
-                    memberCount: {
-                        $ifNull: [{ $size: { $ifNull: ['$members', []] } }, 0],
+                    memberCount: { $size: { $ifNull: ['$members', []] } },
+                    safeCount: { $size: { $ifNull: ['$safes', []] } },
+                    totalBalance: {
+                        $sum: {
+                            $map: {
+                                input: "$safes",
+                                as: "safe",
+                                in: { $toDouble: "$$safe.balance" }
+                            }
+                        }
                     },
-                    safeCount: {
-                        $ifNull: [{ $size: { $ifNull: ['$safes', []] } }, 0],
+                    directPaymentCount: {
+                        $sum: {
+                            $map: {
+                                input: "$safes",
+                                as: "safe",
+                                in: { $size: { $ifNull: ["$$safe.transactions", []] } }
+                            }
+                        }
                     },
                     recurringPaymentCount: { $size: '$recurringPayments' },
                 },
             },
+            {
+                $addFields: {
+                    transactionVolumn: { $add: [{ $toInt: '$directPaymentCount' }, { $toInt: '$recurringPaymentCount' }] }
+                },
+            },
+            {
+                $match: {
+                    $and: [
+                        { totalBalance: { $ne: 0 } },
+                        { transactionVolumn: { $ne: 0 } },
+                    ]
+                }
+            }
         ])
         .sort(sortQuery)
         .skip(+skip)
         .limit(+limit)
         .exec()
-    console.log(sortQuery)
+
     await Member.populate(dao, { path: "members.member" })
     await Safe.populate(dao, { path: "safe" })
-    await Safe.populate(dao, { path: "safes" })
     await Project.populate(dao, { path: "projects" })
 
-    const total = await DAO.countDocuments({ deletedAt: null });
+    // const total = await DAO.countDocuments({ deletedAt: null });
+    const total = dao.length;
     const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total / limit) : 1 };
+
     return res.status(200).json(data)
 }
 
