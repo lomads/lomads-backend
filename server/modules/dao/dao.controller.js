@@ -11,18 +11,115 @@ const moment = require('moment')
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 const gnosisSafeTxSyncTrackerModel = require('../gnosisSafeTx/gnosisSafeTxSyncTracker.model');
-
+const util = require('util');
 const loadAll = async (req, res) => {
-    const { skip = 0, limit = 50 } = req.query;
-    const dao = await DAO.find({ deletedAt: null })
-        .lean()
-        .populate({ path: 'members.member safe projects' })
-        .sort({ createdAt: -1 })
+    const { skip = 0, limit = 10, sortField = 'createdAt', sortDirection = -1, filterField = {
+        totalBalance: false,
+        transactionVolume: false
+    } } = req.query;
+
+    const parsedFilterField = JSON.parse(filterField);
+
+    const { totalBalance, transactionVolume } = parsedFilterField
+
+    let filterTotalBalance = totalBalance;
+    let filterTransactionVolume = transactionVolume;
+
+    const sortQuery = { [sortField]: parseInt(sortDirection) }
+
+    const aggregationPipeline = [
+        // Your initial aggregation stages here
+        {
+            $match: { deletedAt: null }
+        },
+        {
+            $lookup: {
+                from: 'saves',
+                localField: 'safes',
+                foreignField: '_id',
+                as: 'safes',
+            },
+        },
+        {
+            $lookup: {
+                from: 'recurringpayments',
+                localField: '_id',
+                foreignField: 'daoId',
+                as: 'recurringPayments'
+            }
+        },
+        {
+            $addFields: {
+                memberCount: { $size: { $ifNull: ['$members', []] } },
+                safeCount: { $size: { $ifNull: ['$safes', []] } },
+                totalBalance: {
+                    $sum: {
+                        $map: {
+                            input: "$safes",
+                            as: "safe",
+                            in: { $toDouble: "$$safe.balance" }
+                        }
+                    }
+                },
+                directPaymentCount: {
+                    $sum: {
+                        $map: {
+                            input: "$safes",
+                            as: "safe",
+                            in: { $size: { $ifNull: ["$$safe.transactions", []] } }
+                        }
+                    }
+                },
+                recurringPaymentCount: { $size: '$recurringPayments' },
+            },
+        },
+        {
+            $addFields: {
+                transactionVolume: { $add: [{ $toInt: '$directPaymentCount' }, { $toInt: '$recurringPaymentCount' }] }
+            },
+        }
+    ];
+
+    if (filterTotalBalance) {
+        aggregationPipeline.push({
+            $match: {
+                totalBalance: { $ne: 0 }
+            }
+        });
+    }
+
+    if (filterTransactionVolume) {
+        aggregationPipeline.push({
+            $match: {
+                transactionVolume: { $ne: 0 }
+            }
+        });
+    }
+
+    const dao = await DAO
+        // .find({ deletedAt: null })
+        // .lean()
+        // .populate({ path: 'members.member safe safes projects' })
+        .aggregate([aggregationPipeline])
+        .sort(sortQuery)
         .skip(+skip)
         .limit(+limit)
         .exec()
-    const total = await DAO.countDocuments({ deletedAt: null });
+
+    aggregationPipeline.push({
+        $count: "total" // Count the documents before skip and limit
+    });
+
+    const countResult = await DAO.aggregate(aggregationPipeline).exec();
+
+    const total = countResult[0] ? countResult[0].total : 0;
+
+    await Member.populate(dao, { path: "members.member" })
+    await Safe.populate(dao, { path: "safe" })
+    await Project.populate(dao, { path: "projects" })
+
     const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total / limit) : 1 };
+
     return res.status(200).json(data)
 }
 
@@ -57,11 +154,11 @@ const create = async (req, res, next) => {
     if (!name)
         return res.status(400).json({ message: 'Organisation name is required' })
     const currDao = await DAO.findOne({ url })
-    if(currDao){
+    if (currDao) {
         return res.status(400).json({ message: `Organisation with url ${url} already exists` })
     }
-    
-    if(!_.find(members, m => toChecksumAddress(m.address) === toChecksumAddress(wallet))) {
+
+    if (!_.find(members, m => toChecksumAddress(m.address) === toChecksumAddress(wallet))) {
         return res.status(500).json({ message: 'Something went wrong. Please try again' })
     }
     let mMembers = []
@@ -279,7 +376,7 @@ const updateDetails = async (req, res) => {
         if (!dao)
             return res.status(404).json({ message: 'DAO not found or Unauthorised action' })
         const member = _.find(dao.members, m => m.member.toString() === _id.toString())
-        if(!member || (member && member.role !== 'role1')) {
+        if (!member || (member && member.role !== 'role1')) {
             return res.status(500).json({ message: 'Unauthorised action' })
         }
 
@@ -306,15 +403,15 @@ const getByUrl = async (req, res) => {
     try {
         let dao = null;
         let userInDao = null;
-        if(user){
+        if (user) {
             userInDao = await DAO.findOne({ url, 'members.member': { $in: [user._id] } })
             console.log(userInDao)
         }
-        if(user && userInDao){
+        if (user && userInDao) {
             dao = await DAO.findOne({ url }).populate({ path: 'safe safes sbt members.member projects tasks', populate: { path: 'owners members members.member tasks transactions project metadata' } })
         } else {
-            dao = await DAO.findOne({ url }, {  contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
-            .populate({ path: 'safe safes sbt', select:  mint === 'true' ? '-nonPayingMembers -membersList -transactions -discountCodes' : 'name token image whitelisted version chainId address', })
+            dao = await DAO.findOne({ url }, { contractAddress: 0, updatedAt: 0, createdAt: 0, deletedAt: 0, members: 0, projects: 0, tasks: 0, discord: 0, trello: 0, github: 0, links: 0, sweatPoints: 0 })
+                .populate({ path: 'safe safes sbt', select: mint === 'true' ? '-nonPayingMembers -membersList -transactions -discountCodes' : 'name token image whitelisted version chainId address', })
         }
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' })
@@ -331,7 +428,7 @@ const addDaoMember = async (req, res) => {
     const { _id } = req.user;
     const { url } = req.params;
     const { name, address, role = "role4" } = req.body;
-    
+
 
     try {
         //const dao = await DAO.findOne({ deletedAt: null, url, 'members.member': { $in: [ObjectId(_id)] } })
@@ -605,16 +702,16 @@ const deleteDaoLink = async (req, res) => {
 }
 
 const updateSweatPoints = async (req, res) => {
-    const {  _id } = req.user;
+    const { _id } = req.user;
     const { url } = req.params;
     const { status } = req.body;
     try {
         const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
-        if(!dao) {
+        if (!dao) {
             return res.status(500).json({ message: 'DAO not found' })
         }
         const member = _.find(dao.members, m => m.member.toString() === _id.toString())
-        if(!member || (member && member.role !== 'role1')) {
+        if (!member || (member && member.role !== 'role1')) {
             return res.status(500).json({ message: 'Unauthorised action' })
         }
         await DAO.findOneAndUpdate({ url, 'members.member': { $in: [_id] } }, { sweatPoints: status })
@@ -628,7 +725,7 @@ const updateSweatPoints = async (req, res) => {
 }
 
 const syncSafeOwners = async (req, res) => {
-    const {  _id } = req.user;
+    const { _id } = req.user;
     const { url } = req.params;
     const owners = req.body;
     const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } }).populate({ path: 'members.member', populate: { path: 'owners members members.member' } })
@@ -743,7 +840,7 @@ const attachSafe = async (req, res) => {
         if (!dao)
             return res.status(404).json({ message: 'DAO not found' });
         const member = _.find(members, m => toChecksumAddress(m.address) === wallet)
-        if(!member || (member && member.role !== 'role1')) {
+        if (!member || (member && member.role !== 'role1')) {
             return res.status(500).json({ message: 'Unauthorised action' })
         }
 
@@ -775,20 +872,20 @@ const attachSafe = async (req, res) => {
             return { member: m._id, creator: _.find(members, mem => mem.address.toLowerCase() === m.wallet.toLowerCase()).creator, role: _.get(m, 'role', 'role4') }
         })
 
-        mem  = dao?.members?.concat(mem)
+        mem = dao?.members?.concat(mem)
         mem = _.uniqBy(mem, m => String(m.member))
 
-        if(dao?.safes?.length == 0) {
-            await Project.updateMany({ isDummy: true, daoId: dao?._id }, { 
-                $set : { 'compensation.currency': safe?.token?.tokenAddress, 'compensation.symbol': safe?.token?.symbol, 'compensation.tokenAddress': safe?.token?.tokenAddress }
+        if (dao?.safes?.length == 0) {
+            await Project.updateMany({ isDummy: true, daoId: dao?._id }, {
+                $set: { 'compensation.currency': safe?.token?.tokenAddress, 'compensation.symbol': safe?.token?.symbol, 'compensation.tokenAddress': safe?.token?.tokenAddress }
             })
-            await Task.updateMany({ isDummy: true, daoId: dao?._id }, { 
-                $set : { 'compensation.currency': safe?.token?.tokenAddress, 'compensation.symbol': safe?.token?.symbol }
+            await Task.updateMany({ isDummy: true, daoId: dao?._id }, {
+                $set: { 'compensation.currency': safe?.token?.tokenAddress, 'compensation.symbol': safe?.token?.symbol }
             })
         }
 
         const gsts = await gnosisSafeTxSyncTrackerModel.findOne({ safeAddress: newSafe?.address })
-        if(!gsts)
+        if (!gsts)
             await gnosisSafeTxSyncTrackerModel.create({ chainId: newSafe?.chainId, safeAddress: newSafe?.address })
 
         await DAO.findOneAndUpdate(
@@ -797,7 +894,7 @@ const attachSafe = async (req, res) => {
                 ...(!dao?.safe ? { safe: newSafe?._id } : {}),
                 $addToSet: { safes: newSafe?._id },
                 members: mem
-        })
+            })
 
         return res.status(200).json({ message: 'Success' });
 
@@ -807,7 +904,7 @@ const attachSafe = async (req, res) => {
     }
 }
 
-const toggleSafeState  = async (req, res) => {
+const toggleSafeState = async (req, res) => {
     const { _id } = req.user
     const { url } = req.params;
     const { safeAddress } = req.body;
@@ -816,11 +913,11 @@ const toggleSafeState  = async (req, res) => {
         if (!mydao)
             return res.status(404).json({ message: 'DAO not found' });
         const member = _.find(mydao.members, m => m.member.toString() === _id.toString())
-        if(!member || (member && member.role !== 'role1')) {
+        if (!member || (member && member.role !== 'role1')) {
             return res.status(500).json({ message: 'Unauthorised action' })
         }
         const hasDisabledSafe = await DAO.findOne({ url, disabledSafes: { $in: [safeAddress] } })
-        if(hasDisabledSafe) 
+        if (hasDisabledSafe)
             await DAO.findOneAndUpdate({ url }, { $pull: { disabledSafes: { $in: [safeAddress] } } })
         else
             await DAO.findOneAndUpdate({ url }, { $addToSet: { disabledSafes: safeAddress } })
@@ -837,19 +934,19 @@ const deleteByUrl = async (req, res) => {
     const { url } = req.params;
     try {
         console.log(platformRole)
-        if(platformRole !== 'admin') {
+        if (platformRole !== 'admin') {
             const dao = await DAO.findOne({ url, 'members.member': { $in: [_id] } })
-            if(!dao) {
+            if (!dao) {
                 return res.status(500).json({ message: 'DAO not found' })
             }
             const member = _.find(dao.members, m => m.member.toString() === _id.toString())
-            if(!member || (member && member.role !== 'role1')) {
+            if (!member || (member && member.role !== 'role1')) {
                 return res.status(500).json({ message: 'Unauthorised action' })
             }
         }
         await DAO.findOneAndUpdate({ url }, { deletedAt: moment().toDate() })
         return res.status(200).json({ success: true, message: "Deleted successfully" });
-    }  catch (e) {
+    } catch (e) {
         console.log(e)
         return res.status(500).json({ message: 'Something went wrong' });
     }
