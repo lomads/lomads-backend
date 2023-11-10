@@ -11,86 +11,113 @@ const moment = require('moment')
 const { toChecksumAddress, checkAddressChecksum } = require('ethereum-checksum-address')
 const { getGuild, hasNecessaryPermissions, getGuildRoles, getGuildMembers, createGuildRole, createChannelInvite, memberHasRole, attachGuildMemberRole } = require('@services/discord');
 const gnosisSafeTxSyncTrackerModel = require('../gnosisSafeTx/gnosisSafeTxSyncTracker.model');
-
+const util = require('util');
 const loadAll = async (req, res) => {
-    const { skip = 0, limit = 50, sortField = 'createdAt', sortDirection = -1 } = req.query;
+    const { skip = 0, limit = 10, sortField = 'createdAt', sortDirection = -1, filterField = {
+        totalBalance: false,
+        transactionVolume: false
+    } } = req.query;
+
+    const parsedFilterField = JSON.parse(filterField);
+
+    const { totalBalance, transactionVolume } = parsedFilterField
+
+    let filterTotalBalance = totalBalance;
+    let filterTransactionVolume = transactionVolume;
 
     const sortQuery = { [sortField]: parseInt(sortDirection) }
+
+    const aggregationPipeline = [
+        // Your initial aggregation stages here
+        {
+            $match: { deletedAt: null }
+        },
+        {
+            $lookup: {
+                from: 'saves',
+                localField: 'safes',
+                foreignField: '_id',
+                as: 'safes',
+            },
+        },
+        {
+            $lookup: {
+                from: 'recurringpayments',
+                localField: '_id',
+                foreignField: 'daoId',
+                as: 'recurringPayments'
+            }
+        },
+        {
+            $addFields: {
+                memberCount: { $size: { $ifNull: ['$members', []] } },
+                safeCount: { $size: { $ifNull: ['$safes', []] } },
+                totalBalance: {
+                    $sum: {
+                        $map: {
+                            input: "$safes",
+                            as: "safe",
+                            in: { $toDouble: "$$safe.balance" }
+                        }
+                    }
+                },
+                directPaymentCount: {
+                    $sum: {
+                        $map: {
+                            input: "$safes",
+                            as: "safe",
+                            in: { $size: { $ifNull: ["$$safe.transactions", []] } }
+                        }
+                    }
+                },
+                recurringPaymentCount: { $size: '$recurringPayments' },
+            },
+        },
+        {
+            $addFields: {
+                transactionVolume: { $add: [{ $toInt: '$directPaymentCount' }, { $toInt: '$recurringPaymentCount' }] }
+            },
+        }
+    ];
+
+    if (filterTotalBalance) {
+        aggregationPipeline.push({
+            $match: {
+                totalBalance: { $ne: 0 }
+            }
+        });
+    }
+
+    if (filterTransactionVolume) {
+        aggregationPipeline.push({
+            $match: {
+                transactionVolume: { $ne: 0 }
+            }
+        });
+    }
 
     const dao = await DAO
         // .find({ deletedAt: null })
         // .lean()
         // .populate({ path: 'members.member safe safes projects' })
-        .aggregate([
-            {
-                $match: { deletedAt: null }
-            },
-            {
-                $lookup: {
-                    from: 'saves',
-                    localField: 'safes',
-                    foreignField: '_id',
-                    as: 'safes',
-                },
-            },
-            {
-                $lookup: {
-                    from: 'recurringpayments',
-                    localField: '_id',
-                    foreignField: 'daoId',
-                    as: 'recurringPayments'
-                }
-            },
-            {
-                $addFields: {
-                    memberCount: { $size: { $ifNull: ['$members', []] } },
-                    safeCount: { $size: { $ifNull: ['$safes', []] } },
-                    totalBalance: {
-                        $sum: {
-                            $map: {
-                                input: "$safes",
-                                as: "safe",
-                                in: { $toDouble: "$$safe.balance" }
-                            }
-                        }
-                    },
-                    directPaymentCount: {
-                        $sum: {
-                            $map: {
-                                input: "$safes",
-                                as: "safe",
-                                in: { $size: { $ifNull: ["$$safe.transactions", []] } }
-                            }
-                        }
-                    },
-                    recurringPaymentCount: { $size: '$recurringPayments' },
-                },
-            },
-            {
-                $addFields: {
-                    transactionVolumn: { $add: [{ $toInt: '$directPaymentCount' }, { $toInt: '$recurringPaymentCount' }] }
-                },
-            },
-            {
-                $match: {
-                    $and: [
-                        { totalBalance: { $ne: 0 } },
-                        { transactionVolumn: { $ne: 0 } },
-                    ]
-                }
-            }
-        ])
+        .aggregate([aggregationPipeline])
         .sort(sortQuery)
         .skip(+skip)
         .limit(+limit)
         .exec()
 
+    aggregationPipeline.push({
+        $count: "total" // Count the documents before skip and limit
+    });
+
+    const countResult = await DAO.aggregate(aggregationPipeline).exec();
+
+    const total = countResult[0] ? countResult[0].total : 0;
+
     await Member.populate(dao, { path: "members.member" })
     await Safe.populate(dao, { path: "safe" })
     await Project.populate(dao, { path: "projects" })
 
-    // const total = await DAO.countDocuments({ deletedAt: null });
-    const total = dao.length;
     const data = { data: dao, itemCount: total, totalPages: total > limit ? Math.ceil(total / limit) : 1 };
 
     return res.status(200).json(data)
