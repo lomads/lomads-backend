@@ -47,6 +47,8 @@ router.patch('/:url/delete-link', web3Auth, daoCtrl.deleteDaoLink);
 router.patch('/:url/update-details', web3Auth, daoCtrl.updateDetails);
 router.patch('/:url/sync-safe-owners', web3Auth, daoCtrl.syncSafeOwners);
 router.patch('/:url/update-user-discord', web3Auth, daoCtrl.updateUserDiscord);
+router.patch('/:url/membership/add-member', web3Auth, daoCtrl.membershipAddMember);
+router.patch('/:url/membership/whitelisted', web3Auth, daoCtrl.whitelistMembership);
 router.post('/:url/attach-safe', web3Auth, daoCtrl.attachSafe);
 router.post('/:url/toggle-safe-state', web3Auth, daoCtrl.toggleSafeState);
 

@@ -48,6 +48,10 @@ const DAOSchema = new mongoose.Schema({
     default: null,
     required: false
   },
+  whitelisted: {
+    type: Boolean,
+    default: false
+  },
   sweatPoints: {
     type: Boolean,
     default: false,
