@@ -149,7 +149,7 @@ const loadSBTDao = async (req, res) => {
 
 const create = async (req, res, next) => {
     const { _id, wallet } = req.user;
-    const { contractAddress = "", url = null, name, description = null, image, members = [], safe = null, chainId = 5, sbt = null } = req.body;
+    const { contractAddress = "", url = null, name, description = null, image, whitelisted, members = [], safe = null, chainId = 5, sbt = null } = req.body;
 
     if (!name)
         return res.status(400).json({ message: 'Organisation name is required' })
@@ -197,6 +197,7 @@ const create = async (req, res, next) => {
             name: name.replace(/[^a-zA-Z ]/g, ""),
             description,
             image,
+            whitelisted,
             members: mem,
             safe: newSafe?._id,
             sbt: sbt,
@@ -904,6 +905,53 @@ const attachSafe = async (req, res) => {
     }
 }
 
+
+const membershipAddMember = async (req, res) => {
+    const { url } = req.params;
+    const { name, address, role = "role4" } = req.body;
+    try {
+        const filter = { wallet: { $regex: new RegExp(`^${address}$`, "i") } }
+        let m = await Member.findOne(filter);
+
+        if (!m) {
+            m = new Member({ wallet: toChecksumAddress(address), name })
+            m = await m.save();
+        }
+
+        const userExistInDao = await DAO.findOne({ url, 'members.member': m._id })
+
+        if (!userExistInDao) {
+            await DAO.findOneAndUpdate(
+                { url: url },
+                { $push: { members: { creator: false, member: m._id, role } }}
+            )
+        }
+        return res.json({ message: 'Successfully add member!' })
+    }
+    catch (e) {
+        console.error("dao.addDaoMember::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
+const whitelistMembership = async (req, res) => {
+    const { id, whitelisted } = req.body
+
+    console.log('id and whitelisted: ', id, whitelisted)
+
+    try {   
+        await DAO.findOneAndUpdate(
+            { _id: id },
+            { $set: { whitelisted: whitelisted } }
+        )
+        return res.json({ message: 'Successfully updated whitelisted!' })
+    }   
+    catch (e) {
+        console.error("dao.whitelistMembership::", e)
+        return res.status(500).json({ message: 'Something went wrong' })
+    }
+}
+
 const toggleSafeState = async (req, res) => {
     const { _id } = req.user
     const { url } = req.params;
@@ -952,4 +1000,4 @@ const deleteByUrl = async (req, res) => {
     }
 }
 
-module.exports = { deleteByUrl, toggleSafeState, loadSBTDao, attachSafe, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
+module.exports = { deleteByUrl, toggleSafeState, loadSBTDao, attachSafe, membershipAddMember, whitelistMembership, loadAll, updateUserDiscord, syncSafeOwners, load, create, updateDetails, getByUrl, addDaoMember, addDaoMemberList, manageDaoMember, addDaoLinks, updateDaoLinks, updateSweatPoints, deleteDaoLink, createOption };
